@@ -38,6 +38,10 @@ function Overlays({
   toggleNightMode,
   isNightMode,
   handleLogout,
+  handleDeleteAccount,
+  showLogoutConfirm,
+  confirmLogout,
+  cancelLogout,
   showProfileModal,
   setShowProfileModal,
   showPeerProfileModal,
@@ -114,7 +118,10 @@ function Overlays({
   setGroupName,
   selectedFriends,
   handleToggleSelectFriend,
-  handleCreateGroup
+  handleCreateGroup,
+  showDeleteConfirm,
+  cancelDeleteAccount,
+  confirmDeleteAccount
 }) {
   const peerIsFriend = peerProfile ? isAlreadyFriend(peerProfile.userId, peerProfile.name) : false
   const peerRequestPending = peerProfile
@@ -264,6 +271,7 @@ function Overlays({
 
             <div className="user-panel-footer">
               <button className="logout-btn" onClick={handleLogout}><span className="logout-icon">🚪</span>退出登录</button>
+              <button className="delete-account-btn" onClick={handleDeleteAccount}><span className="delete-account-icon">🗑️</span>注销账户</button>
             </div>
           </div>
         </div>
@@ -758,6 +766,42 @@ function Overlays({
           </div>
         </div>
       )}
+
+      {showDeleteConfirm && (
+        <div className="delete-confirm-overlay" onClick={cancelDeleteAccount}>
+          <div className="delete-confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="delete-confirm-header">
+              <h3>⚠️ 注销账户</h3>
+            </div>
+            <div className="delete-confirm-body">
+              <p>您确定要注销账户吗？此操作不可恢复！</p>
+              <p style={{ color: '#ff4444', fontWeight: 'bold' }}>所有数据将被永久删除</p>
+            </div>
+            <div className="delete-confirm-footer">
+              <button className="cancel-btn" onClick={cancelDeleteAccount}>取消</button>
+              <button className="confirm-btn" onClick={confirmDeleteAccount}>确认注销</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showLogoutConfirm && (
+        <div className="logout-confirm-overlay" onClick={cancelLogout}>
+          <div className="logout-confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="logout-confirm-header">
+              <h3>🚪 退出登录</h3>
+            </div>
+            <div className="logout-confirm-body">
+              <p>您确定要退出登录吗？</p>
+            </div>
+            <div className="logout-confirm-footer">
+              <button className="cancel-btn" onClick={cancelLogout}>取消</button>
+              <button className="confirm-btn" onClick={confirmLogout}>确认退出</button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </>
   )
 }

@@ -35,6 +35,8 @@ function App() {
   const [showPeerProfileModal, setShowPeerProfileModal] = useState(false) // 对方详情弹层
   const [peerProfile, setPeerProfile] = useState(null) // 当前查看的对方资料
   const [isNightMode, setIsNightMode] = useState(false) // 夜间模式
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false) // 注销账户二次确认
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false) // 退出登录二次确认
   const [sessionFilter, setSessionFilter] = useState('all') // 会话筛选：all-全部 | personal-个人 | group-群聊
   const [showSearch, setShowSearch] = useState(false) // 搜索框显示/隐藏状态
   const [searchQuery, setSearchQuery] = useState('') // 搜索关键词
@@ -1016,9 +1018,48 @@ function App() {
 
   // 登出
   const handleLogout = () => {
+    setShowLogoutConfirm(true)
+  }
+
+  // 确认退出登录
+  const confirmLogout = () => {
     setIsLoggedIn(false)
     setCurrentChat(0)
     setShowUserPanel(false)
+    setShowLogoutConfirm(false)
+  }
+
+  // 取消退出登录
+  const cancelLogout = () => {
+    setShowLogoutConfirm(false)
+  }
+
+  // 注销账户
+  const handleDeleteAccount = () => {
+    setShowDeleteConfirm(true)
+  }
+
+  // 确认注销账户
+  const confirmDeleteAccount = () => {
+    // 仅前端实现：清除登录状态和本地数据
+    setIsLoggedIn(false)
+    setCurrentChat(0)
+    setShowUserPanel(false)
+    setShowDeleteConfirm(false)
+    
+    // 清除 localStorage 中的 token
+    try {
+      localStorage.removeItem('auth_token')
+    } catch (e) {
+      // ignore
+    }
+    
+    alert('账户已成功注销')
+  }
+
+  // 取消注销账户
+  const cancelDeleteAccount = () => {
+    setShowDeleteConfirm(false)
   }
 
   // 切换用户面板显示/隐藏
@@ -1393,6 +1434,10 @@ function App() {
         toggleNightMode={toggleNightMode}
         isNightMode={isNightMode}
         handleLogout={handleLogout}
+        handleDeleteAccount={handleDeleteAccount}
+        showLogoutConfirm={showLogoutConfirm}
+        confirmLogout={confirmLogout}
+        cancelLogout={cancelLogout}
         showProfileModal={showProfileModal}
         setShowProfileModal={setShowProfileModal}
         showPeerProfileModal={showPeerProfileModal}
@@ -1422,6 +1467,9 @@ function App() {
         handleTransferGroup={handleTransferGroup}
         handleDismissGroup={handleDismissGroup}
         handleExitGroup={handleExitGroup}
+        showDeleteConfirm={showDeleteConfirm}
+        cancelDeleteAccount={cancelDeleteAccount}
+        confirmDeleteAccount={confirmDeleteAccount}
         isEditingRemark={isEditingRemark}
         tempRemark={tempRemark}
         setTempRemark={setTempRemark}
