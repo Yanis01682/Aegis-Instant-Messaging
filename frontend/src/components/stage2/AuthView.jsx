@@ -155,15 +155,6 @@ function AuthView({
               登录
             </button>
 
-            <div className="login-divider">
-              <span>其他登录方式</span>
-            </div>
-
-            <div className="social-login">
-              <button type="button" className="social-btn wechat">微信</button>
-              <button type="button" className="social-btn qq">QQ</button>
-            </div>
-
             <div className="login-footer">
               <p>还没有账号？<a href="#" onClick={(e) => { e.preventDefault(); onShowRegister() }}>立即注册</a></p>
             </div>
