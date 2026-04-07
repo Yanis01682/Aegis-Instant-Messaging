@@ -1,10 +1,12 @@
 # backend/app/main.py
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from .auth import router as auth_router
+from .auth import router as auth_router, get_current_user
 from .chat import router as chat_router
-from .database import engine
+from .database import engine, get_db
 from . import models
+from .models import User
+from sqlalchemy.orm import Session
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -33,6 +35,12 @@ def read_root():
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+@app.delete("/api/users/me")
+def delete_account(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    db.delete(current_user)
+    db.commit()
+    return {"message": "Account deleted successfully"}
 
 app.include_router(auth_router)
 app.include_router(chat_router, prefix="/api/chat", tags=["chat"])
