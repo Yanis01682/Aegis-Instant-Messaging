@@ -9,7 +9,7 @@ import {
   INITIAL_PROFILE_DATA,
   MY_ROLE_MAP
 } from './features/chat/mockData'
-import { login, register, getCurrentUser, deleteAccount } from './services/api'
+import { login, register, getCurrentUser, deleteAccount, getProfile, updateProfile } from './services/api'
 import AuthView from './components/stage2/AuthView'
 import TopBar from './components/stage2/TopBar'
 import SidebarPanel from './components/stage2/SidebarPanel'
@@ -700,7 +700,16 @@ function App() {
         await login({ username: account, password })
         const user = await getCurrentUser()
         if (user) {
-          setProfileData(prev => ({ ...prev, name: user.username, email: user.email }))
+          const profile = await getProfile()
+          setProfileData(prev => ({
+            ...prev,
+            name: user.username,
+            email: profile.email || user.email || '',
+            nickname: profile.nickname || '',
+            gender: profile.gender || 'other',
+            phone: profile.phone || '',
+            bio: profile.bio || '',
+          }))
           setIsLoggedIn(true)
         }
       } catch (err) {
@@ -867,11 +876,23 @@ function App() {
   }
 
   // 保存个人信息
-  const handleSaveProfile = () => {
-    // 保存到 localStorage
-    localStorage.setItem('userProfile', JSON.stringify(profileData))
-    setIsEditingProfile(false)
-    alert('个人信息保存成功！')
+  const handleSaveProfile = async () => {
+    try {
+      const updated = await updateProfile({
+        nickname: profileData.nickname,
+        gender: profileData.gender,
+        email: profileData.email,
+        phone: profileData.phone,
+        bio: profileData.bio,
+      })
+      setProfileData(prev => ({ ...prev, ...updated }))
+      localStorage.setItem('userProfile', JSON.stringify({ ...profileData, ...updated }))
+      setIsEditingProfile(false)
+      alert('个人信息保存成功！')
+    } catch (err) {
+      const msg = err.response?.data?.detail || err.message || '保存失败'
+      alert(msg)
+    }
   }
 
   // 取消编辑个人信息

@@ -114,3 +114,58 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+class UserProfileUpdate(BaseModel):
+    nickname: Optional[str] = None
+    gender: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    bio: Optional[str] = None
+
+
+class UserProfileResponse(BaseModel):
+    id: int
+    username: str
+    nickname: Optional[str] = None
+    gender: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    bio: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+@router.get("/profile", response_model=UserProfileResponse)
+def get_profile(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    user = get_user_by_username(db, username)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+
+@router.patch("/profile", response_model=UserProfileResponse)
+def update_profile(data: UserProfileUpdate, token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    user = get_user_by_username(db, username)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    for field, value in data.model_dump(exclude_unset=True).items():
+        if field == 'email' and value:
+            existing = db.query(models.User).filter(
+                models.User.email == value,
+                models.User.id != user.id
+            ).first()
+            if existing:
+                raise HTTPException(status_code=400, detail="邮箱已被使用")
+        setattr(user, field, value)
+    db.commit()
+    db.refresh(user)
+    return user

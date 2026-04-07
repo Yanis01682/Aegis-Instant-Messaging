@@ -78,3 +78,13 @@ export function getAuthToken() {
 }
 
 export default apiClient
+
+export async function getProfile() {
+  const res = await apiClient.get('/auth/profile')
+  return res.data
+}
+
+export async function updateProfile(data) {
+  const res = await apiClient.patch('/auth/profile', data)
+  return res.data
+}
