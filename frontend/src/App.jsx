@@ -9,7 +9,7 @@ import {
   INITIAL_PROFILE_DATA,
   MY_ROLE_MAP
 } from './features/chat/mockData'
-import { login, register, getCurrentUser, deleteAccount, getProfile, updateProfile } from './services/api'
+import { login, register, getCurrentUser, deleteAccount, getProfile, updateProfile, getSessions, getFriends, getMessages, sendChatMessage } from './services/api'
 import AuthView from './components/stage2/AuthView'
 import TopBar from './components/stage2/TopBar'
 import SidebarPanel from './components/stage2/SidebarPanel'
@@ -88,6 +88,7 @@ function App() {
     }
   ]) // 收到的好友请求（待我审批）
   const [sentFriendRequests, setSentFriendRequests] = useState([]) // 我发出的好友申请（用于展示审批状态）
+  const [sessions, setSessions] = useState([]) // 存储真实的会话列表
   const [myFriends, setMyFriends] = useState(INITIAL_FRIENDS) // 我的好友列表
   const [collapsedGroups, setCollapsedGroups] = useState([]) // 已折叠的分组
   const [customGroups, setCustomGroups] = useState(INITIAL_CUSTOM_GROUPS) // 自定义分组列表
@@ -102,7 +103,7 @@ function App() {
       try {
         const user = await getCurrentUser()
         if (user) {
-          setProfileData(prev => ({ ...prev, name: user.username, email: user.email }))
+          setProfileData(prev => ({ ...prev, id: user.id, name: user.username, email: user.email }))
           setIsLoggedIn(true)
         }
       } catch (e) {
@@ -111,6 +112,69 @@ function App() {
     }
     checkAuth()
   }, [])
+
+// 登录成功后，拉取真实会话和好友列表
+  useEffect(() => {
+    if (isLoggedIn) {
+      const fetchInitialData = async () => {
+        try {
+          const sessionsData = await getSessions()
+          const formattedSessions = sessionsData.map(s => ({
+            id: s.id,
+            title: s.title,
+            avatar: s.is_group ? '群' : (s.title.charAt(0) || 'U'),
+            lastMessage: '点击查看消息',
+            time: s.updated_at ? new Date(s.updated_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '',
+            badge: 0,
+            online: 1,
+            isGroup: s.is_group,
+            realName: s.title
+          }))
+          setSessions(formattedSessions)
+
+          const friendsData = await getFriends()
+          const formattedFriends = friendsData.map(f => ({
+            id: f.id,
+            accountId: f.username,
+            name: f.nickname || f.username,
+            avatar: (f.nickname || f.username).charAt(0),
+            status: 'offline',
+            group: '我的好友',
+            remark: '',
+            signature: f.bio || '这个人很懒，什么都没写~'
+          }))
+          setMyFriends(formattedFriends)
+        } catch (e) {
+          console.error('获取初始数据失败', e)
+        }
+      }
+      fetchInitialData()
+    }
+  }, [isLoggedIn])
+
+  // 切换聊天窗口时，拉取该窗口的真实历史消息
+  useEffect(() => {
+    if (isLoggedIn && currentChat > 0) {
+      const fetchMessages = async () => {
+        try {
+          const msgs = await getMessages(currentChat)
+          const formattedMsgs = msgs.map(m => ({
+            id: m.id,
+            text: m.content,
+            sender: m.sender_id === profileData.id ? 'me' : 'other',
+            time: m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''
+          }))
+          setMessages(prev => ({
+            ...prev,
+            [currentChat]: formattedMsgs
+          }))
+        } catch (e) {
+          console.error('获取消息失败', e)
+        }
+      }
+      fetchMessages()
+    }
+  }, [currentChat, isLoggedIn, profileData.id])
 
   // 加载保存的头像
   useEffect(() => {
@@ -807,6 +871,7 @@ function App() {
           const profile = await getProfile()
           setProfileData(prev => ({
             ...prev,
+            id: user.id,
             name: user.username,
             email: profile.email || user.email || '',
             nickname: profile.nickname || '',
@@ -1068,29 +1133,34 @@ function App() {
   }
 
   // 发送消息
-  const handleSendMessage = () => {
+const handleSendMessage = async () => {
     if (!messageInput.trim()) return
     
-    const newMessage = {
-      id: editingMessageId || Date.now(),
-      text: messageInput,
-      sender: 'me',
-      time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
-      replyTo: replyToMessage ? {
-        id: replyToMessage.id,
-        text: replyToMessage.text,
-        sender: replyToMessage.sender
-      } : null
+    const textToSend = messageInput
+    setMessageInput('') // 提前清空输入框提升体验
+    
+    try {
+      // 对接真实后端 API
+      const res = await sendChatMessage(currentChat, textToSend)
+      
+      const newMessage = {
+        id: res.message_id || Date.now(),
+        text: textToSend,
+        sender: 'me',
+        time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+        replyTo: replyToMessage ? { ...replyToMessage } : null
+      }
+      
+      setMessages(prev => ({
+        ...prev,
+        [currentChat]: [...(prev[currentChat] || []), newMessage]
+      }))
+      setReplyToMessage(null)
+      setEditingMessageId(null)
+    } catch (e) {
+      alert('消息发送失败，请稍后重试')
+      setMessageInput(textToSend) // 发送失败恢复用户输入的内容
     }
-    
-    setMessages(prev => ({
-      ...prev,
-      [currentChat]: [...(prev[currentChat] || []), newMessage]
-    }))
-    
-    setMessageInput('')
-    setReplyToMessage(null)
-    setEditingMessageId(null)
   }
 
   // 发送图片消息（本地预览模式）
@@ -1461,8 +1531,6 @@ function App() {
     alert(`已向 ${peerProfile.name} 发送好友申请`)
   }
 
-  // 会话数据
-  const sessions = DEFAULT_SESSIONS
 
   // 获取当前群主
   const getCurrentOwner = () => {
