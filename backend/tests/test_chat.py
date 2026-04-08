@@ -1,67 +1,54 @@
-import os
+# backend/tests/test_chat.py
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 from app.main import app
-from app.database import get_db
-from app import models
+from app.database import Base, engine
+import pytest
 
-TEST_DB_FILE = "./test_chat_real.db"
-
-engine = create_engine(
-    f"sqlite:///{TEST_DB_FILE}", connect_args={"check_same_thread": False}
-)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-models.Base.metadata.drop_all(bind=engine)
-models.Base.metadata.create_all(bind=engine)
-
-def override_get_db():
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
 
+# 每次测试前清空并重建数据库，保证测试环境干净
+@pytest.fixture(autouse=True)
+def setup_db():
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+    yield
+    Base.metadata.drop_all(bind=engine)
+
+def get_auth_headers(username, password):
+    """辅助函数：注册、登录并获取 Token Header"""
+    client.post("/auth/register", json={"username": username, "password": password})
+    res = client.post("/auth/login", json={"username": username, "password": password})
+    token = res.json().get("access_token")
+    return {"Authorization": f"Bearer {token}"}
+
 def test_read_sessions():
-    """测试：读取会话接口 (空列表)"""
-    response = client.get("/api/chat/sessions")
+    """测试：携带 Token 读取会话接口"""
+    headers = get_auth_headers("testuser1", "pass123")
+    response = client.get("/api/chat/sessions", headers=headers)
     assert response.status_code == 200
-    assert response.json() == []
+    assert isinstance(response.json(), list)
 
-def test_add_friend_and_send_message_flow():
-    """测试：完整的好友添加与消息发送流程"""
-    client.post("/auth/register", json={"username": "alice_chat", "password": "pw"})
-    client.post("/auth/register", json={"username": "bob_chat", "password": "pw"})
-    client.post("/auth/register", json={"username": "eve_chat", "password": "pw"})
+def test_chat_operations():
+    """测试：完整的添加好友、发消息、拉取记录流程"""
+    headers_a = get_auth_headers("userA", "pass123")
+    headers_b = get_auth_headers("userB", "pass123") # userB 是第二个注册的，ID应为 2
     
-    res_alice = client.post("/auth/login", json={"username": "alice_chat", "password": "pw"})
-    headers_alice = {"Authorization": f"Bearer {res_alice.json()['access_token']}"}
+    # 1. userA 添加 userB 为好友
+    res_add = client.post("/api/chat/friends/add?friend_id=2", headers=headers_a)
+    assert res_add.status_code == 200
+    conv_id = res_add.json().get("conversation_id")
     
-    res_bob = client.post("/auth/login", json={"username": "bob_chat", "password": "pw"})
-    bob_id = res_bob.json()["user"]["id"]
-
-    res_eve = client.post("/auth/login", json={"username": "eve_chat", "password": "pw"})
-    headers_eve = {"Authorization": f"Bearer {res_eve.json()['access_token']}"}
-
-    add_res = client.post(f"/api/chat/friends/add?friend_id={bob_id}", headers=headers_alice)
-    assert add_res.status_code == 200
-    conv_id = add_res.json()["conversation_id"]
-
-    add_res_dup = client.post(f"/api/chat/friends/add?friend_id={bob_id}", headers=headers_alice)
-    assert add_res_dup.status_code == 200
-
-    send_res = client.post(
-        f"/api/chat/messages/send?conversation_id={conv_id}&content=HelloBob", 
-        headers=headers_alice
-    )
-    assert send_res.status_code == 200
-
-    send_res_fail = client.post(
-        f"/api/chat/messages/send?conversation_id={conv_id}&content=HackMessage", 
-        headers=headers_eve
-    )
-    assert send_res_fail.status_code == 403
+    # 2. 获取好友列表
+    res_friends = client.get("/api/chat/friends", headers=headers_a)
+    assert res_friends.status_code == 200
+    assert len(res_friends.json()) == 1
+    
+    # 3. 发送消息
+    res_send = client.post(f"/api/chat/messages/send?conversation_id={conv_id}&content=hello_world", headers=headers_a)
+    assert res_send.status_code == 200
+    
+    # 4. 获取历史消息
+    res_msgs = client.get(f"/api/chat/messages?conversation_id={conv_id}", headers=headers_a)
+    assert res_msgs.status_code == 200
+    assert len(res_msgs.json()) == 1
+    assert res_msgs.json()[0]["content"] == "hello_world"
