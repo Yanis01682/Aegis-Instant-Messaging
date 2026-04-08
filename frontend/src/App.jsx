@@ -356,7 +356,8 @@ function App() {
     setShowChatDetail(false)
   }
 
-  // 获取当前会话信息
+// 获取当前会话信息（正常软件的空状态逻辑）
+// 获取当前会话信息（正常软件的空状态逻辑）
   const getCurrentSession = () => {
     const allSessions = [...dynamicSessions, ...sessions]
     return allSessions.find(s => s.id === currentChat) || sessions[0] || { id: -1, avatar: '', title: '加载中...', isGroup: false, online: 0 }
