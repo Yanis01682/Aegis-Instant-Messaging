@@ -132,6 +132,7 @@ function App() {
             realName: s.title
           }))
           setSessions(formattedSessions)
+          if (formattedSessions.length > 0) setCurrentChat(formattedSessions[0].id)
 
           const friendsData = await getFriends()
           const formattedFriends = friendsData.map(f => ({
@@ -359,26 +360,7 @@ function App() {
 // 获取当前会话信息（正常软件的空状态逻辑）
   const getCurrentSession = () => {
     const allSessions = [...dynamicSessions, ...sessions]
-    
-    // 1. 尝试寻找当前选中的会话
-    const activeSession = allSessions.find(s => s.id === currentChat)
-    if (activeSession) return activeSession
-    
-    // 2. 如果没选中，但列表里有会话，默认显示第一个
-    if (allSessions.length > 0) return allSessions[0]
-    
-    // 3. 极度关键：给新注册用户一个安全的占位对象，防止读取 .avatar 时页面崩溃白屏！
-    return {
-      id: -1, 
-      title: '欢迎来到 WhatTheDogDoing',
-      avatar: '🐶', // 有了这个就不会再报 reading 'avatar' 的错误了
-      lastMessage: '暂无消息，点击左侧添加好友开始聊天吧！',
-      time: '',
-      badge: 0,
-      online: 1,
-      isGroup: false,
-      realName: '系统提示'
-    }
+    return allSessions.find(s => s.id === currentChat) || sessions[0] || { id: -1, avatar: '', title: '加载中...', isGroup: false, online: 0 }
   }
 
   // 根据被点击的消息，解析对方资料（群聊/私聊）
