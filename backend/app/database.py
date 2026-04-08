@@ -4,11 +4,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import declarative_base
 
-# 优先使用环境变量 DATABASE_URL (用于线上部署连 MySQL)
-# 如果没配置，就回退到本地 SQLite (用于本地开发测试)
+# 直接把平台上的 MySQL 地址作为默认值兜底
+# 这样在 Secoder 上哪怕不配环境变量，也能精准连上 mysql-db
 SQLALCHEMY_DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "sqlite:///./whatthedogdoing.db"
+    "mysql+pymysql://root:123456@mysql-db:3306/whatthedogdoing"
 )
 
 # SQLite 需要设置 check_same_thread，但 MySQL 不能加这个参数

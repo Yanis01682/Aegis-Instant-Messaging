@@ -355,10 +355,29 @@ function App() {
     setShowChatDetail(false)
   }
 
-  // 获取当前会话信息
+// 获取当前会话信息（正常软件的空状态逻辑）
   const getCurrentSession = () => {
     const allSessions = [...dynamicSessions, ...sessions]
-    return allSessions.find(s => s.id === currentChat) || sessions[0]
+    
+    // 1. 尝试寻找当前选中的会话
+    const activeSession = allSessions.find(s => s.id === currentChat)
+    if (activeSession) return activeSession
+    
+    // 2. 如果没选中，但列表里有会话，默认显示第一个
+    if (allSessions.length > 0) return allSessions[0]
+    
+    // 3. 真实软件逻辑：如果列表全空（新注册用户），返回一个安全的“系统欢迎界面”占位对象，防止前端崩溃
+    return {
+      id: -1, // 虚拟ID
+      title: '欢迎来到 WhatTheDogDoing',
+      avatar: '🐶',
+      lastMessage: '暂无消息，点击左侧添加好友开始聊天吧！',
+      time: '',
+      badge: 0,
+      online: 1,
+      isGroup: false,
+      realName: '系统提示'
+    }
   }
 
   // 根据被点击的消息，解析对方资料（群聊/私聊）
