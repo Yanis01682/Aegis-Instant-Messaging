@@ -1,7 +1,9 @@
 # backend/app/main.py
 import time
-import threading  # 1. 引入 threading 模块
-from fastapi import FastAPI, Depends, HTTPException
+import threading
+import asyncio
+from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -13,27 +15,48 @@ from . import models
 
 app = FastAPI(title="WhatTheDogDoing API")
 
+# 【核心修复 1】添加全局标志，标记数据库是否准备就绪
+DB_READY = False
+
 @app.on_event("startup")
 def startup_db_client():
-    # 2. 将原本阻塞主线程的代码封装进一个内部函数
     def init_db():
+        global DB_READY
         retries = 30  
         while retries > 0:
             try:
                 models.Base.metadata.create_all(bind=engine)
                 print("Successfully connected to the database and created tables.")
+                DB_READY = True  # 数据库准备完毕，修改标志！
                 break
             except Exception as e:
                 print(f"Database not ready yet, retrying... ({retries} attempts left). Error: {e}")
                 retries -= 1
-                time.sleep(5)
+                time.sleep(3)
         if retries == 0:
             print("WARNING: Failed to connect to the database after multiple attempts.")
             
-    # 3. 开启后台线程执行数据库初始化，立刻放行主线程！
     threading.Thread(target=init_db, daemon=True).start()
 
-# ... 下方 app.add_middleware 及后续路由代码保持完全不变 ...
+# 【核心修复 2】添加异步等待中间件
+@app.middleware("http")
+async def wait_for_db_middleware(request: Request, call_next):
+    global DB_READY
+    # 放行健康检查和根路径，确保云平台探针能瞬间得到 200 响应
+    if request.url.path not in ["/", "/health"] and not DB_READY:
+        retries = 20
+        # 异步挂起当前请求。前端会处于 loading 状态，不会报 500
+        while not DB_READY and retries > 0:
+            await asyncio.sleep(2)
+            retries -= 1
+        # 如果等了 40 秒数据库还是没连上，返回 503 提示
+        if not DB_READY:
+            return JSONResponse(
+                status_code=503, 
+                content={"detail": "Database is initializing, please try again in a moment."}
+            )
+    
+    return await call_next(request)
 
 app.add_middleware(
     CORSMiddleware,
