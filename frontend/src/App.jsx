@@ -132,6 +132,7 @@ function App() {
             realName: s.title
           }))
           setSessions(formattedSessions)
+          if (formattedSessions.length > 0) setCurrentChat(formattedSessions[0].id)
 
           const friendsData = await getFriends()
           const formattedFriends = friendsData.map(f => ({
@@ -358,7 +359,7 @@ function App() {
   // 获取当前会话信息
   const getCurrentSession = () => {
     const allSessions = [...dynamicSessions, ...sessions]
-    return allSessions.find(s => s.id === currentChat) || sessions[0]
+    return allSessions.find(s => s.id === currentChat) || sessions[0] || { id: -1, avatar: '', title: '加载中...', isGroup: false, online: 0 }
   }
 
   // 根据被点击的消息，解析对方资料（群聊/私聊）
