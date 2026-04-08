@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from .database import get_db
 from . import models, auth # 使用相对导入，修复可能的模块引用问题
+from sqlalchemy.sql import func
 
 router = APIRouter()
 
@@ -125,11 +126,11 @@ def send_message(conversation_id: int, content: str, db: Session = Depends(get_d
     )
     db.add(new_msg)
     
-    # 更新会话的最后活跃时间
+# 更新会话的最后活跃时间
     conv = db.query(models.Conversation).filter(models.Conversation.id == conversation_id).first()
     if conv:
-        # SQLAlchemy onupdate 会自动更新更新时间
-        conv.name = conv.name 
+        # 显式更新时间戳，让有新消息的会话排在最前面
+        conv.updated_at = func.now()
         
     db.commit()
     return {"status": "sent", "message_id": new_msg.id}
