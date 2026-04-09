@@ -19,6 +19,8 @@ function ChatMainView({
   handleOpenMemberList,
   // 打开聊天详情弹窗。
   handleOpenChatDetail,
+  // 打开查找消息弹窗。
+  handleOpenSearchMessage,
   // 全量消息映射（按会话 id）。
   messages,
   // 点击消息列表时执行的处理函数（用于关闭右键菜单）。
@@ -107,7 +109,7 @@ function ChatMainView({
           </div>
         </div>
         <div className="chat-actions">
-          <button className="icon-btn" type="button" aria-label="搜索消息">🔍</button>
+          <button className="icon-btn" type="button" aria-label="搜索消息" onClick={handleOpenSearchMessage}>🔍</button>
           <button className="icon-btn" type="button" aria-label="更多操作" onClick={handleOpenChatDetail}>⋯</button>
         </div>
       </header>

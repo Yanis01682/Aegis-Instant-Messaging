@@ -27,6 +27,7 @@ class UserAuth(BaseModel):
 class UserResponse(BaseModel):
     id: int
     username: str
+    email: Optional[str] = None
     
     # [修改点2] 修复 Pydantic V2 警告，替换原来的 class Config:
     model_config = ConfigDict(from_attributes=True) 
