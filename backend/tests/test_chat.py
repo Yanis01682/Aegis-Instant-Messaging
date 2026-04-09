@@ -131,6 +131,31 @@ def test_add_friend_creates_session_for_both_users():
     assert bob_sessions.json()[0]["title"] == "carol"
 
 
+def test_add_friend_upgrades_pending_request_to_accepted_friendship():
+    headers_alice, _ = register_and_login("olivia", "olivia@example.com")
+    headers_bob, bob_user = register_and_login("peter", "peter@example.com")
+
+    request_res = client.post(
+        "/api/chat/friends/requests",
+        json={"friend_id": bob_user["id"]},
+        headers=headers_alice,
+    )
+    assert request_res.status_code == 200
+
+    add_res = client.post(
+        "/api/chat/friends/add",
+        json={"friend_id": bob_user["id"]},
+        headers=headers_alice,
+    )
+    assert add_res.status_code == 200
+
+    alice_friends = client.get("/api/chat/friends", headers=headers_alice)
+    bob_friends = client.get("/api/chat/friends", headers=headers_bob)
+
+    assert [friend["name"] for friend in alice_friends.json()] == ["peter"]
+    assert [friend["name"] for friend in bob_friends.json()] == ["olivia"]
+
+
 def test_send_and_read_messages():
     headers_alice, _ = register_and_login("eve", "eve@example.com")
     headers_bob, bob_user = register_and_login("frank", "frank@example.com")

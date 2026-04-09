@@ -92,7 +92,6 @@ function Overlays({
   handleSearchFriend,
   friendSearchResults,
   isAlreadyFriend,
-  getSentRequestStatus,
   handleSendFriendRequest,
   friendRequestList,
   sentFriendRequests,
@@ -553,8 +552,6 @@ function Overlays({
                   {friendSearchResults.length > 0 ? (
                     friendSearchResults.map((user) => {
                       const alreadyFriend = isAlreadyFriend(user.userId, user.name)
-                      const sentStatus = getSentRequestStatus(user.userId)
-                      const isPending = sentStatus === 'pending'
                       return (
                         <div key={user.userId} className="search-result-item">
                           <div className="result-avatar">{user.avatar}</div>
@@ -565,9 +562,9 @@ function Overlays({
                           <button
                             className="send-request-btn"
                             onClick={() => handleSendFriendRequest(user.userId)}
-                            disabled={alreadyFriend || isPending}
+                            disabled={alreadyFriend}
                           >
-                            {alreadyFriend ? '已是好友' : isPending ? '待审批' : '添加'}
+                            {alreadyFriend ? '已是好友' : '直接添加'}
                           </button>
                         </div>
                       )
