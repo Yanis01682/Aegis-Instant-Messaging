@@ -1,98 +1,286 @@
-# 🚀 WhatTheDogDoing 团队 Git 协作手册
+# WhatTheDogDoing 团队 Git 协作手册
 
-本手册用于规范团队开发流程，确保代码能正确同步
+本手册用于统一团队开发流程，目标只有两个：
 
-## 1. 第一次加入项目 (Clone & Token 配置)
+1. `main` 分支始终保持可运行、可部署。
+2. 每个人都知道“什么时候切分支、什么时候同步 main、什么时候提 MR”。
 
-如果你是第一次把代码拉到本地，请按以下步骤操作：
+## 1. 第一次加入项目
 
-### 第一步：获取 Secoder Access Token
+### 1.1 获取 Secoder Access Token
 
 1. 登录 [Secoder GitLab](https://gitlab.spring26b.secoder.net/)。
-2. 点击右上角头像 -> **Settings** -> **Access Tokens**。
-3. 创建 Token：名字选 `git-access`，有效期设长一点，**Scopes 务必勾选 `api`, `read_repository`, `write_repository`**。
-4. **复制生成的 Token**（离开页面就看不到了！）。
+2. 点击右上角头像，进入 `Settings` -> `Access Tokens`。
+3. 创建 Token：
+   `Name` 可以写 `git-access`
+   `Scopes` 至少勾选 `api`、`read_repository`、`write_repository`
+4. 复制生成的 Token。
 
-### 第二步：克隆仓库
+### 1.2 克隆仓库
 
-打开 PowerShell 或终端，执行：
-
-```
-# 将 <你的Token> 换成刚才复制的字符串
+```powershell
 git clone https://oauth2:<你的Token>@gitlab.spring26b.secoder.net/WhatTheDogDoing/WhatTheDogDoing.git
-
-# 进入目录
 cd WhatTheDogDoing
 ```
 
-## 2. 日常开发工作流
+## 2. 核心规则
 
-**核心原则：先拉取 (Pull)，再写代码，最后提交 (Push)。**
+- 不要直接在 `main` 上写代码。
+- 开发新功能、修 bug、改文档，都要新建自己的分支。
+- 每个分支只做一类事情，方便提 MR 和 Code Review。
+- 一个分支合并完成后，不要长期复用，下一次工作从最新 `main` 重新开新分支。
 
-### 情况 A：开始写代码前 (同步队友进度)
+推荐分支命名：
 
-```
-# 1. 先同步一下主仓库最新代码
+- 新功能：`feat/login-page`
+- 修 bug：`fix/homework-bugs-20260409`
+- 文档：`docs/contributing-workflow`
+
+推荐 commit message：
+
+- `feat: add login form validation`
+- `fix: repair auth session and chat detail interactions`
+- `docs: clarify branch and merge workflow`
+
+## 3. 日常标准流程
+
+### 3.1 开始新任务前
+
+每次开始新任务，先回到 `main`，同步最新代码，再开新分支。
+
+```powershell
+git switch main
 git pull origin main
-
-# 2. 新建一个属于你自己的分支 (不要在 main 上写！)比如feat-login
-git checkout -b feat-login
+git switch -c fix/your-branch-name
 ```
 
-### 情况 B：本地部署：
+说明：
 
+- `git switch main`：切回主分支
+- `git pull origin main`：同步组里最新代码
+- `git switch -c ...`：基于最新 `main` 新建你的工作分支
 
-```
-部署这个项目需要先处理后端环境。进入 backend 目录并执行 pip install -r requirements.txt 来安装 FastAPI 和 SQLAlchemy 等核心依赖。在 VSCode 里重新选择一下当前这个 Python 解释器（按 Ctrl+Shift+P -> Python: Select Interpreter），如果命令行是带有（base）的，刚刚运行的 pip 命令，是把你电脑上的 Miniconda (base 环境) 里的工具，把包全都装到了 D:\mininconda\ 这个“大房间”里。这个时候就不要选择.\venv\Scripts\python.exe的解释器了，要选择D:\mininconda\python.exe！启动后端服务只需在 backend 目录下运行 uvicorn app.main:app --reload，这会自动加载 app/main.py 中定义的 FastAPI 应用。接着处理前端部分。切换到 frontend 目录后执行 npm install 以安装 package.json 中列出的 React 和 Vite 相关包。安装完成后运行 npm run dev 即可在浏览器启动前端开发服务器（http://localhost:5173/）。
+不要这样做：
 
-终端就可以跑后端单测
-在 backend 目录下运行 pytest --cov=app --cov-report=term-missing
-```
-
-### 情况 C：写完一个功能后 (提交代码)
-
-```
-# 1. 查看改了哪些文件
-git status
-
-# 2. 把所有改动加到暂存区
-git add .
-
-# 3. 写下你干了什么 (遵循规范)
-# 格式：feat: 新功能, fix: 修 Bug, docs: 文档修改
-git commit -m "feat: 完成了用户注册后端接口"
-
-# 4. 一键推送到 GitLab(注意是推送到自己新建的分支，如feat-login)
-git push origin feat-login
-
-# 5. push后，去 GitLab 网页端发起 Merge Request (MR) 给组长。
-```
-
-------
-
-## 3. 注意事项
-
-- **不要直接在 main 修改已经交付的功能**：根据《过程分细则》，主分支代码必须时刻保持“部署可用”。
-- **后端依赖**：如果你用 `pip install` 安装了新包，必须执行： `cd backend; pip freeze > requirements.txt` 并提交。
-- **前端依赖**：如果你用 `npm install` 安装了新包，记得提交 `package.json` 和 `package-lock.json`。
-
-
-
-## 4.Q&A
-
-**Q**:如果我在我的分支下修改代码的过程中，main分支更新了怎么办？
-
-**A**:
-1.先切回本地主分支并拉取最新内容
-```python
+```powershell
+# 不推荐
 git checkout main
+# 然后直接在 main 上改代码
+```
+
+## 4. 开发过程中怎么提交
+
+写代码时一直在你自己的分支上操作，不要切回 `main` 开发。
+
+### 4.1 查看改动
+
+```powershell
+git status
+```
+
+### 4.2 提交改动
+
+```powershell
+git add .
+git commit -m "fix: describe what you changed"
+```
+
+如果你只想提交部分文件，可以手动指定：
+
+```powershell
+git add frontend/src/App.jsx backend/app/auth.py
+git commit -m "fix: repair login profile sync"
+```
+
+### 4.3 推送到远程分支
+
+第一次推送：
+
+```powershell
+git push -u origin fix/your-branch-name
+```
+
+后续继续推送同一个分支：
+
+```powershell
+git push
+```
+
+## 5. 提交 Merge Request
+
+当你完成一个阶段的开发后：
+
+1. 把代码 push 到你自己的分支
+2. 去 GitLab 页面发起 Merge Request
+3. 目标分支选择 `main`
+4. 等待组长或队友 review
+5. MR 被批准后再合并
+
+注意：
+
+- MR 没合并前，继续在你当前分支改代码。
+- 如果 review 提了修改意见，还是在这个分支继续改，然后再次 `git add`、`git commit`、`git push`。
+
+## 6. MR 合并之后你该怎么做
+
+这是最容易搞混的地方。
+
+### 6.1 你的 MR 还没合并
+
+继续在当前分支开发：
+
+```powershell
+git switch fix/your-branch-name
+```
+
+也就是说：
+
+- 没合并前，在你自己的分支继续改
+- 不要切到 `main` 继续写代码
+
+### 6.2 你的 MR 已经合并到 main
+
+先同步本地 `main`：
+
+```powershell
+git switch main
 git pull origin main
 ```
-2.切换回正在开发的功能分支，将最新的 main 合并进来。
 
-```python
-git checkout feat-login
+如果你接下来还有新的任务，再从最新 `main` 新建一个新分支：
+
+```powershell
+git switch -c fix/next-bug-branch
+```
+
+也就是说：
+
+- `main` 只负责同步最新主线代码
+- 真正开发仍然在新的功能分支或修复分支上进行
+
+## 7. main 更新了，但我自己的分支还没写完怎么办
+
+如果你正在自己的分支开发，这时队友已经把新代码合并进 `main`，你需要把最新 `main` 同步进你的分支。
+
+推荐做法：
+
+```powershell
+git switch main
+git pull origin main
+git switch fix/your-branch-name
 git merge main
 ```
 
-这样就能在包含最新代码的基础上继续开发
+如果出现冲突：
+
+1. 手动修改冲突文件
+2. 确认文件内容正确
+3. 执行：
+
+```powershell
+git add .
+git commit
+```
+
+如果你只是想放弃这次 merge：
+
+```powershell
+git merge --abort
+```
+
+## 8. 常见错误操作
+
+### 8.1 直接在 main 上改代码
+
+不允许。发现后应尽快：
+
+```powershell
+git switch -c fix/save-my-work
+```
+
+先把改动转移到新分支，再继续处理。
+
+### 8.2 `git pull` 提示有冲突或未完成操作
+
+常见原因：
+
+- 上一次 `merge` 没处理完
+- 上一次 `revert` 没处理完
+- 工作区里还有未解决冲突
+
+先看状态：
+
+```powershell
+git status
+```
+
+根据提示处理：
+
+```powershell
+git merge --abort
+git revert --abort
+```
+
+如果你确认本地改动都不要了，再考虑：
+
+```powershell
+git reset --hard
+```
+
+注意：`git reset --hard` 会直接丢弃本地未提交改动，使用前一定确认。
+
+## 9. 本地运行和测试
+
+### 9.1 后端
+
+进入 `backend` 目录后安装依赖：
+
+```powershell
+pip install -r requirements.txt
+```
+
+启动后端：
+
+```powershell
+uvicorn app.main:app --reload
+```
+
+运行后端测试：
+
+```powershell
+pytest --cov=app --cov-report=term-missing
+```
+
+### 9.2 前端
+
+进入 `frontend` 目录后安装依赖：
+
+```powershell
+npm install
+```
+
+启动前端：
+
+```powershell
+npm run dev
+```
+
+打包前端：
+
+```powershell
+npm run build
+```
+
+## 10. 依赖变更注意事项
+
+- 后端新增依赖后，要更新并提交 `backend/requirements.txt`
+- 前端新增依赖后，要提交 `frontend/package.json` 和 `frontend/package-lock.json`
+
+## 11. 一条最实用的记忆口诀
+
+可以记成这 4 句话：
+
+1. 开始写代码前：先回 `main` 拉最新
+2. 写代码时：只在自己的分支写
+3. 提交时：push 到自己的分支，提 MR
+4. MR 合并后：回 `main` 拉最新，再开下一个新分支
