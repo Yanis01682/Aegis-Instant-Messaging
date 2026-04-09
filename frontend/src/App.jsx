@@ -8,6 +8,7 @@ import {
 } from './features/chat/mockData'
 import {
   addFriend,
+  deleteFriend,
   getCurrentUser,
   getFriends,
   getMessages,
@@ -596,7 +597,7 @@ function App() {
   }
 
   // 删除好友
-  const handleDeleteFriend = (friendId) => {
+  const handleDeleteFriend = async (friendId) => {
     const friend = myFriends.find((item) => item.id === friendId)
     if (!friend) {
       alert('好友不存在或已删除')
@@ -614,29 +615,40 @@ function App() {
           currentSession.title === friend.remark
         )
 
-      setMyFriends((prev) => prev.filter((item) => item.id !== friendId))
-      setSentFriendRequests((prev) =>
-        prev.filter((item) => item.userId !== friend.accountId && item.name !== friend.name)
-      )
-      setBlacklist((prev) =>
-        prev.filter((item) => {
-          const itemId = item.id || item.userId
-          return itemId !== friend.id && itemId !== friend.accountId && item.name !== friend.name
-        })
-      )
-      setDynamicSessions((prev) =>
-        prev.filter(
-          (session) =>
-            session.realName !== friend.name &&
-            session.title !== friend.name &&
-            session.title !== friend.remark
+      try {
+        await deleteFriend(Number(friend.accountId))
+        await refreshRealtimeChatData()
+        setSentFriendRequests((prev) =>
+          prev.filter((item) => item.userId !== friend.accountId && item.name !== friend.name)
         )
-      )
-      if (isCurrentFriendChat) {
-        setCurrentChat(sessions[0]?.id ?? null)
-        setShowChatDetail(false)
+        setBlacklist((prev) =>
+          prev.filter((item) => {
+            const itemId = item.id || item.userId
+            return itemId !== friend.id && itemId !== friend.accountId && item.name !== friend.name
+          })
+        )
+        setDynamicSessions((prev) =>
+          prev.filter(
+            (session) =>
+              session.realName !== friend.name &&
+              session.title !== friend.name &&
+              session.title !== friend.remark
+          )
+        )
+        if (isCurrentFriendChat) {
+          setMessages((prev) => {
+            const nextMessages = { ...prev }
+            if (currentChat) {
+              delete nextMessages[currentChat]
+            }
+            return nextMessages
+          })
+          setShowChatDetail(false)
+        }
+        alert('好友已删除')
+      } catch (err) {
+        alert(err.response?.data?.detail || '删除好友失败')
       }
-      alert('好友已删除')
     }
   }
 

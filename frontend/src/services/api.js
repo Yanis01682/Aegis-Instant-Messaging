@@ -89,6 +89,11 @@ export async function addFriend(friendId) {
   return res.data
 }
 
+export async function deleteFriend(friendId) {
+  const res = await apiClient.delete(`/api/chat/friends/${friendId}`)
+  return res.data
+}
+
 export async function getSessions() {
   const res = await apiClient.get('/api/chat/sessions')
   return res.data
