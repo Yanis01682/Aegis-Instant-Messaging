@@ -9,7 +9,7 @@ import {
   INITIAL_PROFILE_DATA,
   MY_ROLE_MAP
 } from './features/chat/mockData'
-import { login, register, getCurrentUser } from './services/api'
+import { login, register, getCurrentUser, logout } from './services/api'
 import AuthView from './components/stage2/AuthView'
 import TopBar from './components/stage2/TopBar'
 import SidebarPanel from './components/stage2/SidebarPanel'
@@ -95,13 +95,23 @@ function App() {
   const [profileData, setProfileData] = useState(INITIAL_PROFILE_DATA) // 个人信息数据
   const [pinnedChatIds, setPinnedChatIds] = useState([]) // 置顶聊天 ID 列表
 
+  const syncProfileFromUser = (user) => {
+    if (!user) return
+
+    setProfileData((prev) => ({
+      ...prev,
+      nickname: user.username || prev.nickname,
+      email: user.email ?? prev.email
+    }))
+  }
+
   // 初始加载时尝试获取用户信息
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const user = await getCurrentUser()
         if (user) {
-          setProfileData(prev => ({ ...prev, name: user.username, email: user.email }))
+          syncProfileFromUser(user)
           setIsLoggedIn(true)
         }
       } catch (e) {
@@ -477,8 +487,45 @@ function App() {
 
   // 删除好友
   const handleDeleteFriend = (friendId) => {
+    const friend = myFriends.find((item) => item.id === friendId)
+    if (!friend) {
+      alert('好友不存在或已删除')
+      return
+    }
+
     if (window.confirm('确定要删除该好友吗？')) {
-      setMyFriends(prev => prev.filter(f => f.id !== friendId))
+      const currentSession = [...dynamicSessions, ...DEFAULT_SESSIONS].find((session) => session.id === currentChat)
+      const isCurrentFriendChat =
+        currentSession &&
+        !currentSession.isGroup &&
+        (
+          currentSession.realName === friend.name ||
+          currentSession.title === friend.name ||
+          currentSession.title === friend.remark
+        )
+
+      setMyFriends((prev) => prev.filter((item) => item.id !== friendId))
+      setSentFriendRequests((prev) =>
+        prev.filter((item) => item.userId !== friend.accountId && item.name !== friend.name)
+      )
+      setBlacklist((prev) =>
+        prev.filter((item) => {
+          const itemId = item.id || item.userId
+          return itemId !== friend.id && itemId !== friend.accountId && item.name !== friend.name
+        })
+      )
+      setDynamicSessions((prev) =>
+        prev.filter(
+          (session) =>
+            session.realName !== friend.name &&
+            session.title !== friend.name &&
+            session.title !== friend.remark
+        )
+      )
+      if (isCurrentFriendChat) {
+        setCurrentChat(0)
+        setShowChatDetail(false)
+      }
       alert('好友已删除')
     }
   }
@@ -803,7 +850,7 @@ function App() {
         await login({ username: account, password })
         const user = await getCurrentUser()
         if (user) {
-          setProfileData(prev => ({ ...prev, name: user.username, email: user.email }))
+          syncProfileFromUser(user)
           setIsLoggedIn(true)
         }
       } catch (err) {
@@ -879,7 +926,7 @@ function App() {
       await login({ username: data.username, password: data.password })
       const user = await getCurrentUser()
       if (user) {
-        setProfileData(prev => ({ ...prev, name: user.username, email: user.email }))
+        syncProfileFromUser(user)
         setIsLoggedIn(true)
         setShowRegisterForm(false)
       }
@@ -1158,6 +1205,7 @@ function App() {
 
   // 确认退出登录
   const confirmLogout = () => {
+    logout()
     setIsLoggedIn(false)
     setCurrentChat(0)
     setShowUserPanel(false)
@@ -1527,6 +1575,7 @@ function App() {
           handleOpenPeerProfile={handleOpenPeerProfile}
           handleOpenMemberList={handleOpenMemberList}
           handleOpenChatDetail={handleOpenChatDetail}
+          handleOpenSearchMessage={handleOpenSearchMessage}
           messages={messages}
           handleMessagesClick={handleMessagesClick}
           handleMessageContextMenu={handleMessageContextMenu}

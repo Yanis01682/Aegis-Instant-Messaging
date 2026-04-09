@@ -134,6 +134,27 @@ function Overlays({
         (item) => item.status === 'pending' && (item.userId === peerProfile.userId || item.name === peerProfile.name)
       )
     : false
+  const currentSession = getCurrentSession()
+  const currentPrivateFriend = !currentSession.isGroup
+    ? myFriends.find(
+        (friend) =>
+          friend.name === currentSession.realName ||
+          friend.name === currentSession.title ||
+          friend.remark === currentSession.title
+      )
+    : null
+  const blacklistTarget = currentPrivateFriend
+    ? {
+        id: currentPrivateFriend.accountId || currentPrivateFriend.id,
+        name: currentPrivateFriend.remark || currentPrivateFriend.name,
+        avatar: currentPrivateFriend.avatar
+      }
+    : {
+        id: currentSession.id,
+        name: currentSession.title,
+        avatar: currentSession.avatar
+      }
+  const currentGroupOwner = (groupMembers[currentChat] || []).find((member) => member.role === 'owner')
 
   return (
     <>
@@ -476,9 +497,9 @@ function Overlays({
               ) : (
                 <div className="personal-chat-detail">
                   <div className="personal-info-section">
-                    <div className="personal-avatar-large">{getCurrentSession().avatar}</div>
-                    <h2 className="personal-name">{getCurrentSession().title}</h2>
-                    <p className="personal-status">🟢 在线</p>
+                    <div className="personal-avatar-large">{currentSession.avatar}</div>
+                    <h2 className="personal-name">{currentSession.title}</h2>
+                    <p className="personal-status">{currentSession.online > 0 ? '🟢 在线' : '⚫ 离线'}</p>
                   </div>
 
                   <div className="detail-section">
@@ -486,11 +507,7 @@ function Overlays({
                     <div className="section-content">
                       {!isEditingRemark ? (
                         <div className="remark-input">
-                          {(() => {
-                            const currentSession = getCurrentSession()
-                            const friend = myFriends.find((f) => f.name === currentSession.realName)
-                            return friend?.remark || '未设置'
-                          })()}
+                          {currentPrivateFriend?.remark || '未设置'}
                           <button className="edit-remark-btn" onClick={handleStartEditRemark}>编辑</button>
                         </div>
                       ) : (
@@ -508,12 +525,12 @@ function Overlays({
                   <div className="detail-section"><div className="section-title">标签</div><div className="section-content"><span className="tag-placeholder">未设置标签</span><span className="arrow-icon">›</span></div></div>
                   <div className="detail-section clickable"><div className="section-title">发消息</div><div className="section-content"><span className="arrow-icon">›</span></div></div>
                   <div className="detail-section clickable"><div className="section-title">音视频通话</div><div className="section-content"><span className="arrow-icon">›</span></div></div>
-                  <div className="detail-section clickable"><div className="section-title">查找聊天记录</div><div className="section-content"><span className="arrow-icon">›</span></div></div>
+                  <div className="detail-section clickable" onClick={handleOpenSearchMessage}><div className="section-title">查找聊天记录</div><div className="section-content"><span className="arrow-icon">›</span></div></div>
                   <div className="detail-section"><div className="section-title">消息免打扰</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" /><span className="toggle-slider"></span></label></div></div>
                   <div className="detail-section"><div className="section-title">置顶聊天</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" checked={isChatPinned(currentChat)} onChange={() => handleTogglePinChat(currentChat)} /><span className="toggle-slider"></span></label></div></div>
-                  <div className="detail-section"><div className="section-title">添加到黑名单</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" checked={getCurrentSession().isGroup ? false : isUserInBlacklist(getCurrentSession().id)} onChange={() => !getCurrentSession().isGroup && handleToggleBlacklist({ id: getCurrentSession().id, name: getCurrentSession().title, avatar: getCurrentSession().avatar })} /><span className="toggle-slider"></span></label></div></div>
+                  <div className="detail-section"><div className="section-title">添加到黑名单</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" checked={currentSession.isGroup ? false : isUserInBlacklist(blacklistTarget.id)} onChange={() => !currentSession.isGroup && handleToggleBlacklist(blacklistTarget)} /><span className="toggle-slider"></span></label></div></div>
                   <div className="detail-section clickable danger"><div className="section-title">投诉</div><div className="section-content"><span className="arrow-icon">›</span></div></div>
-                  <div className="detail-section clickable danger"><div className="section-title">删除好友</div><div className="section-content" onClick={() => handleDeleteFriend(100)}><span className="arrow-icon">›</span></div></div>
+                  <div className={`detail-section clickable danger ${!currentPrivateFriend ? 'disabled' : ''}`}><div className="section-title">删除好友</div><div className="section-content" onClick={() => currentPrivateFriend && handleDeleteFriend(currentPrivateFriend.id)}><span className="arrow-icon">›</span></div></div>
                 </div>
               )}
             </div>
@@ -677,10 +694,10 @@ function Overlays({
               <div className="member-list-section">
                 <h4>群主</h4>
                 <div className="member-item">
-                  <div className="member-avatar">张</div>
+                  <div className="member-avatar">{currentGroupOwner?.avatar || '群'}</div>
                   <div className="member-info">
-                    <p className="member-name">张三</p>
-                    <p className="member-role"><span className={`status-dot ${groupMembers[currentChat]?.[0]?.online ? 'online' : 'offline'}`}></span>群主 {groupMembers[currentChat]?.[0]?.online ? '(在线)' : '(离线)'}</p>
+                    <p className="member-name">{currentGroupOwner?.name || '暂无群主'}</p>
+                    <p className="member-role"><span className={`status-dot ${currentGroupOwner?.online ? 'online' : 'offline'}`}></span>群主 {currentGroupOwner?.online ? '(在线)' : '(离线)'}</p>
                   </div>
                   {userRole === 'owner' && <button className="transfer-btn" onClick={() => handleTransferGroup(null)}>转让</button>}
                 </div>
