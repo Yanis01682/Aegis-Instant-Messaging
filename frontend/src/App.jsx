@@ -5,6 +5,7 @@ import {
   INITIAL_PROFILE_DATA,
 } from './features/chat/mockData'
 import {
+  addFriend,
   deleteFriend,
   createGroup,
   getFriendRequests,
@@ -19,7 +20,6 @@ import {
   acceptFriendRequest,
   rejectFriendRequest,
   searchUsers,
-  sendFriendRequest,
   sendChatMessage
 } from './services/api'
 import AuthView from './components/stage2/AuthView'
@@ -549,23 +549,6 @@ function App() {
     setFriendSearchQuery(e.target.value)
   }
 
-  // 将“申请用户”标准化为好友结构，保证好友列表字段统一。
-  // 参数：requestUser 包含 userId/name/avatar/signature。
-  // 返回：可直接写入 myFriends 的好友对象。
-  const createFriendRecord = (requestUser) => {
-    const defaultGroup = customGroups[0] || '我的好友'
-    return {
-      id: Date.now() + Math.floor(Math.random() * 1000),
-      accountId: requestUser.userId,
-      name: requestUser.name,
-      avatar: requestUser.avatar || requestUser.name.charAt(0),
-      status: 'offline',
-      group: defaultGroup,
-      remark: '',
-      signature: requestUser.signature || ''
-    }
-  }
-
   // 判断用户是否已是好友，避免重复添加。
   // 兼容 accountId 和 name 两种匹配方式，降低旧数据结构兼容成本。
   const isAlreadyFriend = (userId, name) => {
@@ -574,14 +557,7 @@ function App() {
     )
   }
 
-  // 查询“我发出的申请”的当前状态，供按钮文案和禁用态判断。
-  const getSentRequestStatus = (userId) => {
-    const request = sentFriendRequests.find((item) => item.userId === userId)
-    return request?.status || null
-  }
-
-  // 发送好友请求。
-  // 当前版本直接创建真实好友关系和私聊会话，不再使用假数据目录。
+  // 直接添加真实好友，并立即创建双向好友关系与私聊会话。
   const handleSendFriendRequest = async (userId) => {
     const targetUser = friendSearchResults.find((user) => user.userId === userId)
     if (!targetUser) {
@@ -594,15 +570,14 @@ function App() {
       return
     }
 
-    if (getSentRequestStatus(targetUser.userId) === 'pending') {
-      alert('申请已发送，请等待对方审批')
-      return
-    }
-
     try {
-      await sendFriendRequest(Number(targetUser.accountId))
+      const result = await addFriend(Number(targetUser.accountId))
+      await refreshRealtimeChatData(result.conversation_id)
       await refreshFriendRequests()
-      alert(`已向 ${targetUser.name} 发送好友申请`)
+      setCurrentChat(result.conversation_id)
+      setActiveTab('chats')
+      setShowAddFriendModal(false)
+      alert(`已添加 ${targetUser.name} 为好友`)
     } catch (err) {
       alert(err.response?.data?.detail || '添加好友失败')
     }
@@ -1602,9 +1577,12 @@ function App() {
     }
 
     try {
-      await sendFriendRequest(Number(peerProfile.userId))
-      await refreshFriendRequests()
-      alert(`已向 ${peerProfile.name} 发送好友申请`)
+      const result = await addFriend(Number(peerProfile.userId))
+      await refreshRealtimeChatData(result.conversation_id)
+      setCurrentChat(result.conversation_id)
+      setActiveTab('chats')
+      handleClosePeerProfile()
+      alert(`已添加 ${peerProfile.name} 为好友`)
     } catch (err) {
       alert(err.response?.data?.detail || '添加好友失败')
     }
@@ -1806,7 +1784,6 @@ function App() {
         handleSearchFriend={handleSearchFriend}
         friendSearchResults={friendSearchResults}
         isAlreadyFriend={isAlreadyFriend}
-        getSentRequestStatus={getSentRequestStatus}
         handleSendFriendRequest={handleSendFriendRequest}
         friendRequestList={friendRequestList}
         sentFriendRequests={sentFriendRequests}

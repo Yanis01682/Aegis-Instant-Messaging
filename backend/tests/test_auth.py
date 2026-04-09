@@ -104,8 +104,17 @@ def test_health_check():
     assert response.json() == {"status": "ok"}
 
 def test_chat_sessions_placeholder():
-    """测试会话占位接口 (补全覆盖率)"""
-    response = client.get("/api/chat/sessions")
-    # 因为 wjq 的 chat.py 里目前返回的是空列表 []
+    """测试登录后可访问会话接口 (补全覆盖率)"""
+    client.post("/auth/register", json={"username": "chat_session_user", "password": "pw"})
+    login_res = client.post(
+        "/auth/login",
+        data={"username": "chat_session_user", "password": "pw"},
+    )
+    token = login_res.json()["access_token"]
+
+    response = client.get(
+        "/api/chat/sessions",
+        headers={"Authorization": f"Bearer {token}"},
+    )
     assert response.status_code == 200
     assert response.json() == []

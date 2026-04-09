@@ -359,7 +359,9 @@ def add_friend(
         .filter(models.Friendship.user_id == current_user.id, models.Friendship.friend_id == friend_id)
         .first()
     )
-    if not existing:
+    if existing:
+        existing.status = "accepted"
+    else:
         db.add(models.Friendship(user_id=current_user.id, friend_id=friend_id, status="accepted"))
 
     reverse_existing = (
@@ -367,7 +369,9 @@ def add_friend(
         .filter(models.Friendship.user_id == friend_id, models.Friendship.friend_id == current_user.id)
         .first()
     )
-    if not reverse_existing:
+    if reverse_existing:
+        reverse_existing.status = "accepted"
+    else:
         db.add(models.Friendship(user_id=friend_id, friend_id=current_user.id, status="accepted"))
 
     conversation = _get_private_conversation_between(db, current_user.id, friend_id)
