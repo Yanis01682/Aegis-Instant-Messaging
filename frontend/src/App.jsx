@@ -143,6 +143,18 @@ function App() {
     })
   }
 
+  const refreshConversationMessages = async (conversationId) => {
+    if (!conversationId || dynamicSessions.some((session) => session.id === conversationId)) {
+      return
+    }
+
+    const fetchedMessages = await getMessages(conversationId)
+    setMessages((prev) => ({
+      ...prev,
+      [conversationId]: fetchedMessages
+    }))
+  }
+
   // 初始加载时尝试获取用户信息
   useEffect(() => {
     const checkAuth = async () => {
@@ -152,6 +164,9 @@ function App() {
           syncProfileFromUser(user)
           setIsLoggedIn(true)
           await refreshRealtimeChatData()
+          if (currentChat) {
+            await refreshConversationMessages(currentChat)
+          }
         }
       } catch (e) {
         // 未登录或错误，保持未登录状态
@@ -223,17 +238,49 @@ function App() {
 
     const loadMessages = async () => {
       try {
-        const fetchedMessages = await getMessages(currentChat)
-        setMessages((prev) => ({
-          ...prev,
-          [currentChat]: fetchedMessages
-        }))
+        await refreshConversationMessages(currentChat)
       } catch (err) {
         console.error('加载消息失败', err)
       }
     }
 
     loadMessages()
+  }, [currentChat, dynamicSessions, isLoggedIn])
+
+  useEffect(() => {
+    if (!isLoggedIn) return
+
+    const pollSessions = async () => {
+      if (document.visibilityState !== 'visible') return
+
+      try {
+        await refreshRealtimeChatData(currentChat)
+      } catch (err) {
+        console.error('刷新会话失败', err)
+      }
+    }
+
+    const timerId = window.setInterval(pollSessions, 5000)
+    return () => window.clearInterval(timerId)
+  }, [currentChat, isLoggedIn])
+
+  useEffect(() => {
+    if (!isLoggedIn || !currentChat || dynamicSessions.some((session) => session.id === currentChat)) {
+      return
+    }
+
+    const pollMessages = async () => {
+      if (document.visibilityState !== 'visible') return
+
+      try {
+        await refreshConversationMessages(currentChat)
+      } catch (err) {
+        console.error('刷新消息失败', err)
+      }
+    }
+
+    const timerId = window.setInterval(pollMessages, 3000)
+    return () => window.clearInterval(timerId)
   }, [currentChat, dynamicSessions, isLoggedIn])
 
   useEffect(() => {
