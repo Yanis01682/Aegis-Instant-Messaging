@@ -1,11 +1,8 @@
 import axios from 'axios'
 
 // frontend/src/services/api.js
-const DEPLOYED_BACKEND_BASE_URL = 'https://backend-dyno-whatthedogdoing.app.spring26b.secoder.net'
-const isSecoderDeployment = typeof window !== 'undefined' && window.location.hostname.includes('spring26b.secoder.net')
-
 const apiClient = axios.create({
-  baseURL: isSecoderDeployment ? DEPLOYED_BACKEND_BASE_URL : '/',
+  baseURL: '/',
   timeout: 10000,
   headers: { 'Content-Type': 'application/json' },
 })
