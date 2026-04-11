@@ -108,9 +108,6 @@ function App() {
   const [messages, setMessages] = useState({})
   const [friendSearchResults, setFriendSearchResults] = useState([])
   const [currentUserId, setCurrentUserId] = useState(null)
-  
-  // eslint-disable-next-line no-unused-vars
-  const [_handleMoveFriendToGroup, handleMoveFriendToGroup] = [null, (friendId, newGroup) => {
 
   const syncProfileFromUser = (user) => {
     if (!user) return

@@ -12,14 +12,14 @@ export function setAuthToken(token) {
     apiClient.defaults.headers.common['Authorization'] = 'Bearer ' + token
     try {
       localStorage.setItem('auth_token', token)
-    } catch (_e) {
+    } catch {
       // ignore
     }
   } else {
     delete apiClient.defaults.headers.common['Authorization']
     try {
       localStorage.removeItem('auth_token')
-    } catch (_e) {
+    } catch {
       // ignore
     }
   }
@@ -29,7 +29,7 @@ export function setAuthToken(token) {
 try {
   const _t = localStorage.getItem('auth_token')
   if (_t) setAuthToken(_t)
-} catch (_e) {
+} catch {
   // ignore
 }
 
@@ -169,7 +169,7 @@ export function logout() {
 export function getAuthToken() {
   try {
     return localStorage.getItem('auth_token')
-  } catch (_e) {
+  } catch {
     return null
   }
 }
