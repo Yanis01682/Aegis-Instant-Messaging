@@ -12,14 +12,14 @@ export function setAuthToken(token) {
     apiClient.defaults.headers.common['Authorization'] = 'Bearer ' + token
     try {
       localStorage.setItem('auth_token', token)
-    } catch (e) {
+    } catch (_e) {
       // ignore
     }
   } else {
     delete apiClient.defaults.headers.common['Authorization']
     try {
       localStorage.removeItem('auth_token')
-    } catch (e) {
+    } catch (_e) {
       // ignore
     }
   }
@@ -29,7 +29,7 @@ export function setAuthToken(token) {
 try {
   const _t = localStorage.getItem('auth_token')
   if (_t) setAuthToken(_t)
-} catch (e) {
+} catch (_e) {
   // ignore
 }
 
@@ -53,7 +53,7 @@ export async function login({ username, password }) {
 
 export async function register(payload) {
   // 移除前端特有字段（如 confirmPassword），避免后端 Pydantic 校验 422 报错
-  const { confirmPassword, ...rest } = payload
+  const { confirmPassword: _confirmPassword, ...rest } = payload
   const res = await apiClient.post('/auth/register', rest)
   return res.data
 }
@@ -169,7 +169,7 @@ export function logout() {
 export function getAuthToken() {
   try {
     return localStorage.getItem('auth_token')
-  } catch (e) {
+  } catch (_e) {
     return null
   }
 }

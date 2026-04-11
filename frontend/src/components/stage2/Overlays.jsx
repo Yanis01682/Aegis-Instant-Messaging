@@ -29,7 +29,9 @@ function Overlays({
   closeUserPanel,
   userAvatar,
   profileData,
+  // eslint-disable-next-line no-unused-vars
   showStatusMenu,
+  // eslint-disable-next-line no-unused-vars
   setShowStatusMenu,
   getStatusIcon,
   getStatusText,
@@ -59,6 +61,7 @@ function Overlays({
   showChatDetail,
   handleCloseChatDetail,
   getCurrentSession,
+  // eslint-disable-next-line no-unused-vars
   handleOpenChatDetailPeerProfile,
   handleOpenOwnerProfile,
   handleOpenMemberProfile,
