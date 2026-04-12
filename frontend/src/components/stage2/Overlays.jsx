@@ -39,6 +39,12 @@ function Overlays({
   isNightMode,
   handleLogout,
   handleDeleteAccount,
+  handleOpenChangePassword,
+  showChangePasswordModal,
+  handleCloseChangePassword,
+  changePasswordForm,
+  handleChangePasswordInput,
+  handleSubmitChangePassword,
   showLogoutConfirm,
   confirmLogout,
   cancelLogout,
@@ -283,6 +289,7 @@ function Overlays({
 
             <div className="user-panel-menu">
               <div className="menu-item" onClick={(e) => { e.stopPropagation(); handleOpenProfile() }}><span className="menu-icon">👤</span><span className="menu-text">个人信息</span><span className="menu-arrow">›</span></div>
+              <div className="menu-item" onClick={(e) => { e.stopPropagation(); handleOpenChangePassword() }}><span className="menu-icon">🔑</span><span className="menu-text">修改密码</span><span className="menu-arrow">›</span></div>
               <div className="menu-item"><span className="menu-icon">⚙️</span><span className="menu-text">设置</span><span className="menu-arrow">›</span></div>
               <div className="menu-item" onClick={toggleNightMode}><span className="menu-icon">{isNightMode ? '☀️' : '🌙'}</span><span className="menu-text">{isNightMode ? '日间模式' : '夜间模式'}</span><span className="menu-toggle"><span className={`toggle-switch ${isNightMode ? 'active' : ''}`}></span></span></div>
               <div className="menu-item"><span className="menu-icon">🔔</span><span className="menu-text">消息通知</span><span className="menu-badge">3</span></div>
@@ -828,6 +835,53 @@ function Overlays({
             <div className="logout-confirm-footer">
               <button className="cancel-btn" onClick={cancelLogout}>取消</button>
               <button className="confirm-btn" onClick={confirmLogout}>确认退出</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showChangePasswordModal && (
+        <div className="change-password-overlay" onClick={handleCloseChangePassword}>
+          <div className="change-password-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="change-password-header">
+              <h3>🔑 修改密码</h3>
+              <button className="change-password-close" onClick={handleCloseChangePassword}>×</button>
+            </div>
+            <div className="change-password-body">
+              <div className="form-group">
+                <label htmlFor="oldPassword">原密码</label>
+                <input 
+                  type="password" 
+                  id="oldPassword" 
+                  value={changePasswordForm.oldPassword} 
+                  onChange={(e) => handleChangePasswordInput('oldPassword', e.target.value)} 
+                  placeholder="请输入原密码" 
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="newPassword">新密码</label>
+                <input 
+                  type="password" 
+                  id="newPassword" 
+                  value={changePasswordForm.newPassword} 
+                  onChange={(e) => handleChangePasswordInput('newPassword', e.target.value)} 
+                  placeholder="请输入新密码" 
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="confirmPassword">确认新密码</label>
+                <input 
+                  type="password" 
+                  id="confirmPassword" 
+                  value={changePasswordForm.confirmPassword} 
+                  onChange={(e) => handleChangePasswordInput('confirmPassword', e.target.value)} 
+                  placeholder="请再次输入新密码" 
+                />
+              </div>
+            </div>
+            <div className="change-password-footer">
+              <button className="cancel-btn" onClick={handleCloseChangePassword}>取消</button>
+              <button className="confirm-btn" onClick={handleSubmitChangePassword}>确认修改</button>
             </div>
           </div>
         </div>

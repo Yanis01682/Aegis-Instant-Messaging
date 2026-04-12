@@ -614,7 +614,7 @@
   font-size: 1.1rem;
 }
 
-/* 澶滈棿妯″紡 */
+/* 澶滈棿″紡 */
 .night-mode {
   background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%) !important;
 }
@@ -1260,6 +1260,139 @@
 
 .logout-confirm-footer .confirm-btn:hover {
   background: #5568d3;
+}
+
+/* 修改密码模态框 */
+.change-password-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+.change-password-modal {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 420px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s ease;
+}
+
+.change-password-header {
+  padding: 24px;
+  border-bottom: 1px solid #e5e5e5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.change-password-header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.change-password-close {
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.change-password-close:hover {
+  color: #333;
+}
+
+.change-password-body {
+  padding: 24px;
+}
+
+.change-password-body .form-group {
+  margin-bottom: 20px;
+}
+
+.change-password-body .form-group:last-child {
+  margin-bottom: 0;
+}
+
+.change-password-body label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  color: #555;
+  font-weight: 500;
+}
+
+.change-password-body input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.change-password-body input:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.change-password-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e5e5e5;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.change-password-footer .cancel-btn,
+.change-password-footer .confirm-btn {
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.change-password-footer .cancel-btn {
+  background: #f0f0f0;
+  color: #555;
+}
+
+.change-password-footer .cancel-btn:hover {
+  background: #e0e0e0;
+}
+
+.change-password-footer .confirm-btn {
+  background: #4a90e2;
+  color: #ffffff;
+}
+
+.change-password-footer .confirm-btn:hover {
+  background: #357abd;
 }
 
 /* 夜间模式 */
