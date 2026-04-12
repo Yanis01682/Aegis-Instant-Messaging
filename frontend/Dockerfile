@@ -5,9 +5,9 @@ WORKDIR $FRONTEND
 
 # 拷贝 package.json 并安装依赖 (利用缓存)
 COPY package.json package-lock.json ./
-# 使用课程专属 NPM 缓存源
-RUN npm config set registry https://npm-cache-sepi.app.spring26a.secoder.net/
-RUN npm install
+# 使用课程专属 NPM 缓存源，失败时回退到官方源
+RUN npm config set registry https://npm-cache-sepi.app.spring26a.secoder.net/ || npm config set registry https://registry.npmjs.org/
+RUN npm install --registry https://registry.npmjs.org/ || npm install
 
 # 拷贝前端全部源码并打包
 COPY . .

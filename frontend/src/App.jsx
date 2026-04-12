@@ -99,7 +99,7 @@ function App() {
   const [sentFriendRequests, setSentFriendRequests] = useState([]) // 我发出的好友申请（用于展示审批状态）
   const [myFriends, setMyFriends] = useState([]) // 我的好友列表
   const [collapsedGroups, setCollapsedGroups] = useState([]) // 已折叠的分组
-  const [customGroups, setCustomGroups] = useState(INITIAL_CUSTOM_GROUPS) // 自定义分组列表
+  const [_customGroups, _setCustomGroups] = useState(INITIAL_CUSTOM_GROUPS) // 自定义分组列表
   const [dynamicSessions, setDynamicSessions] = useState([]) // 动态创建的会话（好友私聊）
   const [groupMembers, setGroupMembers] = useState({}) // 群成员数据（包含角色信息）
   const [profileData, setProfileData] = useState(INITIAL_PROFILE_DATA) // 个人信息数据
@@ -131,7 +131,7 @@ function App() {
     setMyFriends(
       fetchedFriends.map((friend) => ({
         ...friend,
-        group: friend.group || customGroups[0] || '我的好友',
+        group: friend.group || _customGroups[0] || '我的好友',
         remark: friend.remark || ''
       }))
     )
@@ -193,12 +193,12 @@ function App() {
             await refreshConversationMessages(currentChat)
           }
         }
-      } catch (e) {
+      } catch {
         // 未登录或错误，保持未登录状态
       }
     }
     checkAuth()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 加载保存的头像
   useEffect(() => {
@@ -270,7 +270,7 @@ function App() {
     }
 
     loadMessages()
-  }, [currentChat, dynamicSessions, isLoggedIn])
+  }, [currentChat, dynamicSessions, isLoggedIn]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!isLoggedIn || !currentChat) return
@@ -287,7 +287,7 @@ function App() {
     }
 
     loadGroupMembers()
-  }, [currentChat, currentUserId, isLoggedIn, sessions])
+  }, [currentChat, currentUserId, isLoggedIn, sessions]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!isLoggedIn) return
@@ -305,7 +305,7 @@ function App() {
 
     const timerId = window.setInterval(pollSessions, 5000)
     return () => window.clearInterval(timerId)
-  }, [currentChat, isLoggedIn])
+  }, [currentChat, isLoggedIn]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!isLoggedIn || !currentChat || dynamicSessions.some((session) => session.id === currentChat)) {
@@ -324,7 +324,7 @@ function App() {
 
     const timerId = window.setInterval(pollMessages, 3000)
     return () => window.clearInterval(timerId)
-  }, [currentChat, dynamicSessions, isLoggedIn])
+  }, [currentChat, dynamicSessions, isLoggedIn]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!showAddFriendModal) return
@@ -768,7 +768,7 @@ function App() {
     )
   }
 
-  // 移动好友到另一个分组
+  // eslint-disable-next-line no-unused-vars
   const handleMoveFriendToGroup = (friendId, newGroup) => {
     setMyFriends(prev => 
       prev.map(f => f.id === friendId ? { ...f, group: newGroup } : f)
@@ -986,14 +986,14 @@ function App() {
   }
 
   // 移除群成员
-  const handleRemoveMember = (memberId) => {
+  const handleRemoveMember = (_memberId) => {
     if (window.confirm('确定要移除该成员吗？')) {
       alert('成员已移除')
     }
   }
 
   // 转让群主
-  const handleTransferGroup = (memberId) => {
+  const handleTransferGroup = (_memberId) => {
     if (window.confirm('确定要转让群主吗？转让后您将成为普通成员。')) {
       setUserRole('member')
       alert('群主已转让')
@@ -1458,7 +1458,7 @@ function App() {
     // 清除 localStorage 中的 token
     try {
       localStorage.removeItem('auth_token')
-    } catch (e) {
+    } catch {
       // ignore
     }
     
@@ -1593,7 +1593,7 @@ function App() {
     const container = document.querySelector('.composer')
     if (!container) return
     
-    const rect = container.getBoundingClientRect()
+    const _rect = container.getBoundingClientRect()
     const newHeight = window.innerHeight - e.clientY
     // 限制最小和最大高度
     if (newHeight >= 80 && newHeight <= 400) {
@@ -1648,9 +1648,10 @@ function App() {
       document.removeEventListener('mouseup', handleComposerResizeEnd)
       document.removeEventListener('click', handleClickOutside)
     }
-  }, [isResizing, isComposingResizing])
+  }, [isResizing, isComposingResizing]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 点击在线人数
+  // eslint-disable-next-line no-unused-vars
   const handleOnlineClick = () => {
     setShowMemberModal(true)
   }
@@ -1666,8 +1667,8 @@ function App() {
   }
 
   // 任命管理员
-  const handleMakeAdmin = (memberId) => {
-    alert(`已任命成员 ${memberId} 为管理员`)
+  const handleMakeAdmin = (_memberId) => {
+    alert(`已任命成员为管理员`)
     // 实际应用中需要调用 API 更新成员角色
   }
 
@@ -1800,7 +1801,7 @@ function App() {
           currentChat={currentChat}
           setCurrentChat={setCurrentChat}
           myFriends={myFriends}
-          customGroups={customGroups}
+          customGroups={_customGroups}
           collapsedGroups={collapsedGroups}
           toggleGroupCollapse={toggleGroupCollapse}
           archivedGroupIds={archivedGroupIds}

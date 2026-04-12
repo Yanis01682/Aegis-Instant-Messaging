@@ -10,7 +10,7 @@ function LegalModal({ isOpen, onClose, title, children, onReadComplete }) {
 
   useEffect(() => {
     if (!isOpen) return
-    
+
     const handleScroll = () => {
       const body = modalBodyRef.current
       if (!body) return
