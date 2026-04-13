@@ -79,7 +79,7 @@ function AuthView({
 
               <div className="form-options">
                 <label className="checkbox-label">
-                  <input type="checkbox" required />
+                  <input type="checkbox" name="agreementAccepted" value="true" required />
                   <span>我已阅读并同意《用户协议》和《隐私政策》</span>
                 </label>
               </div>
