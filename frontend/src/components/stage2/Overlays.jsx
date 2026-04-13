@@ -12,8 +12,8 @@ function Overlays({
   contextMenu,
   closeContextMenu,
   handleReplyMessage,
-  handleEditMessage,
   handleRevokeMessage,
+  handleDeleteMessage,
   // 群成员弹层。
   showMemberModal,
   closeMemberModal,
@@ -215,16 +215,16 @@ function Overlays({
               </button>
             )}
             {contextMenu.canRevoke && (
-              <>
-                <button className="context-menu-item" onClick={handleEditMessage} type="button">
-                  <span className="menu-item-icon">✏️</span>
-                  <span className="menu-item-text">编辑</span>
-                </button>
-                <button className="context-menu-item revoke" onClick={handleRevokeMessage} type="button">
-                  <span className="menu-item-icon">↩️</span>
-                  <span className="menu-item-text">撤回</span>
-                </button>
-              </>
+              <button className="context-menu-item revoke" onClick={handleRevokeMessage} type="button">
+                <span className="menu-item-icon">↩️</span>
+                <span className="menu-item-text">撤回</span>
+              </button>
+            )}
+            {contextMenu.canDelete && (
+              <button className="context-menu-item delete" onClick={handleDeleteMessage} type="button">
+                <span className="menu-item-icon">🗑️</span>
+                <span className="menu-item-text">删除</span>
+              </button>
             )}
           </div>
         </div>
@@ -346,6 +346,7 @@ function Overlays({
 
                   <div className="profile-info-list">
                     <div className="profile-info-item"><span className="info-label">在线状态：</span><span className="info-value">{getStatusIcon(userStatus)} {getStatusText(userStatus)}</span></div>
+                    <div className="profile-info-item"><span className="info-label">登录账号：</span><span className="info-value">{profileData.username || '--'}</span></div>
                     <div className="profile-info-item"><span className="info-label">昵称：</span><span className="info-value">{profileData.nickname || '未设置'}</span></div>
                     <div className="profile-info-item"><span className="info-label">性别：</span><span className="info-value">{profileData.gender === 'male' ? '男' : profileData.gender === 'female' ? '女' : '其他'}</span></div>
                     <div className="profile-info-item"><span className="info-label">邮箱：</span><span className="info-value">{profileData.email || '未设置'}</span></div>
@@ -358,8 +359,12 @@ function Overlays({
               ) : (
                 <div className="profile-edit-form">
                   <div className="form-group">
-                    <label htmlFor="nickname">昵称</label>
-                    <input type="text" id="nickname" value={profileData.nickname} onChange={(e) => handleProfileChange('nickname', e.target.value)} placeholder="请输入昵称" />
+                    <label>登录账号</label>
+                    <input type="text" value={profileData.username} disabled style={{ opacity: 0.5, cursor: 'not-allowed' }} />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="nickname">昵称（聊天显示名）</label>
+                    <input type="text" id="nickname" value={profileData.nickname} onChange={(e) => handleProfileChange('nickname', e.target.value)} placeholder="请输入昵称，留空则显示登录账号" />
                   </div>
                   <div className="form-group">
                     <label htmlFor="gender">性别</label>

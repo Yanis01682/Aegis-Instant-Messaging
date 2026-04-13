@@ -6,6 +6,13 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
   globalIgnores(['dist']),
+  // vite.config.js 运行在 Node 环境，需要 node globals（process 等）
+  {
+    files: ['vite.config.js'],
+    languageOptions: {
+      globals: { ...globals.browser, ...globals.node },
+    },
+  },
   {
     files: ['**/*.{js,jsx}'],
     extends: [
@@ -24,7 +31,7 @@ export default defineConfig([
     },
     rules: {
       // 救火修改 1：将“未使用变量”从 error(报错) 降级为 warn(警告)
-      'no-unused-vars': ['warn', { varsIgnorePattern: '^[A-Z_]' }],
+      'no-unused-vars': ['warn', { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^_' }],
       
       // 救火修改 2：直接关闭这个过于死板的 React 内部状态规则
       'react-hooks/set-state-in-effect': 'off',
