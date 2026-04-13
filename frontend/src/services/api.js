@@ -2,7 +2,7 @@ import axios from 'axios'
 
 // frontend/src/services/api.js
 const apiClient = axios.create({
-  baseURL: 'https://backend-dyno-whatthedogdoing.app.spring26b.secoder.net',
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? '',
   timeout: 10000,
   headers: { 'Content-Type': 'application/json' },
 })

@@ -44,6 +44,14 @@ def initialize_database():
             with engine.connect() as connection:
                 connection.execute(text("SELECT 1"))
             models.Base.metadata.create_all(bind=engine)
+            # 兼容旧数据库：若 users.status 列不存在则补加
+            with engine.connect() as connection:
+                try:
+                    connection.execute(text("SELECT status FROM users LIMIT 1"))
+                except Exception:
+                    connection.execute(text("ALTER TABLE users ADD COLUMN status VARCHAR(32) DEFAULT 'offline'"))
+                    connection.commit()
+                    logger.info("Migrated: added users.status column")
             logger.info("Database initialized successfully on attempt %s", attempt)
             return
         except SQLAlchemyError as exc:
