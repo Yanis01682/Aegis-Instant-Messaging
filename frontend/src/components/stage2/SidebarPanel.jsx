@@ -130,6 +130,18 @@ function SidebarPanel({
     setSessionContextMenu(null)
   }
 
+  const handleComposeClick = () => {
+    if (activeTab === 'friends') {
+      handleOpenCreateGroup()
+      return
+    }
+    alert('新建会话功能开发中，当前请先通过“好友”页添加好友后发起私聊')
+  }
+
+  const handleMenuClick = () => {
+    alert('更多操作菜单开发中，敬请期待')
+  }
+
   const renderSessionItem = (session) => {
     // 获取好友的在线状态（只针对个人私聊）
     let friendStatus = null
@@ -206,11 +218,11 @@ function SidebarPanel({
             className="icon-btn"
             type="button"
             aria-label={activeTab === 'friends' ? '创建群聊' : '新建会话'}
-            onClick={activeTab === 'friends' ? handleOpenCreateGroup : () => alert('新建会话功能待开发')}
+            onClick={handleComposeClick}
           >
             ✎
           </button>
-          <button className="icon-btn" type="button" aria-label="菜单">⋯</button>
+          <button className="icon-btn" type="button" aria-label="菜单" onClick={handleMenuClick}>⋯</button>
         </div>
       </div>
 
