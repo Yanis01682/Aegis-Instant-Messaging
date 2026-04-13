@@ -1346,25 +1346,6 @@ function App() {
     reader.readAsDataURL(file)
   }
 
-  // 编辑消息（用于撤回后的重新编辑）
-  const handleEditMessage = () => {
-    if (!contextMenu) return
-    
-    const { messageId, messageText } = contextMenu
-    
-    setMessageInput(messageText)
-    setEditingMessageId(messageId)
-    closeContextMenu()
-    
-    // 聚焦到输入框
-    setTimeout(() => {
-      const textarea = document.querySelector('.composer-input')
-      if (textarea) {
-        textarea.focus()
-      }
-    }, 0)
-  }
-
   // 发送消息
   const handleSendMessage = async () => {
     if (!messageInput.trim()) return
