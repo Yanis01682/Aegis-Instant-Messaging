@@ -183,6 +183,44 @@ def test_send_and_read_messages():
     assert messages[0]["text"] == "hello frank"
     assert messages[0]["sender"] == "other"
     assert messages[0]["senderName"] == "eve"
+    assert len(messages[0]["time"]) == 5
+    assert messages[0]["time"][2] == ":"
+
+    alice_sessions = client.get("/api/chat/sessions", headers=headers_alice)
+    assert alice_sessions.status_code == 200
+    assert len(alice_sessions.json()[0]["time"]) == 5
+    assert alice_sessions.json()[0]["time"][2] == ":"
+    assert alice_sessions.json()[0]["lastMessage"] == "hello frank"
+
+
+def test_send_message_response_time_matches_messages_list():
+    headers_alice, _ = register_and_login("time_alice", "time_alice@example.com")
+    headers_bob, bob_user = register_and_login("time_bob", "time_bob@example.com")
+
+    add_friend_res = client.post(
+        "/api/chat/friends/add",
+        json={"friend_id": bob_user["id"]},
+        headers=headers_alice,
+    )
+    conversation_id = add_friend_res.json()["conversation_id"]
+
+    send_response = client.post(
+        "/api/chat/messages/send",
+        json={"conversation_id": conversation_id, "content": "time sync"},
+        headers=headers_alice,
+    )
+    assert send_response.status_code == 200
+    sent_time = send_response.json()["message"]["time"]
+
+    read_response = client.get(f"/api/chat/sessions/{conversation_id}/messages", headers=headers_alice)
+    assert read_response.status_code == 200
+    assert len(read_response.json()) == 1
+    assert read_response.json()[0]["time"] == sent_time
+
+    sessions_response = client.get("/api/chat/sessions", headers=headers_alice)
+    assert sessions_response.status_code == 200
+    assert sessions_response.json()[0]["time"] == sent_time
+    assert sessions_response.json()[0]["lastMessage"] == "time sync"
 
 
 def test_delete_friend_removes_friendship_and_private_session():

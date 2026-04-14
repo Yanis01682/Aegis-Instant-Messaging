@@ -1,3 +1,4 @@
+from datetime import timezone, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
@@ -20,6 +21,8 @@ ERR_GROUP_NAME_EMPTY = "Group name cannot be empty"
 ERR_GROUP_NOT_FOUND = "Group not found"
 ERR_NOT_MEMBER_GROUP = "Not a member of this group"
 ERR_ONLY_OWNER_CAN_RENAME = "Only group owner can rename group"
+
+CHINA_TZ = timezone(timedelta(hours=8))
 
 
 class FriendAddPayload(BaseModel):
@@ -160,6 +163,15 @@ def _get_or_create_private_conversation(db: Session, user_a_id: int, user_b_id: 
     return _create_private_conversation(db, user_a_id, user_b_id)
 
 
+def _format_message_time(timestamp):
+    if not timestamp:
+        return ""
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=timezone.utc)
+    timestamp = timestamp.astimezone(CHINA_TZ)
+    return timestamp.strftime("%H:%M")
+
+
 def _serialize_user(user: models.User):
     display_name = user.username
     # 隐身状态在对方视角显示为离线
@@ -188,7 +200,7 @@ def _serialize_message(message: models.Message, current_user_id: int, sender: Op
         "sender": "me" if message.sender_id == current_user_id else "other",
         "senderId": message.sender_id,
         "senderName": sender_name,
-        "time": message.timestamp.strftime("%H:%M") if message.timestamp else "",
+        "time": _format_message_time(message.timestamp),
         "timestamp": message.timestamp.isoformat() if message.timestamp else None,
     }
 
@@ -233,7 +245,7 @@ def _serialize_session(db: Session, conversation: models.Conversation, current_u
         "title": title,
         "avatar": avatar,
         "lastMessage": latest_message.content if latest_message else "暂无消息",
-        "time": latest_message.timestamp.strftime("%H:%M") if latest_message and latest_message.timestamp else "",
+        "time": _format_message_time(latest_message.timestamp) if latest_message else "",
         "badge": 0,
         "online": online_count,
         "isGroup": conversation.is_group,
