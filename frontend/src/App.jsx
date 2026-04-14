@@ -8,6 +8,7 @@ import {
   addFriend,
   changePassword,
   deleteFriend,
+  deleteMyAccount,
   createGroup,
   renameGroup,
   getFriendRequests,
@@ -1596,24 +1597,34 @@ function App() {
   }
 
   // 确认注销账户
-  const confirmDeleteAccount = () => {
-    // 仅前端实现：清除登录状态和本地数据
-    setIsLoggedIn(false)
-    setCurrentChat(null)
-    setSessions([])
-    setMessages({})
-    setMyFriends([])
-    setShowUserPanel(false)
-    setShowDeleteConfirm(false)
-    
-    // 清除 localStorage 中的 token
+  const confirmDeleteAccount = async () => {
     try {
-      localStorage.removeItem('auth_token')
-    } catch {
-      // ignore
+      await deleteMyAccount()
+      logout()
+      setIsLoggedIn(false)
+      setCurrentChat(null)
+      setSessions([])
+      setMessages({})
+      setMyFriends([])
+      setDynamicSessions([])
+      setPinnedChatIds([])
+      setBlacklist([])
+      setShowUserPanel(false)
+      setShowDeleteConfirm(false)
+
+      try {
+        localStorage.removeItem('archivedGroupIds')
+        localStorage.removeItem('blacklist')
+        localStorage.removeItem('userStatus')
+        localStorage.removeItem('userAvatar')
+      } catch {
+        // ignore
+      }
+
+      alert('账户已成功注销')
+    } catch (err) {
+      alert(err.response?.data?.detail || '注销账户失败')
     }
-    
-    alert('账户已成功注销')
   }
 
   // 取消注销账户

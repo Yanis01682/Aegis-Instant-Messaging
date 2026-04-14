@@ -76,6 +76,11 @@ export async function changePassword(oldPassword, newPassword) {
   return res.data
 }
 
+export async function deleteMyAccount() {
+  const res = await apiClient.delete('/api/users/me')
+  return res.data
+}
+
 export async function updateStatus(status) {
   const res = await apiClient.put('/auth/status', {
     status: status,
