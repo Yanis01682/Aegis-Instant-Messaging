@@ -183,13 +183,19 @@ def test_send_and_read_messages():
     assert messages[0]["text"] == "hello frank"
     assert messages[0]["sender"] == "other"
     assert messages[0]["senderName"] == "eve"
-    assert len(messages[0]["time"]) == 5
-    assert messages[0]["time"][2] == ":"
+    assert len(messages[0]["time"]) == 17
+    assert messages[0]["time"][4] == "年"
+    assert messages[0]["time"][7] == "月"
+    assert messages[0]["time"][10] == "日"
+    assert messages[0]["time"][14] == ":"
 
     alice_sessions = client.get("/api/chat/sessions", headers=headers_alice)
     assert alice_sessions.status_code == 200
-    assert len(alice_sessions.json()[0]["time"]) == 5
-    assert alice_sessions.json()[0]["time"][2] == ":"
+    assert len(alice_sessions.json()[0]["time"]) == 17
+    assert alice_sessions.json()[0]["time"][4] == "年"
+    assert alice_sessions.json()[0]["time"][7] == "月"
+    assert alice_sessions.json()[0]["time"][10] == "日"
+    assert alice_sessions.json()[0]["time"][14] == ":"
     assert alice_sessions.json()[0]["lastMessage"] == "hello frank"
 
 

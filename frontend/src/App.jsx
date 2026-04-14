@@ -49,6 +49,15 @@ const EMPTY_SESSION = {
   realName: '暂无会话'
 }
 
+const formatLocalMessageTime = (date = new Date()) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${year}年${month}月${day}日 ${hours}:${minutes}`
+}
+
 function App() {
   // 是否已登录，决定渲染认证视图还是 IM 主界面。
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -492,7 +501,7 @@ function App() {
         title: blacklistUser.name,
         avatar: blacklistUser.avatar,
         lastMessage: '黑名单用户',
-        time: '刚刚',
+        time: formatLocalMessageTime(),
         badge: 0,
         online: 0,
         isGroup: false,
@@ -1471,7 +1480,7 @@ function App() {
       id: editingMessageId || Date.now(),
       text: messageInput,
       sender: 'me',
-      time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+      time: formatLocalMessageTime(),
       replyTo: replyToMessage ? {
         id: replyToMessage.id,
         text: replyToMessage.text,
@@ -1509,7 +1518,7 @@ function App() {
         mediaUrl: reader.result,
         mediaName: file.name,
         sender: 'me',
-        time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+        time: formatLocalMessageTime(),
         replyTo: replyToMessage ? {
           id: replyToMessage.id,
           text: replyToMessage.text,
@@ -1545,7 +1554,7 @@ function App() {
       mediaUrl: URL.createObjectURL(file),
       mediaName: file.name,
       sender: 'me',
-      time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+      time: formatLocalMessageTime(),
       replyTo: replyToMessage ? {
         id: replyToMessage.id,
         text: replyToMessage.text,
@@ -1869,7 +1878,7 @@ function App() {
         title: peerProfile.name,
         avatar: peerProfile.avatar,
         lastMessage: peerProfile.signature || '开始聊天吧',
-        time: '刚刚',
+        time: formatLocalMessageTime(),
         badge: 0,
         online: peerProfile.status === 'online' ? 1 : 0,
         isGroup: false,

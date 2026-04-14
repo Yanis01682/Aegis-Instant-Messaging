@@ -169,7 +169,7 @@ def _format_message_time(timestamp):
     if timestamp.tzinfo is None:
         timestamp = timestamp.replace(tzinfo=timezone.utc)
     timestamp = timestamp.astimezone(CHINA_TZ)
-    return timestamp.strftime("%H:%M")
+    return timestamp.strftime("%Y年%m月%d日 %H:%M")
 
 
 def _is_session_pinned(db: Session, conversation_id: int, user_id: int):
@@ -258,6 +258,7 @@ def _serialize_session(db: Session, conversation: models.Conversation, current_u
         "avatar": avatar,
         "lastMessage": latest_message.content if latest_message else "暂无消息",
         "time": _format_message_time(latest_message.timestamp) if latest_message else "",
+        "timestamp": latest_message.timestamp.isoformat() if latest_message and latest_message.timestamp else None,
         "badge": 0,
         "online": online_count,
         "isGroup": conversation.is_group,
@@ -439,7 +440,7 @@ def read_sessions(
 
     conversations = db.query(models.Conversation).filter(models.Conversation.id.in_(conversation_ids)).all()
     serialized = [_serialize_session(db, conversation, current_user) for conversation in conversations]
-    serialized.sort(key=lambda item: (item["isPinned"], item["time"], item["id"]), reverse=True)
+    serialized.sort(key=lambda item: (item["isPinned"], item["timestamp"] or "", item["id"]), reverse=True)
     return serialized
 
 
