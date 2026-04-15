@@ -113,7 +113,8 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             detail="用户名或密码错误",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    user.status = "online"
+    # 登录后恢复上次登出前的在线状态（默认为 online）
+    user.status = user.last_status if user.last_status else "online"
     db.commit()
     access_token = create_access_token(data={"sub": user.username})
     user_response = UserResponse.model_validate(user)
@@ -152,6 +153,10 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 
 @router.post("/logout")
 def logout(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    # 先保存当前状态为 last_status（下次登录恢复）
+    if current_user.status not in ("offline", "invisible"):
+        current_user.last_status = current_user.status
+    # 然后设置为离线
     current_user.status = "offline"
     db.commit()
     return {"message": "Successfully logged out"}
@@ -180,11 +185,11 @@ def update_status(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """更新用户在线状态"""
+    """更新用户在线状态（不允许手动设置为 offline）"""
     new_status = request.get("status")
-    valid_statuses = ["online", "offline", "busy", "away", "invisible"]
+    valid_statuses = ["online", "busy", "away", "invisible"]
     if new_status not in valid_statuses:
-        raise HTTPException(status_code=400, detail=f"无效的状态值，必须是: {', '.join(valid_statuses)}")
+        raise HTTPException(status_code=400, detail=f"无效的状态值，必须是: {', '.join(valid_statuses)}（离线状态仅由系统自动设置）")
 
     current_user.status = new_status
     db.commit()
@@ -197,6 +202,15 @@ class UserProfileUpdate(BaseModel):
     phone: Optional[str] = None
     bio: Optional[str] = None
     email: Optional[str] = None
+    avatar: Optional[str] = None
+
+
+class SensitiveInfoUpdate(BaseModel):
+    """敏感信息更新（需要密码验证）"""
+    password: str  # 当前密码，用于验证身份
+    new_email: Optional[str] = None
+    new_phone: Optional[str] = None
+    new_password: Optional[str] = None  # 新密码
 
 
 class UserProfileResponse(BaseModel):
@@ -207,6 +221,7 @@ class UserProfileResponse(BaseModel):
     phone: Optional[str] = None
     bio: Optional[str] = None
     email: Optional[str] = None
+    avatar: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -221,8 +236,71 @@ def update_profile(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    """更新用户基本信息（昵称、性别、简介、头像）"""
     for field, value in data.model_dump(exclude_none=True).items():
         setattr(current_user, field, value)
     db.commit()
     db.refresh(current_user)
     return current_user
+
+
+@router.post("/profile/sensitive")
+def update_sensitive_info(
+    data: SensitiveInfoUpdate,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """更新敏感信息（邮箱、手机、密码）- 需要密码验证
+    
+    需要提供当前密码进行身份验证后才能修改：
+    - 邮箱地址
+    - 手机号码
+    - 登录密码
+    """
+    # 验证当前密码
+    if not verify_password(data.password, current_user.hashed_password):
+        raise HTTPException(status_code=401, detail="密码错误，身份验证失败")
+    
+    updated_fields = []
+    
+    # 更新邮箱
+    if data.new_email is not None:
+        # 检查邮箱是否已被其他用户使用
+        existing_user = db.query(models.User).filter(
+            models.User.email == data.new_email,
+            models.User.id != current_user.id
+        ).first()
+        if existing_user:
+            raise HTTPException(status_code=400, detail="该邮箱已被其他用户使用")
+        current_user.email = data.new_email
+        updated_fields.append("邮箱")
+    
+    # 更新手机号
+    if data.new_phone is not None:
+        # 检查手机号是否已被其他用户使用
+        existing_user = db.query(models.User).filter(
+            models.User.phone == data.new_phone,
+            models.User.id != current_user.id
+        ).first()
+        if existing_user:
+            raise HTTPException(status_code=400, detail="该手机号已被其他用户使用")
+        current_user.phone = data.new_phone
+        updated_fields.append("手机号")
+    
+    # 更新密码
+    if data.new_password is not None:
+        if len(data.new_password) < 6:
+            raise HTTPException(status_code=400, detail="新密码长度不能少于6位")
+        current_user.hashed_password = get_password_hash(data.new_password)
+        updated_fields.append("密码")
+    
+    if not updated_fields:
+        raise HTTPException(status_code=400, detail="没有需要更新的字段")
+    
+    db.commit()
+    db.refresh(current_user)
+    
+    return {
+        "message": f"成功更新：{', '.join(updated_fields)}",
+        "updated_fields": updated_fields
+    }
