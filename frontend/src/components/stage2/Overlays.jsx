@@ -3,6 +3,8 @@
  * 负责渲染聊天页所有 overlay/modal，包括：表情面板、右键菜单、好友申请、聊天详情、成员管理等。
  * 说明：该组件仅做展示与事件转发，不持有业务状态，所有数据来自 App。
  */
+import { useState } from 'react'
+
 function Overlays({
   // 表情面板显示控制。
   showEmojiPicker,
@@ -134,6 +136,10 @@ function Overlays({
   handleCloseMemberList,
   showInviteMemberModal,
   handleCloseInviteMember,
+  selectedInviteFriends,
+  handleToggleInviteFriend,
+  handleSendInvite,
+  getCurrentGroupMemberIds,
   // 创建群聊。
   showCreateGroupModal,
   handleCloseCreateGroup,
@@ -790,26 +796,61 @@ function Overlays({
         </div>
       )}
 
-      {showInviteMemberModal && (
-        <div className="invite-member-overlay" onClick={handleCloseInviteMember}>
-          <div className="invite-member-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="invite-member-header"><h3>邀请好友</h3><button className="close-btn" onClick={handleCloseInviteMember}>✕</button></div>
-            <div className="invite-member-body">
-              <p className="invite-hint">选择要邀请的好友（需群主或管理员审核）</p>
-              <div className="friend-select-list">
-                {myFriends.map((friend) => (
-                  <label key={friend.id} className="friend-checkbox">
-                    <input type="checkbox" />
-                    <div className="friend-avatar-small">{friend.avatar}</div>
-                    <span className="friend-name">{friend.remark || friend.name}</span>
-                  </label>
-                ))}
+
+      {showInviteMemberModal && (() => {
+        const existingMemberIds = getCurrentGroupMemberIds()
+        // Only show friends who are NOT already in the group
+        const invitableFriends = myFriends.filter(
+          (f) => !existingMemberIds.has(Number(f.accountId))
+        )
+        return (
+          <div className="invite-member-overlay" onClick={handleCloseInviteMember}>
+            <div className="invite-member-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="invite-member-header">
+                <h3>邀请好友</h3>
+                <button className="close-btn" onClick={handleCloseInviteMember}>✕</button>
               </div>
-              <button className="send-invite-btn" onClick={() => { alert('邀请已发送，等待群主或管理员审核'); handleCloseInviteMember() }}>发送邀请</button>
+              <div className="invite-member-body">
+                <p className="invite-hint">
+                  选择要邀请加入群聊的好友（已在群中的好友不显示）
+                </p>
+                <div className="friend-select-list">
+                  {invitableFriends.length > 0 ? (
+                    invitableFriends.map((friend) => {
+                      const friendId = Number(friend.accountId)
+                      const isSelected = selectedInviteFriends.includes(friendId)
+                      return (
+                        <label
+                          key={friend.id}
+                          className={`friend-checkbox ${isSelected ? 'selected' : ''}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleToggleInviteFriend(friendId)}
+                          />
+                          <div className="friend-avatar-small">{friend.avatar}</div>
+                          <span className="friend-name">{friend.remark || friend.name}</span>
+                        </label>
+                      )
+                    })
+                  ) : (
+                    <p className="invite-empty">所有好友均已在该群聊中</p>
+                  )}
+                </div>
+                <button
+                  className="send-invite-btn"
+                  onClick={handleSendInvite}
+                  disabled={selectedInviteFriends.length === 0}
+                >
+                  邀请 {selectedInviteFriends.length > 0 ? `(${selectedInviteFriends.length})` : ''}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
+
 
       {showCreateGroupModal && (
         <div className="create-group-overlay" onClick={handleCloseCreateGroup}>
@@ -895,54 +936,114 @@ function Overlays({
       )}
 
       {showChangePasswordModal && (
-        <div className="change-password-overlay" onClick={handleCloseChangePassword}>
-          <div className="change-password-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="change-password-header">
-              <h3>🔑 修改密码</h3>
-              <button className="change-password-close" onClick={handleCloseChangePassword}>×</button>
-            </div>
-            <div className="change-password-body">
-              <div className="form-group">
-                <label htmlFor="oldPassword">原密码</label>
-                <input 
-                  type="password" 
-                  id="oldPassword" 
-                  value={changePasswordForm.oldPassword} 
-                  onChange={(e) => handleChangePasswordInput('oldPassword', e.target.value)} 
-                  placeholder="请输入原密码" 
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="newPassword">新密码</label>
-                <input 
-                  type="password" 
-                  id="newPassword" 
-                  value={changePasswordForm.newPassword} 
-                  onChange={(e) => handleChangePasswordInput('newPassword', e.target.value)} 
-                  placeholder="请输入新密码" 
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="confirmPassword">确认新密码</label>
-                <input 
-                  type="password" 
-                  id="confirmPassword" 
-                  value={changePasswordForm.confirmPassword} 
-                  onChange={(e) => handleChangePasswordInput('confirmPassword', e.target.value)} 
-                  placeholder="请再次输入新密码" 
-                />
-              </div>
-            </div>
-            <div className="change-password-footer">
-              <button className="cancel-btn" onClick={handleCloseChangePassword}>取消</button>
-              <button className="confirm-btn" onClick={handleSubmitChangePassword}>确认修改</button>
-            </div>
-          </div>
-        </div>
+        <ChangePasswordModal
+          handleCloseChangePassword={handleCloseChangePassword}
+          changePasswordForm={changePasswordForm}
+          handleChangePasswordInput={handleChangePasswordInput}
+          handleSubmitChangePassword={handleSubmitChangePassword}
+        />
       )}
 
     </>
   )
 }
 
+/**
+ * 密码显示/隐藏切换图标，定义在模块级别避免每次渲染重建。
+ */
+function EyeIcon({ visible }) {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      {visible ? (
+        <>
+          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+          <line x1="1" y1="1" x2="23" y2="23" />
+        </>
+      ) : (
+        <>
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+          <circle cx="12" cy="12" r="3" />
+        </>
+      )}
+    </svg>
+  )
+}
+
+/**
+ * 修改密码弹窗子组件，自管理三个密码框的显示/隐藏状态。
+ */
+function ChangePasswordModal({
+  handleCloseChangePassword,
+  changePasswordForm,
+  handleChangePasswordInput,
+  handleSubmitChangePassword,
+}) {
+  const [showOld, setShowOld] = useState(false)
+  const [showNew, setShowNew] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+
+  return (
+    <div className="change-password-overlay" onClick={handleCloseChangePassword}>
+      <div className="change-password-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="change-password-header">
+          <h3>🔑 修改密码</h3>
+          <button className="change-password-close" onClick={handleCloseChangePassword}>×</button>
+        </div>
+        <div className="change-password-body">
+          <div className="form-group">
+            <label htmlFor="oldPassword">原密码</label>
+            <div className="password-input-wrapper">
+              <input
+                type={showOld ? 'text' : 'password'}
+                id="oldPassword"
+                value={changePasswordForm.oldPassword}
+                onChange={(e) => handleChangePasswordInput('oldPassword', e.target.value)}
+                placeholder="请输入原密码"
+              />
+              <button type="button" className="password-toggle-btn" onClick={() => setShowOld(!showOld)} aria-label={showOld ? '隐藏密码' : '显示密码'}>
+                <EyeIcon visible={showOld} />
+              </button>
+            </div>
+          </div>
+          <div className="form-group">
+            <label htmlFor="newPassword">新密码</label>
+            <div className="password-input-wrapper">
+              <input
+                type={showNew ? 'text' : 'password'}
+                id="newPassword"
+                value={changePasswordForm.newPassword}
+                onChange={(e) => handleChangePasswordInput('newPassword', e.target.value)}
+                placeholder="请输入新密码（至少 6 位）"
+              />
+              <button type="button" className="password-toggle-btn" onClick={() => setShowNew(!showNew)} aria-label={showNew ? '隐藏密码' : '显示密码'}>
+                <EyeIcon visible={showNew} />
+              </button>
+            </div>
+          </div>
+          <div className="form-group">
+            <label htmlFor="confirmPassword">确认新密码</label>
+            <div className="password-input-wrapper">
+              <input
+                type={showConfirm ? 'text' : 'password'}
+                id="confirmPassword"
+                value={changePasswordForm.confirmPassword}
+                onChange={(e) => handleChangePasswordInput('confirmPassword', e.target.value)}
+                placeholder="请再次输入新密码"
+              />
+              <button type="button" className="password-toggle-btn" onClick={() => setShowConfirm(!showConfirm)} aria-label={showConfirm ? '隐藏密码' : '显示密码'}>
+                <EyeIcon visible={showConfirm} />
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="change-password-footer">
+          <button className="cancel-btn" onClick={handleCloseChangePassword}>取消</button>
+          <button className="confirm-btn" onClick={handleSubmitChangePassword}>确认修改</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default Overlays
+
