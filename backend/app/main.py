@@ -72,6 +72,13 @@ def initialize_database():
                         connection.execute(text(f"ALTER TABLE users ADD COLUMN {col} {definition}"))
                         connection.commit()
                         logger.info("Migrated: added users.%s column", col)
+            with engine.connect() as connection:
+                try:
+                    connection.execute(text("SELECT reply_to_id FROM messages LIMIT 1"))
+                except Exception:
+                    connection.execute(text("ALTER TABLE messages ADD COLUMN reply_to_id INTEGER"))
+                    connection.commit()
+                    logger.info("Migrated: added messages.reply_to_id column")
             logger.info("Database initialized successfully on attempt %s", attempt)
             return
         except SQLAlchemyError as exc:

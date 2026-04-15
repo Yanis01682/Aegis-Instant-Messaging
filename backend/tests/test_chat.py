@@ -287,6 +287,85 @@ def test_non_sender_cannot_revoke_other_users_message():
     assert read_response.json()[0]["id"] == message_id
 
 
+
+def test_send_message_persists_reply_metadata():
+    headers_alice, _ = register_and_login("reply_alice", "reply_alice@example.com")
+    headers_bob, bob_user = register_and_login("reply_bob", "reply_bob@example.com")
+
+    add_friend_res = client.post(
+        "/api/chat/friends/add",
+        json={"friend_id": bob_user["id"]},
+        headers=headers_alice,
+    )
+    conversation_id = add_friend_res.json()["conversation_id"]
+
+    original_response = client.post(
+        "/api/chat/messages/send",
+        json={"conversation_id": conversation_id, "content": "first message"},
+        headers=headers_alice,
+    )
+    assert original_response.status_code == 200
+    original_message = original_response.json()["message"]
+
+    reply_response = client.post(
+        "/api/chat/messages/send",
+        json={"conversation_id": conversation_id, "content": "reply message", "reply_to_id": original_message["id"]},
+        headers=headers_bob,
+    )
+    assert reply_response.status_code == 200
+    reply_message = reply_response.json()["message"]
+    assert reply_message["replyToId"] == original_message["id"]
+    assert reply_message["replyTo"]["id"] == original_message["id"]
+    assert reply_message["replyTo"]["text"] == "first message"
+    assert reply_message["replyTo"]["sender"] == "other"
+    assert reply_message["replyTo"]["senderName"] == "reply_alice"
+
+    read_response = client.get(f"/api/chat/sessions/{conversation_id}/messages", headers=headers_bob)
+    assert read_response.status_code == 200
+    messages = read_response.json()
+    assert len(messages) == 2
+    assert messages[1]["replyToId"] == original_message["id"]
+    assert messages[1]["replyTo"]["text"] == "first message"
+    assert messages[1]["replyTo"]["senderName"] == "reply_alice"
+
+
+
+def test_reply_message_must_belong_to_same_conversation():
+    headers_alice, _ = register_and_login("reply_guard_alice", "reply_guard_alice@example.com")
+    headers_bob, bob_user = register_and_login("reply_guard_bob", "reply_guard_bob@example.com")
+    headers_cathy, cathy_user = register_and_login("reply_guard_cathy", "reply_guard_cathy@example.com")
+
+    first_conversation = client.post(
+        "/api/chat/friends/add",
+        json={"friend_id": bob_user["id"]},
+        headers=headers_alice,
+    )
+    second_conversation = client.post(
+        "/api/chat/friends/add",
+        json={"friend_id": cathy_user["id"]},
+        headers=headers_alice,
+    )
+    first_conversation_id = first_conversation.json()["conversation_id"]
+    second_conversation_id = second_conversation.json()["conversation_id"]
+
+    original_response = client.post(
+        "/api/chat/messages/send",
+        json={"conversation_id": first_conversation_id, "content": "source message"},
+        headers=headers_alice,
+    )
+    assert original_response.status_code == 200
+    original_message_id = original_response.json()["message"]["id"]
+
+    reply_response = client.post(
+        "/api/chat/messages/send",
+        json={"conversation_id": second_conversation_id, "content": "bad reply", "reply_to_id": original_message_id},
+        headers=headers_alice,
+    )
+    assert reply_response.status_code == 400
+    assert reply_response.json()["detail"] == "Reply message must belong to the same conversation"
+
+
+
 def test_pin_session_only_affects_current_user_order():
     headers_alice, _ = register_and_login("pin_alice", "pin_alice@example.com")
     headers_bob, bob_user = register_and_login("pin_bob", "pin_bob@example.com")
