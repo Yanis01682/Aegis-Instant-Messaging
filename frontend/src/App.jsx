@@ -148,6 +148,11 @@ function App() {
   const syncProfileFromUser = async (user) => {
     if (!user) return
     setCurrentUserId(user.id ?? null)
+    // 同步后端返回的在线状态
+    if (user.status) {
+      setUserStatus(user.status)
+      localStorage.setItem('userStatus', user.status)
+    }
     try {
       const profile = await getProfile()
       setProfileData({
@@ -1268,6 +1273,8 @@ function App() {
         setIsLoggedIn(true)
         await refreshRealtimeChatData()
         await refreshFriendRequests()
+        // 清除 localStorage 中的 lastStatus（后端已恢复）
+        localStorage.removeItem('lastStatus')
       }
       } catch (err) {
         alert(err.message || '登录失败')
@@ -1802,6 +1809,9 @@ function App() {
 
   // 确认退出登录
   const confirmLogout = () => {
+    // 保存当前状态到 localStorage（下次登录恢复）
+    localStorage.setItem('lastStatus', userStatus)
+    
     logout()
     setIsLoggedIn(false)
     setCurrentChat(null)

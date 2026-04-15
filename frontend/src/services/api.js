@@ -231,7 +231,12 @@ export async function revokeMessage(messageId) {
   return res.data
 }
 
-export function logout() {
+export async function logout() {
+  try {
+    await apiClient.post('/auth/logout')
+  } catch {
+    // 忽略错误，继续清除本地状态
+  }
   setAuthToken(null)
 }
 
