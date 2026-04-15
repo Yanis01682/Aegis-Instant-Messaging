@@ -32,6 +32,7 @@ class FriendAddPayload(BaseModel):
 class MessageSendPayload(BaseModel):
     conversation_id: int
     content: str
+    reply_to_id: Optional[int] = None
 
 
 class FriendRequestPayload(BaseModel):
@@ -204,9 +205,26 @@ def _serialize_user(user: models.User):
     }
 
 
-def _serialize_message(message: models.Message, current_user_id: int, sender: Optional[models.User]):
+def _serialize_reply_reference(reply_message: models.Message, current_user_id: int, sender: Optional[models.User]):
     sender_name = sender.username if sender else "系统"
     return {
+        "id": reply_message.id,
+        "text": reply_message.content,
+        "sender": "me" if reply_message.sender_id == current_user_id else "other",
+        "senderId": reply_message.sender_id,
+        "senderName": sender_name,
+    }
+
+
+def _serialize_message(
+    message: models.Message,
+    current_user_id: int,
+    sender: Optional[models.User],
+    reply_message: Optional[models.Message] = None,
+    reply_sender: Optional[models.User] = None,
+):
+    sender_name = sender.username if sender else "系统"
+    payload = {
         "id": message.id,
         "text": message.content,
         "sender": "me" if message.sender_id == current_user_id else "other",
@@ -214,7 +232,57 @@ def _serialize_message(message: models.Message, current_user_id: int, sender: Op
         "senderName": sender_name,
         "time": _format_message_time(message.timestamp),
         "timestamp": message.timestamp.isoformat() if message.timestamp else None,
+        "replyToId": message.reply_to_id,
     }
+    if reply_message:
+        payload["replyTo"] = _serialize_reply_reference(reply_message, current_user_id, reply_sender)
+    return payload
+
+
+def _get_reply_message_or_400(db: Session, conversation_id: int, reply_to_id: Optional[int]):
+    if reply_to_id is None:
+        return None
+
+    reply_message = db.query(models.Message).filter(models.Message.id == reply_to_id).first()
+    if not reply_message:
+        raise HTTPException(status_code=404, detail="Reply message not found")
+    if reply_message.conversation_id != conversation_id:
+        raise HTTPException(status_code=400, detail="Reply message must belong to the same conversation")
+    return reply_message
+
+
+
+def _serialize_messages(
+    db: Session,
+    messages: list[models.Message],
+    current_user_id: int,
+    users_by_id: dict[int, models.User],
+):
+    reply_ids = {message.reply_to_id for message in messages if message.reply_to_id is not None}
+    reply_messages = (
+        db.query(models.Message).filter(models.Message.id.in_(reply_ids)).all()
+        if reply_ids
+        else []
+    )
+    reply_map = {message.id: message for message in reply_messages}
+
+    reply_sender_ids = {message.sender_id for message in reply_messages if message.sender_id is not None}
+    missing_reply_sender_ids = [sender_id for sender_id in reply_sender_ids if sender_id not in users_by_id]
+    if missing_reply_sender_ids:
+        reply_senders = db.query(models.User).filter(models.User.id.in_(missing_reply_sender_ids)).all()
+        for user in reply_senders:
+            users_by_id[user.id] = user
+
+    return [
+        _serialize_message(
+            message,
+            current_user_id,
+            users_by_id.get(message.sender_id),
+            reply_map.get(message.reply_to_id),
+            users_by_id.get(reply_map[message.reply_to_id].sender_id) if message.reply_to_id in reply_map else None,
+        )
+        for message in messages
+    ]
 
 
 def _serialize_session(db: Session, conversation: models.Conversation, current_user: models.User):
@@ -507,7 +575,7 @@ def read_messages(
     sender_ids = {message.sender_id for message in messages if message.sender_id is not None}
     users = db.query(models.User).filter(models.User.id.in_(sender_ids)).all() if sender_ids else []
     user_map = {user.id: user for user in users}
-    return [_serialize_message(message, current_user.id, user_map.get(message.sender_id)) for message in messages]
+    return _serialize_messages(db, messages, current_user.id, user_map)
 
 
 @router.post("/friends/add")
@@ -628,9 +696,15 @@ def send_message(
     if not content:
         raise HTTPException(status_code=400, detail=ERR_MESSAGE_CONTENT_EMPTY)
 
+    reply_message = _get_reply_message_or_400(db, payload.conversation_id, payload.reply_to_id)
+    reply_sender = None
+    if reply_message and reply_message.sender_id is not None:
+        reply_sender = db.query(models.User).filter(models.User.id == reply_message.sender_id).first()
+
     new_message = models.Message(
         conversation_id=payload.conversation_id,
         sender_id=current_user.id,
+        reply_to_id=payload.reply_to_id,
         content=content,
     )
     db.add(new_message)
@@ -638,8 +712,28 @@ def send_message(
     db.refresh(new_message)
     return {
         "status": "sent",
-        "message": _serialize_message(new_message, current_user.id, current_user),
+        "message": _serialize_message(new_message, current_user.id, current_user, reply_message, reply_sender),
     }
+
+
+@router.delete("/messages/{message_id}")
+def revoke_message(
+    message_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    message = db.query(models.Message).filter(models.Message.id == message_id).first()
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+
+    _ensure_conversation_membership(db, message.conversation_id, current_user.id)
+
+    if message.sender_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Only the sender can revoke this message")
+
+    db.delete(message)
+    db.commit()
+    return {"message": "Message revoked successfully", "message_id": message_id}
 
 
 @router.post("/groups")
