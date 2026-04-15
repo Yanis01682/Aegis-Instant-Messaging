@@ -6,6 +6,7 @@ import {
 } from './features/chat/mockData'
 import {
   addFriend,
+  sendFriendRequest,
   changePassword,
   deleteFriend,
   deleteMyAccount,
@@ -782,7 +783,7 @@ function App() {
     )
   }
 
-  // 直接添加真实好友，并立即创建双向好友关系与私聊会话。
+  // 直接搜索结果中发送好友申请（双向确认）
   const handleSendFriendRequest = async (userId) => {
     const targetUser = friendSearchResults.find((user) => user.userId === userId)
     if (!targetUser) {
@@ -796,15 +797,12 @@ function App() {
     }
 
     try {
-      const result = await addFriend(Number(targetUser.accountId))
-      await refreshRealtimeChatData(result.conversation_id)
+      await sendFriendRequest(Number(targetUser.accountId))
       await refreshFriendRequests()
-      setCurrentChat(result.conversation_id)
-      setActiveTab('chats')
       setShowAddFriendModal(false)
-      alert(`已添加 ${targetUser.name} 为好友`)
+      alert(`好友申请已发送给 ${targetUser.name}，等待对方确认`)
     } catch (err) {
-      alert(err.response?.data?.detail || '添加好友失败')
+      alert(err.response?.data?.detail || '发送好友申请失败')
     }
   }
 
@@ -2119,7 +2117,7 @@ function App() {
     handleClosePeerProfile()
   }
 
-  // 在“对方详情页”点击添加好友
+  // 在“对方详情页”点击添加好友（双向拉取确认）
   const handleAddPeerAsFriend = async () => {
     if (!peerProfile) return
 
@@ -2129,14 +2127,13 @@ function App() {
     }
 
     try {
-      const result = await addFriend(Number(peerProfile.userId))
-      await refreshRealtimeChatData(result.conversation_id)
-      setCurrentChat(result.conversation_id)
-      setActiveTab('chats')
+      // peerProfile.userId 是真实 DB 用户 ID（即 accountId）
+      await sendFriendRequest(Number(peerProfile.userId))
+      await refreshFriendRequests()
       handleClosePeerProfile()
-      alert(`已添加 ${peerProfile.name} 为好友`)
+      alert(`好友申请已发送给 ${peerProfile.name}，等待对方确认`)
     } catch (err) {
-      alert(err.response?.data?.detail || '添加好友失败')
+      alert(err.response?.data?.detail || '发送好友申请失败')
     }
   }
 
