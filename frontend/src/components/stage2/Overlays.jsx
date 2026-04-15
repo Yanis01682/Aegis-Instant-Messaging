@@ -949,19 +949,10 @@ function Overlays({
 }
 
 /**
- * 修改密码弹窗子组件，自管理三个密码框的显示/隐藏状态。
+ * 密码显示/隐藏切换图标，定义在模块级别避免每次渲染重建。
  */
-function ChangePasswordModal({
-  handleCloseChangePassword,
-  changePasswordForm,
-  handleChangePasswordInput,
-  handleSubmitChangePassword,
-}) {
-  const [showOld, setShowOld] = useState(false)
-  const [showNew, setShowNew] = useState(false)
-  const [showConfirm, setShowConfirm] = useState(false)
-
-  const EyeIcon = ({ visible }) => (
+function EyeIcon({ visible }) {
+  return (
     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       {visible ? (
         <>
@@ -976,6 +967,20 @@ function ChangePasswordModal({
       )}
     </svg>
   )
+}
+
+/**
+ * 修改密码弹窗子组件，自管理三个密码框的显示/隐藏状态。
+ */
+function ChangePasswordModal({
+  handleCloseChangePassword,
+  changePasswordForm,
+  handleChangePasswordInput,
+  handleSubmitChangePassword,
+}) {
+  const [showOld, setShowOld] = useState(false)
+  const [showNew, setShowNew] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
 
   return (
     <div className="change-password-overlay" onClick={handleCloseChangePassword}>

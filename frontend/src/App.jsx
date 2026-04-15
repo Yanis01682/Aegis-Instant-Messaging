@@ -5,7 +5,6 @@ import {
   INITIAL_PROFILE_DATA,
 } from './features/chat/mockData'
 import {
-  addFriend,
   sendFriendRequest,
   changePassword,
   deleteFriend,
