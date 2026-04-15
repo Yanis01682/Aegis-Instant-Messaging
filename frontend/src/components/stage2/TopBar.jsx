@@ -57,11 +57,6 @@ function TopBar({
                 <span className="status-menu-text">隐身</span>
                 {userStatus === 'invisible' && <span className="status-menu-check">✓</span>}
               </div>
-              <div className="status-menu-item" onClick={() => handleChangeStatus('offline')}>
-                <span className="status-menu-icon">⚫</span>
-                <span className="status-menu-text">离线</span>
-                {userStatus === 'offline' && <span className="status-menu-check">✓</span>}
-              </div>
             </div>
           )}
         </div>

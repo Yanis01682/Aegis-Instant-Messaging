@@ -316,6 +316,14 @@
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
 }
 
+.night-mode .password-toggle-btn {
+  opacity: 0.6;
+}
+
+.night-mode .password-toggle-btn:hover {
+  opacity: 1;
+}
+
 .night-mode .checkbox-label {
   color: #b0b0b0;
 }

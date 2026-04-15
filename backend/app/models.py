@@ -18,10 +18,12 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     last_login = Column(DateTime(timezone=True), nullable=True)
     status = Column(String, default="offline")
+    last_status = Column(String, default="online")  # 记录上次登出前的在线状态，用于登录后恢复
     nickname = Column(String(64), nullable=True)
     gender = Column(String(16), nullable=True)
     phone = Column(String(32), nullable=True)
     bio = Column(String(500), nullable=True)
+    avatar = Column(String(500), nullable=True)  # 头像 URL 或 base64 数据
 
 
 class Conversation(Base):
@@ -51,7 +53,10 @@ class Message(Base):
     conversation_id = Column(Integer, ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False, index=True)
     sender_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     reply_to_id = Column(Integer, ForeignKey("messages.id", ondelete="SET NULL"), nullable=True, index=True)
-    content = Column(String(2000), nullable=False)
+    message_type = Column(String(20), nullable=False, default="text")  # text, image
+    content = Column(String(2000), nullable=True)  # 文本内容，图片消息时可为空
+    media_url = Column(String(500), nullable=True)  # 图片URL路径
+    media_name = Column(String(200), nullable=True)  # 原始文件名
     timestamp = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
