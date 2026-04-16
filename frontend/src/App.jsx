@@ -34,7 +34,8 @@ import {
   revokeMessage,
   getProfile,
   updateProfile,
-  updateSensitiveInfo
+  updateSensitiveInfo,
+  updateFriendRemark
 } from './services/api'
 import AuthView from './components/stage2/AuthView'
 import LeftNav from './components/stage2/LeftNav'
@@ -855,11 +856,17 @@ function App() {
   }
 
   // 修改好友备注
-  const handleUpdateRemark = (friendId, newRemark) => {
-    setMyFriends(prev => 
-      prev.map(f => f.id === friendId ? { ...f, remark: newRemark } : f)
-    )
-    alert('备注已保存')
+  const handleUpdateRemark = async (friendId, newRemark) => {
+    try {
+      await updateFriendRemark(friendId, newRemark)
+      setMyFriends(prev => 
+        prev.map(f => f.id === friendId ? { ...f, remark: newRemark } : f)
+      )
+      alert('备注已保存')
+    } catch (err) {
+      console.error('更新备注失败', err)
+      alert('保存备注失败，请稍后重试')
+    }
   }
 
   // 开始编辑备注
