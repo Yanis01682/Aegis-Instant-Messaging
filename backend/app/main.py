@@ -96,6 +96,42 @@ def initialize_database():
                     connection.execute(text("ALTER TABLE friendships ADD COLUMN remark VARCHAR(64)"))
                     connection.commit()
                     logger.info("Migrated: added friendships.remark column")
+
+            # 兼容旧数据库：增加 read_index 字段
+            with engine.connect() as connection:
+                try:
+                    connection.execute(text("SELECT read_index FROM conversation_members LIMIT 1"))
+                except Exception:
+                    connection.execute(text("ALTER TABLE conversation_members ADD COLUMN read_index INTEGER DEFAULT 0"))
+                    connection.commit()
+                    logger.info("Migrated: added conversation_members.read_index column")
+
+            # 兼容更旧数据库：增加 is_group 字段
+            with engine.connect() as connection:
+                try:
+                    connection.execute(text("SELECT is_group FROM conversations LIMIT 1"))
+                except Exception:
+                    connection.execute(text("ALTER TABLE conversations ADD COLUMN is_group BOOLEAN DEFAULT FALSE"))
+                    connection.commit()
+                    logger.info("Migrated: added conversations.is_group column")
+
+            # 检查并创建 conversation_pins 表（如果 create_all 没生效）
+            with engine.connect() as connection:
+                try:
+                    connection.execute(text("SELECT 1 FROM conversation_pins LIMIT 1"))
+                except Exception:
+                    logger.info("Migrated: creating conversation_pins table manually")
+                    connection.execute(text("""
+                        CREATE TABLE conversation_pins (
+                            id INTEGER PRIMARY KEY AUTO_INCREMENT,
+                            conversation_id INTEGER NOT NULL,
+                            user_id INTEGER NOT NULL,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+                            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                        )
+                    """))
+                    connection.commit()
             logger.info("Database initialized successfully on attempt %s", attempt)
             return
         except SQLAlchemyError as exc:
