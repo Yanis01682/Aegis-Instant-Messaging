@@ -53,6 +53,8 @@ function ChatMainView({
   isComposingResizing,
   // 开始拖拽输入区高度。
   handleComposerResizeStart,
+  // 打开图片/视频灯箱
+  onOpenLightbox,
   // 打开个人信息页面。
   handleOpenProfile
 }) {
@@ -146,7 +148,9 @@ function ChatMainView({
                     <img 
                       className="message-media-image" 
                       src={msg.mediaUrl.startsWith('http') ? msg.mediaUrl : msg.mediaUrl}
-                      alt={msg.mediaName || '图片消息'} 
+                      alt={msg.mediaName || '图片消息'}
+                      style={{ cursor: 'zoom-in' }}
+                      onClick={() => onOpenLightbox?.(msg.mediaUrl, msg.mediaName)}
                     />
                   </div>
                 ) : msg.type === 'video' && msg.mediaUrl ? (
@@ -155,7 +159,9 @@ function ChatMainView({
                       className="message-media-video" 
                       src={msg.mediaUrl.startsWith('http') ? msg.mediaUrl : msg.mediaUrl}
                       controls 
-                      preload="metadata" 
+                      preload="metadata"
+                      style={{ cursor: 'pointer' }}
+                      onClick={(e) => { e.preventDefault(); onOpenLightbox?.(msg.mediaUrl, msg.mediaName, 'video') }}
                     />
                   </div>
                 ) : (
