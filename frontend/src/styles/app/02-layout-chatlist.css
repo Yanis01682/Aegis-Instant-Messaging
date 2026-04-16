@@ -1,4 +1,4 @@
-﻿/* ========================================
+/* ========================================
    3. 涓诲竷灞€鍖哄煙 - 瀵艰埅鏍忎笅鏂瑰唴瀹瑰尯
    浣嶇疆锛氬垎涓哄乏鍙充袱鏍忥紙浼氳瘽鍒楄〃 + 鑱婂ぉ绐楀彛锛?
    ======================================== */
@@ -136,6 +136,96 @@
   background-color: rgba(0, 132, 255, 0.15);
   color: #0084ff;
   transform: scale(1.05);
+}
+
+.wechat-panel-header {
+  padding: 12px 14px;
+  background: #f7f7f7;
+  border-bottom: 1px solid #e1e1e1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wechat-search-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: #e2e2e2;
+  border-radius: 4px;
+  padding: 4px 8px;
+}
+
+.wechat-search-icon {
+  color: #888;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 6px;
+}
+
+.wechat-search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.85rem;
+  min-width: 0;
+}
+
+.wechat-search-clear {
+  border: none;
+  background: transparent;
+  color: #888;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+.wechat-add-btn-wrapper {
+  position: relative;
+}
+
+.wechat-add-btn {
+  background: #e2e2e2;
+  border: none;
+  border-radius: 4px;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #333;
+}
+
+.wechat-add-btn:hover {
+  background: #d1d1d1;
+}
+
+.wechat-header-menu {
+  position: absolute;
+  top: 36px;
+  right: -5px;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  padding: 4px 0;
+  width: 120px;
+  z-index: 1000;
+}
+
+.header-menu-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.header-menu-item:hover {
+  background: #f0f0f0;
 }
 
 .search-wrap {
