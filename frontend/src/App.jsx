@@ -856,7 +856,7 @@ function App() {
   // 开始编辑备注
   const handleStartEditRemark = () => {
     const currentSession = getCurrentSession()
-    const friend = myFriends.find(f => f.name === currentSession.realName || f.id.toString() === currentSession.title)
+    const friend = myFriends.find(f => f.name === currentSession.realName || f.id === currentSession.id || f.id?.toString() === currentSession.title)
     setTempRemark(friend?.remark || '')
     setIsEditingRemark(true)
   }
@@ -864,7 +864,7 @@ function App() {
   // 保存备注
   const handleSaveRemark = () => {
     const currentSession = getCurrentSession()
-    const friend = myFriends.find(f => f.name === currentSession.realName)
+    const friend = myFriends.find(f => f.name === currentSession.realName || f.id === currentSession.id || f.id?.toString() === currentSession.title)
     if (friend) {
       handleUpdateRemark(friend.id, tempRemark)
       setIsEditingRemark(false)

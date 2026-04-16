@@ -507,9 +507,13 @@ function Overlays({
                     </div>
                   </div>
                   <div className="detail-section"><div className="section-title">我在本群的昵称</div><div className="section-content"><div className="my-nickname">{profileData.nickname || '未设置'}<button className="edit-nickname-btn">编辑</button></div></div></div>
-                  <div className="detail-section"><div className="section-title">消息免打扰</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" /><span className="toggle-slider"></span></label></div></div>
                   <div className="detail-section"><div className="section-title">置顶聊天</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" checked={isChatPinned(currentChat)} onChange={() => handleTogglePinChat(currentChat)} /><span className="toggle-slider"></span></label></div></div>
-                  <div className="detail-section clickable" onClick={handleOpenSearchMessage}><div className="section-title">查找聊天记录</div><div className="section-content"><span className="arrow-icon">›</span></div></div>
+                  <div className="detail-section clickable" onClick={handleOpenSearchMessage}>
+                    <div className="section-content">
+                      <span className="section-title" style={{ marginBottom: 0 }}>查找聊天记录</span>
+                      <span className="arrow-icon">›</span>
+                    </div>
+                  </div>
 
                   <div className="detail-section">
                     <div className="section-title">群公告</div>
@@ -531,7 +535,12 @@ function Overlays({
                     </div>
                   </div>
 
-                  <div className="detail-section clickable" onClick={handleOpenMemberList}><div className="section-title">成员管理</div><div className="section-content"><span className="arrow-icon">›</span></div></div>
+                  <div className="detail-section clickable" onClick={handleOpenMemberList}>
+                    <div className="section-content">
+                      <span className="section-title" style={{ marginBottom: 0 }}>成员管理</span>
+                      <span className="arrow-icon">›</span>
+                    </div>
+                  </div>
 
                   {userRole === 'owner' && (
                     <>
@@ -574,16 +583,20 @@ function Overlays({
                   </div>
 
 
-                  <div className="detail-section clickable" onClick={handleOpenSearchMessage}><div className="section-title">查找聊天记录</div><div className="section-content"><span className="arrow-icon">›</span></div></div>
-                  <div className="detail-section"><div className="section-title">消息免打扰</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" /><span className="toggle-slider"></span></label></div></div>
+                  <div className="detail-section clickable" onClick={handleOpenSearchMessage}>
+                    <div className="section-content">
+                      <span className="section-title" style={{ marginBottom: 0 }}>查找聊天记录</span>
+                      <span className="arrow-icon">›</span>
+                    </div>
+                  </div>
                   <div className="detail-section"><div className="section-title">置顶聊天</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" checked={isChatPinned(currentChat)} onChange={() => handleTogglePinChat(currentChat)} /><span className="toggle-slider"></span></label></div></div>
                   <div className="detail-section"><div className="section-title">添加到黑名单</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" checked={currentSession.isGroup ? false : isUserInBlacklist(blacklistTarget.id)} onChange={() => !currentSession.isGroup && handleToggleBlacklist(blacklistTarget)} /><span className="toggle-slider"></span></label></div></div>
                   <div 
                     className={`detail-section clickable danger ${!currentPrivateFriend ? 'disabled' : ''}`}
                     onClick={() => currentPrivateFriend && handleDeleteFriend(currentPrivateFriend.id)}
                   >
-                    <div className="section-title">删除好友</div>
                     <div className="section-content">
+                      <span className="section-title" style={{ marginBottom: 0 }}>删除好友</span>
                       <span className="arrow-icon">›</span>
                     </div>
                   </div>
