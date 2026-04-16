@@ -239,6 +239,26 @@ export async function revokeMessage(messageId) {
   return res.data
 }
 
+export async function transferGroupOwnership(conversationId, newOwnerId) {
+  const res = await apiClient.post(`/api/chat/groups/${conversationId}/transfer`, { new_owner_id: newOwnerId })
+  return res.data
+}
+
+export async function kickGroupMember(conversationId, userId) {
+  const res = await apiClient.post(`/api/chat/groups/${conversationId}/kick`, { user_id: userId })
+  return res.data
+}
+
+export async function setGroupAdmin(conversationId, userId, isAdmin) {
+  const res = await apiClient.put(`/api/chat/groups/${conversationId}/admin`, { user_id: userId, is_admin: isAdmin })
+  return res.data
+}
+
+export async function updateGroupNickname(conversationId, nickname) {
+  const res = await apiClient.put(`/api/chat/groups/${conversationId}/nickname`, { nickname })
+  return res.data
+}
+
 export async function logout() {
   try {
     await apiClient.post('/auth/logout')

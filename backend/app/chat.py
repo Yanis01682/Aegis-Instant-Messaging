@@ -989,13 +989,25 @@ def create_group(
     db.flush()
 
     for member_id in member_ids:
-        db.add(models.ConversationMember(conversation_id=conversation.id, user_id=member_id))
+        role = "owner" if member_id == current_user.id else "member"
+        db.add(models.ConversationMember(conversation_id=conversation.id, user_id=member_id, role=role))
 
     db.commit()
     return {
         "message": "Group created successfully",
         "conversation_id": conversation.id,
     }
+
+
+def _get_member_or_403(db: Session, conversation_id: int, user_id: int) -> models.ConversationMember:
+    """获取成员记录，不存在则 403"""
+    m = db.query(models.ConversationMember).filter(
+        models.ConversationMember.conversation_id == conversation_id,
+        models.ConversationMember.user_id == user_id,
+    ).first()
+    if not m:
+        raise HTTPException(status_code=403, detail=ERR_NOT_MEMBER_CONVERSATION)
+    return m
 
 
 @router.put("/groups/{conversation_id}")
@@ -1006,15 +1018,9 @@ def rename_group(
     current_user: models.User = Depends(auth.get_current_user),
 ):
     conversation = _get_group_or_404(db, conversation_id)
-    _ensure_group_membership(db, conversation_id, current_user.id)
+    my_member = _get_member_or_403(db, conversation_id, current_user.id)
 
-    owner_membership = (
-        db.query(models.ConversationMember)
-        .filter(models.ConversationMember.conversation_id == conversation_id)
-        .order_by(models.ConversationMember.id.asc())
-        .first()
-    )
-    if not owner_membership or owner_membership.user_id != current_user.id:
+    if my_member.role != "owner":
         raise HTTPException(status_code=403, detail=ERR_ONLY_OWNER_CAN_RENAME)
 
     group_name = payload.name.strip()
@@ -1040,7 +1046,7 @@ def invite_group_members(
 ):
     """邀请成员加入群聊"""
     _get_group_or_404(db, conversation_id)
-    _ensure_group_membership(db, conversation_id, current_user.id)
+    _get_member_or_403(db, conversation_id, current_user.id)
 
     if not payload.member_ids:
         raise HTTPException(status_code=400, detail="No members to invite")
@@ -1098,7 +1104,7 @@ def read_group_members(
     current_user: models.User = Depends(auth.get_current_user),
 ):
     _get_group_or_404(db, conversation_id)
-    _ensure_group_membership(db, conversation_id, current_user.id)
+    _get_member_or_403(db, conversation_id, current_user.id)
 
     members = (
         db.query(models.ConversationMember)
@@ -1109,23 +1115,27 @@ def read_group_members(
     users = db.query(models.User).filter(models.User.id.in_([item.user_id for item in members])).all()
     user_map = {user.id: user for user in users}
 
-    payload = []
-    for index, member in enumerate(members):
+    role_order = {"owner": 0, "admin": 1, "member": 2}
+    payload_list = []
+    for member in members:
         user = user_map.get(member.user_id)
         if not user:
             continue
-        payload.append(
+        display_name = member.group_nickname or user.username
+        payload_list.append(
             {
                 "id": user.id,
                 "name": user.username,
-                "avatar": user.username[:1].upper(),
-                "role": "owner" if index == 0 else "member",
-                "status": user.status or "online",  # 使用数据库中真实的在线状态
-                "online": user.status != "offline" and user.status != "invisible",  # 兼容性字段
+                "displayName": display_name,
+                "groupNickname": member.group_nickname or "",
+                "avatar": display_name[:1].upper(),
+                "role": member.role or "member",
+                "status": user.status or "online",
+                "online": user.status not in ("offline", "invisible"),
             }
         )
-
-    return payload
+    payload_list.sort(key=lambda x: role_order.get(x["role"], 2))
+    return payload_list
 
 
 @router.post("/groups/{conversation_id}/exit")
@@ -1135,29 +1145,20 @@ def exit_group(
     current_user: models.User = Depends(auth.get_current_user),
 ):
     conversation = _get_group_or_404(db, conversation_id)
-    membership = _ensure_group_membership(db, conversation_id, current_user.id)
+    membership = _get_member_or_403(db, conversation_id, current_user.id)
 
     # 群主不能直接退出，必须先转让群主
-    owner_membership = (
-        db.query(models.ConversationMember)
-        .filter(models.ConversationMember.conversation_id == conversation_id)
-        .order_by(models.ConversationMember.id.asc())
-        .first()
-    )
-    if owner_membership and owner_membership.user_id == current_user.id:
+    if membership.role == "owner":
         raise HTTPException(status_code=403, detail=ERR_OWNER_CANNOT_LEAVE)
 
-    # 删除群成员记录
     db.delete(membership)
 
-    # 检查群内是否还有其他成员
     remaining_members = (
         db.query(models.ConversationMember)
         .filter(models.ConversationMember.conversation_id == conversation_id)
         .all()
     )
 
-    # 如果群内没有其他成员了，解散群聊（删除群消息和会话）
     if not remaining_members:
         messages = (
             db.query(models.Message)
@@ -1181,31 +1182,13 @@ def dismiss_group(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user),
 ):
-    """解散群聊 - 只有群主可以执行
-    
-    解散后会：
-    1. 删除所有群消息
-    2. 删除所有群成员记录
-    3. 删除所有置顶记录
-    4. 删除群聊会话
-    """
+    """解散群聊 - 只有群主可以执行"""
     conversation = _get_group_or_404(db, conversation_id)
-    
-    # 验证当前用户是群成员
-    _ensure_group_membership(db, conversation_id, current_user.id)
-    
-    # 验证当前用户是群主（第一个加入的成员）
-    owner_membership = (
-        db.query(models.ConversationMember)
-        .filter(models.ConversationMember.conversation_id == conversation_id)
-        .order_by(models.ConversationMember.id.asc())
-        .first()
-    )
-    
-    if not owner_membership or owner_membership.user_id != current_user.id:
+    my_member = _get_member_or_403(db, conversation_id, current_user.id)
+
+    if my_member.role != "owner":
         raise HTTPException(status_code=403, detail=ERR_ONLY_OWNER_CAN_DISMISS)
-    
-    # 1. 删除所有群消息
+
     messages = (
         db.query(models.Message)
         .filter(models.Message.conversation_id == conversation_id)
@@ -1213,8 +1196,7 @@ def dismiss_group(
     )
     for message in messages:
         db.delete(message)
-    
-    # 2. 删除所有群成员记录（包括置顶记录会通过 CASCADE 自动删除）
+
     members = (
         db.query(models.ConversationMember)
         .filter(models.ConversationMember.conversation_id == conversation_id)
@@ -1222,13 +1204,128 @@ def dismiss_group(
     )
     for member in members:
         db.delete(member)
-    
-    # 3. 删除群聊会话
+
     db.delete(conversation)
-    
     db.commit()
-    
+
     return {
         "message": "Group dismissed successfully",
         "conversation_id": conversation_id,
     }
+
+
+@router.post("/groups/{conversation_id}/transfer")
+def transfer_group_ownership(
+    conversation_id: int,
+    payload: dict = Body(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    """转让群主 - 只有群主可执行"""
+    _get_group_or_404(db, conversation_id)
+    my_member = _get_member_or_403(db, conversation_id, current_user.id)
+    if my_member.role != "owner":
+        raise HTTPException(status_code=403, detail="Only owner can transfer ownership")
+
+    new_owner_id = payload.get("new_owner_id")
+    if not new_owner_id:
+        raise HTTPException(status_code=400, detail="new_owner_id is required")
+    if new_owner_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot transfer ownership to yourself")
+
+    new_owner_member = db.query(models.ConversationMember).filter(
+        models.ConversationMember.conversation_id == conversation_id,
+        models.ConversationMember.user_id == new_owner_id,
+    ).first()
+    if not new_owner_member:
+        raise HTTPException(status_code=404, detail="Target user is not in the group")
+
+    my_member.role = "member"
+    new_owner_member.role = "owner"
+    db.commit()
+    return {"message": "Ownership transferred successfully"}
+
+
+@router.post("/groups/{conversation_id}/kick")
+def kick_group_member(
+    conversation_id: int,
+    payload: dict = Body(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    """踢人 - 群主可踢任何人，管理员可踢普通成员"""
+    _get_group_or_404(db, conversation_id)
+    my_member = _get_member_or_403(db, conversation_id, current_user.id)
+
+    if my_member.role not in ("owner", "admin"):
+        raise HTTPException(status_code=403, detail="Only owner or admin can kick members")
+
+    target_id = payload.get("user_id")
+    if not target_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    if target_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot kick yourself")
+
+    target_member = db.query(models.ConversationMember).filter(
+        models.ConversationMember.conversation_id == conversation_id,
+        models.ConversationMember.user_id == target_id,
+    ).first()
+    if not target_member:
+        raise HTTPException(status_code=404, detail="Target user is not in the group")
+
+    if my_member.role == "admin" and target_member.role in ("owner", "admin"):
+        raise HTTPException(status_code=403, detail="Admins can only kick regular members")
+
+    db.delete(target_member)
+    db.commit()
+    return {"message": "Member kicked successfully"}
+
+
+@router.put("/groups/{conversation_id}/admin")
+def set_group_admin(
+    conversation_id: int,
+    payload: dict = Body(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    """设置/取消管理员 - 只有群主可执行"""
+    _get_group_or_404(db, conversation_id)
+    my_member = _get_member_or_403(db, conversation_id, current_user.id)
+    if my_member.role != "owner":
+        raise HTTPException(status_code=403, detail="Only owner can set admins")
+
+    target_id = payload.get("user_id")
+    is_admin = payload.get("is_admin", True)
+    if not target_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    if target_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot change your own role")
+
+    target_member = db.query(models.ConversationMember).filter(
+        models.ConversationMember.conversation_id == conversation_id,
+        models.ConversationMember.user_id == target_id,
+    ).first()
+    if not target_member:
+        raise HTTPException(status_code=404, detail="Target user is not in the group")
+
+    target_member.role = "admin" if is_admin else "member"
+    db.commit()
+    return {"message": "Role updated successfully", "role": target_member.role}
+
+
+@router.put("/groups/{conversation_id}/nickname")
+def update_group_nickname(
+    conversation_id: int,
+    payload: dict = Body(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    """修改我在本群的昵称"""
+    _get_group_or_404(db, conversation_id)
+    my_member = _get_member_or_403(db, conversation_id, current_user.id)
+
+    nickname = payload.get("nickname", "").strip()
+    my_member.group_nickname = nickname if nickname else None
+    db.commit()
+    return {"message": "Group nickname updated", "group_nickname": my_member.group_nickname or ""}
+

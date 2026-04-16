@@ -44,6 +44,8 @@ class ConversationMember(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     joined_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     read_index = Column(Integer, default=0, nullable=False)
+    role = Column(String(16), default="member", nullable=False)  # owner / admin / member
+    group_nickname = Column(String(64), nullable=True)  # 在本群的昵称
 
 
 class Message(Base):

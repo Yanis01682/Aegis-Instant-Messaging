@@ -35,7 +35,11 @@ import {
   getProfile,
   updateProfile,
   updateSensitiveInfo,
-  updateFriendRemark
+  updateFriendRemark,
+  transferGroupOwnership,
+  kickGroupMember,
+  setGroupAdmin,
+  updateGroupNickname,
 } from './services/api'
 import AuthView from './components/stage2/AuthView'
 import LeftNav from './components/stage2/LeftNav'
@@ -117,6 +121,8 @@ function App() {
   const [tempAnnouncement, setTempAnnouncement] = useState('') // 临时公告内容
   const [isEditingGroupName, setIsEditingGroupName] = useState(false)
   const [tempGroupName, setTempGroupName] = useState('')
+  const [isEditingGroupNickname, setIsEditingGroupNickname] = useState(false)
+  const [tempGroupNickname, setTempGroupNickname] = useState('')
   const [isRenamingGroup, setIsRenamingGroup] = useState(false)
   const [groupOwnerIdMap, setGroupOwnerIdMap] = useState({})
   const [groupOwnerNameMap, setGroupOwnerNameMap] = useState({})
@@ -1099,6 +1105,30 @@ function App() {
     setIsEditingGroupName(true)
   }
 
+  const handleStartEditGroupNickname = () => {
+    const currentSession = getCurrentSession()
+    if (!currentSession?.isGroup) return
+    const myMember = groupMembers[currentSession.id]?.find(m => m.id === profileData.userId)
+    setTempGroupNickname(myMember?.groupNickname || '')
+    setIsEditingGroupNickname(true)
+  }
+
+  const handleSaveGroupNicknameAction = async () => {
+    const currentSession = getCurrentSession()
+    if (!currentSession?.isGroup) return
+    try {
+      await handleSaveGroupNickname(tempGroupNickname)
+      setIsEditingGroupNickname(false)
+    } catch (err) {
+      // 错误已由 handleSaveGroupNickname 处理
+    }
+  }
+
+  const handleCancelEditGroupNickname = () => {
+    setIsEditingGroupNickname(false)
+    setTempGroupNickname('')
+  }
+
   const handleCancelEditGroupName = () => {
     const currentSession = getCurrentSession()
     setTempGroupName(currentSession?.title || '')
@@ -1161,18 +1191,33 @@ function App() {
     setTempAnnouncement('')
   }
 
-  // 移除群成员
-  const handleRemoveMember = (_memberId) => {
-    if (window.confirm('确定要移除该成员吗？')) {
+  // 移除群成员（踢人）
+  const handleRemoveMember = async (memberId) => {
+    const currentSession = getCurrentSession()
+    if (!currentSession?.isGroup) return
+    if (!window.confirm('确定要移除该成员吗？')) return
+    try {
+      await kickGroupMember(currentSession.id, memberId)
+      // 刷新成员列表
+      await refreshGroupConversationMembers(currentSession.id)
       alert('成员已移除')
+    } catch (err) {
+      alert(err.response?.data?.detail || '移除成员失败')
     }
   }
 
   // 转让群主
-  const handleTransferGroup = (_memberId) => {
-    if (window.confirm('确定要转让群主吗？转让后您将成为普通成员。')) {
+  const handleTransferGroup = async (memberId) => {
+    const currentSession = getCurrentSession()
+    if (!currentSession?.isGroup) return
+    if (!window.confirm('确定要转让群主吗？转让后您将成为普通成员。')) return
+    try {
+      await transferGroupOwnership(currentSession.id, memberId)
       setUserRole('member')
-      alert('群主已转让')
+      await refreshGroupConversationMembers(currentSession.id)
+      alert('群主已成功转让')
+    } catch (err) {
+      alert(err.response?.data?.detail || '转让群主失败')
     }
   }
 
@@ -1988,10 +2033,28 @@ function App() {
     setShowMemberModal(false)
   }
 
-  // 任命管理员
-  const handleMakeAdmin = (_memberId) => {
-    alert(`已任命成员为管理员`)
-    // 实际应用中需要调用 API 更新成员角色
+  // 任命/取消管理员
+  const handleMakeAdmin = async (memberId, isAdmin = true) => {
+    const currentSession = getCurrentSession()
+    if (!currentSession?.isGroup) return
+    try {
+      await setGroupAdmin(currentSession.id, memberId, isAdmin)
+      await refreshGroupConversationMembers(currentSession.id)
+    } catch (err) {
+      alert(err.response?.data?.detail || '操作失败')
+    }
+  }
+
+  // 修改我在本群的昵称
+  const handleSaveGroupNickname = async (nickname) => {
+    const currentSession = getCurrentSession()
+    if (!currentSession?.isGroup) return
+    try {
+      await updateGroupNickname(currentSession.id, nickname)
+      await refreshGroupConversationMembers(currentSession.id)
+    } catch (err) {
+      alert(err.response?.data?.detail || '修改群昵称失败')
+    }
   }
 
   // 从好友列表打开（或创建）私聊会话
@@ -2267,6 +2330,12 @@ function App() {
         handleTransferGroup={handleTransferGroup}
         handleDismissGroup={handleDismissGroup}
         handleExitGroup={handleExitGroup}
+        isEditingGroupNickname={isEditingGroupNickname}
+        tempGroupNickname={tempGroupNickname}
+        setTempGroupNickname={setTempGroupNickname}
+        handleStartEditGroupNickname={handleStartEditGroupNickname}
+        handleSaveGroupNickname={handleSaveGroupNicknameAction}
+        handleCancelEditGroupNickname={handleCancelEditGroupNickname}
         showDeleteConfirm={showDeleteConfirm}
         cancelDeleteAccount={cancelDeleteAccount}
         confirmDeleteAccount={confirmDeleteAccount}
