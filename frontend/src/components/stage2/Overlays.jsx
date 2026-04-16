@@ -173,14 +173,7 @@ function Overlays({
         avatar: currentSession.avatar
       }
   const currentGroupOwner = (groupMembers[currentChat] || []).find((member) => member.role === 'owner')
-  const currentPrivateStatus = currentPrivateFriend?.status || (currentSession.online > 0 ? 'online' : 'offline')
-  const currentPrivateStatusText = {
-    online: '🟢 在线',
-    busy: '🔴 忙碌',
-    away: '🟡 离开',
-    invisible: '🌙 隐身',
-    offline: '⚫ 离线',
-  }[currentPrivateStatus] || '⚫ 离线'
+
 
 
   return (
@@ -558,7 +551,6 @@ function Overlays({
                   <div className="personal-info-section">
                     <div className="personal-avatar-large">{currentSession.avatar}</div>
                     <h2 className="personal-name">{currentSession.title}</h2>
-                    <p className="personal-status">{currentPrivateStatusText}</p>
                   </div>
 
                   <div className="detail-section">
@@ -581,15 +573,20 @@ function Overlays({
                     </div>
                   </div>
 
-                  <div className="detail-section"><div className="section-title">标签</div><div className="section-content"><span className="tag-placeholder">未设置标签</span><span className="arrow-icon">›</span></div></div>
-                  <div className="detail-section clickable"><div className="section-title">发消息</div><div className="section-content"><span className="arrow-icon">›</span></div></div>
-                  <div className="detail-section clickable"><div className="section-title">音视频通话</div><div className="section-content"><span className="arrow-icon">›</span></div></div>
+
                   <div className="detail-section clickable" onClick={handleOpenSearchMessage}><div className="section-title">查找聊天记录</div><div className="section-content"><span className="arrow-icon">›</span></div></div>
                   <div className="detail-section"><div className="section-title">消息免打扰</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" /><span className="toggle-slider"></span></label></div></div>
                   <div className="detail-section"><div className="section-title">置顶聊天</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" checked={isChatPinned(currentChat)} onChange={() => handleTogglePinChat(currentChat)} /><span className="toggle-slider"></span></label></div></div>
                   <div className="detail-section"><div className="section-title">添加到黑名单</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" checked={currentSession.isGroup ? false : isUserInBlacklist(blacklistTarget.id)} onChange={() => !currentSession.isGroup && handleToggleBlacklist(blacklistTarget)} /><span className="toggle-slider"></span></label></div></div>
-                  <div className="detail-section clickable danger"><div className="section-title">投诉</div><div className="section-content"><span className="arrow-icon">›</span></div></div>
-                  <div className={`detail-section clickable danger ${!currentPrivateFriend ? 'disabled' : ''}`}><div className="section-title">删除好友</div><div className="section-content" onClick={() => currentPrivateFriend && handleDeleteFriend(currentPrivateFriend.id)}><span className="arrow-icon">›</span></div></div>
+                  <div 
+                    className={`detail-section clickable danger ${!currentPrivateFriend ? 'disabled' : ''}`}
+                    onClick={() => currentPrivateFriend && handleDeleteFriend(currentPrivateFriend.id)}
+                  >
+                    <div className="section-title">删除好友</div>
+                    <div className="section-content">
+                      <span className="arrow-icon">›</span>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
