@@ -268,10 +268,7 @@ function Overlays({
                       {member.name}
                       <span className={`role-badge role-${member.role}`}>{member.role === 'owner' ? '群主' : member.role === 'admin' ? '管理员' : '成员'}</span>
                     </div>
-                    <div className="member-status">
-                      <span className={`online-indicator ${member.online ? 'online' : 'offline'}`}></span>
-                      {member.online ? '在线' : '离线'}
-                    </div>
+
                   </div>
                   {myRole[currentChat] === 'owner' && member.role === 'member' && (
                     <div className="member-actions">
@@ -419,13 +416,10 @@ function Overlays({
                 <div className="peer-profile-avatar">{peerProfile.avatar}</div>
               </div>
               <h3 className="peer-profile-name">{peerProfile.name}</h3>
-              <p className="peer-profile-id">微信号：{peerProfile.wechatId || peerProfile.name}</p>
+              <p className="peer-profile-id">刀盾号：{peerProfile.wechatId || peerProfile.name}</p>
 
               <div className="peer-profile-info-list">
-                <div className="peer-profile-info-item">
-                  <span className="peer-profile-info-label">状态</span>
-                  <span className="peer-profile-info-value">{peerProfile.status === 'online' ? '在线' : '离线'}</span>
-                </div>
+
                 <div className="peer-profile-info-item">
                   <span className="peer-profile-info-label">来源</span>
                   <span className="peer-profile-info-value">{peerProfile.source === 'group' ? '群聊成员' : '私聊对象'}</span>
@@ -616,7 +610,7 @@ function Overlays({
             </div>
             <div className="add-friend-modal-body">
               <div className="friend-search-section">
-                <input type="text" className="friend-search-input" placeholder="搜索用户名、昵称或微信号" value={friendSearchQuery} onChange={handleSearchFriend} autoFocus />
+                <input type="text" className="friend-search-input" placeholder="搜索用户名、昵称或刀盾号" value={friendSearchQuery} onChange={handleSearchFriend} autoFocus />
               </div>
               {friendSearchQuery && (
                 <div className="friend-search-results">
@@ -628,7 +622,7 @@ function Overlays({
                           <div className="result-avatar">{user.avatar}</div>
                           <div className="result-info">
                             <p className="result-name">{user.name}</p>
-                            <p className="result-subtitle">微信号：{user.userId}</p>
+                            <p className="result-subtitle">刀盾号：{user.userId}</p>
                           </div>
                           <button
                             className="send-request-btn"
@@ -696,7 +690,7 @@ function Overlays({
                       <div className="friend-list-avatar">{friend.avatar}</div>
                       <div className="friend-list-info">
                         <p className="friend-list-name">{friend.name}</p>
-                        <p className="friend-list-status">{friend.status === 'online' ? '🟢 在线' : friend.status === 'busy' ? '🔴 忙碌' : friend.status === 'away' ? '🟡 离开' : friend.status === 'invisible' ? '🌙 隐身' : '⚫ 离线'}</p>
+
                       </div>
                     </div>
                   ))}
@@ -704,7 +698,7 @@ function Overlays({
               )}
 
               {!friendSearchQuery && friendRequestList.length === 0 && (
-                <div className="add-friend-hint"><p>在上方搜索框中输入用户的微信号、昵称或手机号</p></div>
+                <div className="add-friend-hint"><p>在上方搜索框中输入用户的刀盾号、昵称或手机号</p></div>
               )}
             </div>
           </div>
@@ -762,7 +756,7 @@ function Overlays({
                   <div className="member-avatar">{currentGroupOwner?.avatar || '群'}</div>
                   <div className="member-info">
                     <p className="member-name">{currentGroupOwner?.name || '暂无群主'}</p>
-                    <p className="member-role"><span className={`status-dot ${currentGroupOwner?.online ? 'online' : 'offline'}`}></span>群主 {currentGroupOwner?.online ? '(在线)' : '(离线)'}</p>
+                    <p className="member-role">群主 </p>
                   </div>
                   {userRole === 'owner' && <button className="transfer-btn" onClick={() => handleTransferGroup(null)}>转让</button>}
                 </div>
@@ -775,7 +769,7 @@ function Overlays({
                     <div className="member-avatar">{member.avatar}</div>
                     <div className="member-info">
                       <p className="member-name">{member.name}</p>
-                      <p className="member-role"><span className={`status-dot ${member.online ? 'online' : 'offline'}`}></span>管理员 {member.online ? '(在线)' : '(离线)'}</p>
+                      <p className="member-role">管理员 </p>
                     </div>
                     {userRole === 'owner' && <button className="remove-btn" onClick={() => handleRemoveMember(member.id)}>移除</button>}
                   </div>
@@ -789,7 +783,7 @@ function Overlays({
                     <div className="member-avatar">{member.avatar}</div>
                     <div className="member-info">
                       <p className="member-name">{member.name}</p>
-                      <p className="member-role"><span className={`status-dot ${member.online ? 'online' : 'offline'}`}></span>普通成员 {member.online ? '(在线)' : '(离线)'}</p>
+                      <p className="member-role">普通成员 </p>
                     </div>
                     {(userRole === 'owner' || userRole === 'admin') && <button className="remove-btn" onClick={() => handleRemoveMember(member.id)}>移除</button>}
                   </div>

@@ -172,14 +172,23 @@ function App() {
       getSessions()
     ])
 
-    setMyFriends(
-      fetchedFriends.map((friend) => ({
-        ...friend,
-        group: friend.group || _customGroups[0] || '我的好友',
-        remark: friend.remark || ''
-      }))
-    )
-    setSessions(fetchedSessions)
+    const mappedFriends = fetchedFriends.map((friend) => ({
+      ...friend,
+      group: friend.group || _customGroups[0] || '我的好友',
+      remark: friend.remark || ''
+    }))
+    setMyFriends(mappedFriends)
+    
+    const mappedSessions = fetchedSessions.map(session => {
+      if (!session.isGroup) {
+        const friend = mappedFriends.find(f => f.name === session.realName || f.id === session.id || f.id?.toString() === session.title)
+        if (friend && friend.remark) {
+          return { ...session, title: friend.remark }
+        }
+      }
+      return session
+    })
+    setSessions(mappedSessions)
     setPinnedChatIds((prev) => {
       const localPinnedDynamicIds = prev.filter((id) => dynamicSessions.some((session) => session.id === id))
       const serverPinnedIds = fetchedSessions.filter((session) => session.isPinned).map((session) => session.id)
@@ -870,6 +879,12 @@ function App() {
       setIsEditingRemark(false)
       // 更新动态会话的标题
       setDynamicSessions(prev => 
+        prev.map(s => s.id === currentSession.id 
+          ? { ...s, title: tempRemark || friend.name } 
+          : s
+        )
+      )
+      setSessions(prev => 
         prev.map(s => s.id === currentSession.id 
           ? { ...s, title: tempRemark || friend.name } 
           : s

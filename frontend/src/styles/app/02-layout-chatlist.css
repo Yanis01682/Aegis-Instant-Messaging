@@ -461,11 +461,11 @@
 }
 
 .session-item.pinned {
-  background-color: #f3f3f3;
+  background-color: #e0e0e0;
 }
 
 .session-item.pinned:hover {
-  background-color: #ebebeb;
+  background-color: #d6d6d6;
 }
 
 .session-item.pinned.active {
