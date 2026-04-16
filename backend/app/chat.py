@@ -535,7 +535,10 @@ def read_sessions(
         return []
 
     conversations = db.query(models.Conversation).filter(models.Conversation.id.in_(conversation_ids)).all()
-    serialized = [_serialize_session(db, conversation, current_user) for conversation in conversations]
+    try:
+        serialized = [_serialize_session(db, conversation, current_user) for conversation in conversations]
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Session serialization error: {str(exc)}")
     serialized.sort(key=lambda item: (item["isPinned"], item["timestamp"] or "", item["id"]), reverse=True)
     return serialized
 
