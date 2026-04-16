@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './App.css'
 import {
   INITIAL_CUSTOM_GROUPS,
@@ -80,7 +80,7 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('') // 搜索关键词
   const [chatlistWidth, setChatlistWidth] = useState(320) // 会话列表宽度
   const [isResizing, setIsResizing] = useState(false) // 是否正在调整宽度（左侧）
-  const resizeDragOffsetRef = React.useRef(0) // 拖拽时鼠标X与侧边栏宽度的偏移量
+  const resizeDragOffsetRef = useRef(0) // 拖拽时鼠标X与侧边栏宽度的偏移量
   const [composerHeight, setComposerHeight] = useState(120) // 输入框高度
   const [isComposingResizing, setIsComposingResizing] = useState(false) // 是否正在调整输入框高度
   const [showEmojiPicker, setShowEmojiPicker] = useState(false) // 表情选择器显示状态
