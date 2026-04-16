@@ -31,13 +31,7 @@ function Overlays({
   closeUserPanel,
   userAvatar,
   profileData,
-  // eslint-disable-next-line no-unused-vars
-  showStatusMenu,
-  // eslint-disable-next-line no-unused-vars
-  setShowStatusMenu,
-  getStatusIcon,
-  getStatusText,
-  userStatus,
+
   handleOpenProfile,
   toggleNightMode,
   isNightMode,
@@ -368,7 +362,7 @@ function Overlays({
                   </div>
 
                   <div className="profile-info-list">
-                    <div className="profile-info-item"><span className="info-label">在线状态：</span><span className="info-value">{getStatusIcon(userStatus)} {getStatusText(userStatus)}</span></div>
+
                     <div className="profile-info-item"><span className="info-label">登录账号：</span><span className="info-value">{profileData.username || '--'}</span></div>
                     <div className="profile-info-item"><span className="info-label">昵称：</span><span className="info-value">{profileData.nickname || '未设置'}</span></div>
                     <div className="profile-info-item"><span className="info-label">性别：</span><span className="info-value">{profileData.gender === 'male' ? '男' : profileData.gender === 'female' ? '女' : '其他'}</span></div>

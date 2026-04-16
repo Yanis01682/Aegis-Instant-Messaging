@@ -32,7 +32,6 @@ import {
   sendVideoMessage,
   unpinChatSession,
   revokeMessage,
-  updateStatus,
   getProfile,
   updateProfile,
   updateSensitiveInfo
@@ -100,8 +99,7 @@ function App() {
     newPassword: '',
     confirmPassword: ''
   }) // 敏感信息修改表单
-  const [userStatus, setUserStatus] = useState('online') // 在线状态：online-在线，offline-离线，busy-忙碌，away-离开，invisible-隐身
-  const [showStatusMenu, setShowStatusMenu] = useState(false) // 状态选择菜单
+
   const [showChatDetail, setShowChatDetail] = useState(false) // 聊天详情模态框
   const [activeTab, setActiveTab] = useState('chats') // 当前激活的标签页：chats-会话，friends-好友
   const [blacklist, setBlacklist] = useState([]) // 黑名单列表
@@ -147,11 +145,7 @@ function App() {
   const syncProfileFromUser = async (user) => {
     if (!user) return
     setCurrentUserId(user.id ?? null)
-    // 同步后端返回的在线状态
-    if (user.status) {
-      setUserStatus(user.status)
-      localStorage.setItem('userStatus', user.status)
-    }
+    // (status removed)
     try {
       const profile = await getProfile()
       setProfileData({
@@ -320,11 +314,7 @@ function App() {
     if (savedProfile) {
       setProfileData(JSON.parse(savedProfile))
     }
-    // 加载保存的在线状态
-    const savedStatus = localStorage.getItem('userStatus')
-    if (savedStatus) {
-      setUserStatus(savedStatus)
-    }
+    // (status removed)
 
     const savedArchivedGroupIds = localStorage.getItem('archivedGroupIds')
     if (savedArchivedGroupIds) {
@@ -540,51 +530,7 @@ function App() {
     }
   }
 
-  // 切换在线状态
-  const handleChangeStatus = async (status) => {
-    setUserStatus(status)
-    localStorage.setItem('userStatus', status)
-    setShowStatusMenu(false)
-    
-    // 调用后端 API 更新数据库中的状态
-    try {
-      await updateStatus(status)
-      // 更新后重新获取好友列表，这样其他用户就能看到新状态
-      await refreshRealtimeChatData()
-    } catch (error) {
-      console.error('更新状态失败:', error)
-    }
-  }
 
-  // 获取状态文本
-  const getStatusText = (status) => {
-    const statusMap = {
-      'online': '在线',
-      'offline': '离线',
-      'busy': '忙碌',
-      'away': '离开',
-      'invisible': '隐身'
-    }
-    return statusMap[status] || '在线'
-  }
-
-  // 获取状态图标
-  const getStatusIcon = (status) => {
-    if (status === 'invisible') {
-      return (
-        <svg className="status-icon-svg status-icon-invisible" viewBox="0 0 24 24" width="16" height="16">
-          <path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/>
-        </svg>
-      )
-    }
-    const iconMap = {
-      'online': '🟢',
-      'offline': '⚫',
-      'busy': '🔴',
-      'away': '🟡'
-    }
-    return iconMap[status] || '🟢'
-  }
 
   // 打开聊天详情
   const handleOpenChatDetail = () => {
@@ -1805,8 +1751,7 @@ function App() {
 
   // 确认退出登录
   const confirmLogout = () => {
-    // 保存当前状态到 localStorage（下次登录恢复）
-    localStorage.setItem('lastStatus', userStatus)
+    // (status removed from localStorage backup)
     
     logout()
     setIsLoggedIn(false)
@@ -1847,7 +1792,7 @@ function App() {
       try {
         localStorage.removeItem('archivedGroupIds')
         localStorage.removeItem('blacklist')
-        localStorage.removeItem('userStatus')
+        // userStatus removed
         localStorage.removeItem('userAvatar')
       } catch {
         // ignore
@@ -2027,20 +1972,13 @@ function App() {
       document.body.style.cursor = ''
     }
     
-    // 点击其他地方关闭状态菜单
-    const handleClickOutside = (e) => {
-      if (!e.target.closest('.status-selector') && !e.target.closest('.user-status-selector')) {
-        setShowStatusMenu(false)
-      }
-    }
-    document.addEventListener('click', handleClickOutside)
+    // (status menu removed)
     
     return () => {
       document.removeEventListener('mousemove', handleResizeMove)
       document.removeEventListener('mouseup', handleResizeEnd)
       document.removeEventListener('mousemove', handleComposerResizeMove)
       document.removeEventListener('mouseup', handleComposerResizeEnd)
-      document.removeEventListener('click', handleClickOutside)
     }
   }, [isResizing, isComposingResizing]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -2172,12 +2110,8 @@ function App() {
   return (
     <div className={`im-shell ${isNightMode ? 'night-mode' : ''}`}>
       <LeftNav
-        showStatusMenu={showStatusMenu}
-        setShowStatusMenu={setShowStatusMenu}
-        userStatus={userStatus}
-        handleChangeStatus={handleChangeStatus}
-        toggleUserPanel={toggleUserPanel}
         userAvatar={userAvatar}
+        toggleUserPanel={toggleUserPanel}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
       />
@@ -2226,7 +2160,6 @@ function App() {
         <ChatMainView
           getCurrentSession={getCurrentSession}
           groupMembers={groupMembers}
-          myFriends={myFriends}
           currentChat={currentChat}
           userAvatar={userAvatar}
           handleOpenPeerProfile={handleOpenPeerProfile}
@@ -2276,11 +2209,7 @@ function App() {
         closeUserPanel={closeUserPanel}
         userAvatar={userAvatar}
         profileData={profileData}
-        showStatusMenu={showStatusMenu}
-        setShowStatusMenu={setShowStatusMenu}
-        getStatusIcon={getStatusIcon}
-        getStatusText={getStatusText}
-        userStatus={userStatus}
+
         handleOpenProfile={handleOpenProfile}
         toggleNightMode={toggleNightMode}
         isNightMode={isNightMode}

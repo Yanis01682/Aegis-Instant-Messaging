@@ -5,10 +5,6 @@ import React from 'react'
  */
 function LeftNav({
   userAvatar,
-  userStatus,
-  showStatusMenu,
-  setShowStatusMenu,
-  handleChangeStatus,
   toggleUserPanel,
   activeTab,
   setActiveTab
@@ -24,7 +20,6 @@ function LeftNav({
               <span>{userAvatar}</span>
             </div>
           )}
-          <span className={`nav-status-dot status-${userStatus}`}></span>
         </div>
 
         <button 
@@ -59,36 +54,12 @@ function LeftNav({
       </div>
 
       <div className="left-nav-bottom">
-        <div className="nav-menu-wrapper" onClick={(e) => { e.stopPropagation(); setShowStatusMenu(!showStatusMenu); }}>
+        <div className="nav-menu-wrapper">
            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" onClick={toggleUserPanel} style={{cursor:'pointer', opacity:0.6}}>
              <circle cx="12" cy="12" r="2" />
              <circle cx="12" cy="5" r="2" />
              <circle cx="12" cy="19" r="2" />
            </svg>
-           {showStatusMenu && (
-            <div className="nav-status-menu" onClick={(e) => e.stopPropagation()}>
-              <div className="status-menu-item" onClick={() => { handleChangeStatus('online'); setShowStatusMenu(false); }}>
-                <span className="status-menu-icon">🟢</span>
-                <span className="status-menu-text">在线</span>
-                {userStatus === 'online' && <span className="status-menu-check">✓</span>}
-              </div>
-              <div className="status-menu-item" onClick={() => { handleChangeStatus('busy'); setShowStatusMenu(false); }}>
-                <span className="status-menu-icon">🔴</span>
-                <span className="status-menu-text">忙碌</span>
-                {userStatus === 'busy' && <span className="status-menu-check">✓</span>}
-              </div>
-              <div className="status-menu-item" onClick={() => { handleChangeStatus('away'); setShowStatusMenu(false); }}>
-                <span className="status-menu-icon">🟡</span>
-                <span className="status-menu-text">离开</span>
-                {userStatus === 'away' && <span className="status-menu-check">✓</span>}
-              </div>
-              <div className="status-menu-item" onClick={() => { handleChangeStatus('invisible'); setShowStatusMenu(false); }}>
-                <span className="status-menu-icon">🌙</span>
-                <span className="status-menu-text">隐身</span>
-                {userStatus === 'invisible' && <span className="status-menu-check">✓</span>}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </nav>

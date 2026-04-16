@@ -153,17 +153,6 @@ function SidebarPanel({
   }
 
   const renderSessionItem = (session) => {
-    // 获取好友的在线状态（只针对个人私聊）
-    let friendStatus = null
-    if (!session.isGroup) {
-      const friend = myFriends.find(f => f.name === session.realName || f.id === session.id || f.id.toString() === session.title)
-      if (friend) {
-        friendStatus = friend.status || null
-      }
-    }
-    
-    const showSessionStatusDot = !session.isGroup && Boolean(friendStatus)
-
     return (
       <li
         key={session.id}
@@ -173,7 +162,6 @@ function SidebarPanel({
       >
         <div className="avatar-wrapper">
           <div className="avatar">{session.avatar}</div>
-          {showSessionStatusDot && <span className={`session-status-dot status-${friendStatus}`}></span>}
         </div>
         <div className="session-main">
           <div className="session-row">
