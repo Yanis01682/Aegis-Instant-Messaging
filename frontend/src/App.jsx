@@ -38,7 +38,7 @@ import {
   updateSensitiveInfo
 } from './services/api'
 import AuthView from './components/stage2/AuthView'
-import TopBar from './components/stage2/TopBar'
+import LeftNav from './components/stage2/LeftNav'
 import SidebarPanel from './components/stage2/SidebarPanel'
 import ChatMainView from './components/stage2/ChatMainView'
 import Overlays from './components/stage2/Overlays'
@@ -77,7 +77,6 @@ function App() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false) // 注销账户二次确认
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false) // 退出登录二次确认
   const [sessionFilter, setSessionFilter] = useState('all') // 会话筛选：all-全部 | personal-个人 | group-群聊
-  const [showSearch, setShowSearch] = useState(false) // 搜索框显示/隐藏状态
   const [searchQuery, setSearchQuery] = useState('') // 搜索关键词
   const [chatlistWidth, setChatlistWidth] = useState(320) // 会话列表宽度
   const [isResizing, setIsResizing] = useState(false) // 是否正在调整宽度（左侧）
@@ -2172,15 +2171,15 @@ function App() {
   // 已登录时显示聊天界面
   return (
     <div className={`im-shell ${isNightMode ? 'night-mode' : ''}`}>
-      <TopBar
+      <LeftNav
         showStatusMenu={showStatusMenu}
         setShowStatusMenu={setShowStatusMenu}
-        getStatusIcon={getStatusIcon}
-        getStatusText={getStatusText}
         userStatus={userStatus}
         handleChangeStatus={handleChangeStatus}
         toggleUserPanel={toggleUserPanel}
         userAvatar={userAvatar}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
       />
 
       <main className="im-layout">
@@ -2192,8 +2191,6 @@ function App() {
           setShowFriendSearch={setShowFriendSearch}
           friendSearchQuery={friendSearchQuery}
           setFriendSearchQuery={setFriendSearchQuery}
-          showSearch={showSearch}
-          setShowSearch={setShowSearch}
           searchQuery={searchQuery}
           handleSearchChange={handleSearchChange}
           handleClearSearch={handleClearSearch}

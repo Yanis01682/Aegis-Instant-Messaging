@@ -1,4 +1,4 @@
-﻿/* ========================================
+/* ========================================
    WhatTheDogDoing 鍗虫椂閫氳杞欢 - 鏍峰紡鏂囦欢
    ========================================
    
@@ -23,130 +23,123 @@
    ======================================== */
 .im-shell {
   width: 100%;
-  height: 100vh; /* 鍗犳弧鏁翠釜瑙嗗彛楂樺害 */
-  display: grid;
-  grid-template-rows: 60px 1fr; /* 椤堕儴瀵艰埅鏍?60px + 鍐呭鍖哄煙鑷€傚簲 */
-  background: linear-gradient(135deg, #8fa3fa 0%, #fbfbfc 100%); /* 绱壊娓愬彉鑳屾櫙 */
+  height: 100vh;
+  display: flex;
+  flex-direction: row;
+  background: #f5f5f5;
   overflow: hidden;
 }
 
 /* ========================================
-   2. 椤堕儴瀵艰埅鏍?- 椤甸潰椤堕儴
-   浣嶇疆锛氶〉闈㈡渶涓婃柟锛屾樉绀哄搧鐗?Logo 鍜岀敤鎴风姸鎬?
+   2. 左侧导航栏 - LeftNav
+   位置：页面最左侧，显示头像和tab切换
    ======================================== */
-.im-topbar {
+.left-nav {
+  width: 60px;
+  background: #2e2e2e;
   display: flex;
+  flex-direction: column;
   align-items: center;
+  padding: 24px 0;
   justify-content: space-between;
-  padding: 0 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  background: transparent; /* 鏀逛负閫忔槑锛岃鐖跺鍣ㄧ殑娓愬彉閫忓嚭鏉?*/
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
   z-index: 100;
 }
 
-.brand {
+.left-nav-top {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 20px;
+  width: 100%;
 }
 
-.brand-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #0084ff, #0073e6);
-  flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(0, 132, 255, 0.4);
-}
-
-.brand-title {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #0a0a0a;
-  letter-spacing: -0.3px;
-}
-
-.brand-sub {
-  margin: 0;
-  font-size: 0.7rem;
-  color: #888;
-  letter-spacing: 0.3px;
-}
-
-.topbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.status {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.85rem;
-  color: #555;
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #31a24c;
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-.ghost-btn {
-  border: 1px solid #181818;
-  border-radius: 6px;
-  padding: 8px 16px;
-  font-size: 0.85rem;
-  font-family: inherit;
-  color: #555;
-  background: transparent;
+.nav-avatar-wrapper {
+  position: relative;
   cursor: pointer;
-  transition: all 0.2s ease;
+  margin-bottom: 10px;
 }
 
-.ghost-btn:hover {
-  border-color: #0084ff;
-  color: #0084ff;
-  background: rgba(0, 132, 255, 0.05);
+.nav-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 4px;
+  background: #0084ff;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+
+.nav-status-dot {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid #2e2e2e;
+}
+.nav-status-dot.status-online { background: #07c160; }
+.nav-status-dot.status-busy { background: #ff4d4f; }
+.nav-status-dot.status-away { background: #faad14; }
+.nav-status-dot.status-invisible { background: #722ed1; }
+
+.nav-tab-btn {
+  width: 100%;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #8c8c8c;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.nav-tab-btn:hover {
+  color: #b0b0b0;
+}
+
+.nav-tab-btn.active {
+  color: #07c160;
+}
+
+.left-nav-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+}
+
+.nav-menu-wrapper {
+  position: relative;
+  color: #8c8c8c;
+}
+
+.nav-status-menu {
+  position: absolute;
+  left: 30px;
+  bottom: 0;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  padding: 4px 0;
+  width: 120px;
+  z-index: 1000;
 }
 
 /* ========================================
    夜间模式样式
    ======================================== */
 .night-mode .im-shell {
-  background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%) !important;
+  background: #1e1e1e !important;
 }
 
-.night-mode .brand-title {
-  color: #ffffff !important;
-}
-
-.night-mode .brand-sub {
-  color: #a0a0a0 !important;
-}
-
-.night-mode .status {
-  color: #a0a0a0 !important;
-}
-
-.night-mode .ghost-btn {
-  border-color: rgba(255, 255, 255, 0.2) !important;
-  color: #a0a0a0 !important;
-}
-
-.night-mode .ghost-btn:hover {
-  border-color: #667eea !important;
-  color: #667eea !important;
-  background: rgba(102, 126, 234, 0.1) !important;
+.night-mode .left-nav {
+  background: #1a1a1a !important;
 }
 

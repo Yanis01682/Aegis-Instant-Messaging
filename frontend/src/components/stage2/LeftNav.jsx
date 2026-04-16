@@ -1,0 +1,98 @@
+import React from 'react'
+
+/**
+ * 左侧导航栏（仿微信样式）
+ */
+function LeftNav({
+  userAvatar,
+  userStatus,
+  showStatusMenu,
+  setShowStatusMenu,
+  handleChangeStatus,
+  toggleUserPanel,
+  activeTab,
+  setActiveTab
+}) {
+  return (
+    <nav className="left-nav">
+      <div className="left-nav-top">
+        <div className="nav-avatar-wrapper" onClick={toggleUserPanel}>
+          {typeof userAvatar === 'string' && userAvatar.startsWith('data:image') ? (
+            <div className="nav-avatar" style={{ backgroundImage: `url(${userAvatar})`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
+          ) : (
+            <div className="nav-avatar">
+              <span>{userAvatar}</span>
+            </div>
+          )}
+          <span className={`nav-status-dot status-${userStatus}`}></span>
+        </div>
+
+        <button 
+          className={`nav-tab-btn ${activeTab === 'chats' ? 'active' : ''}`}
+          onClick={() => setActiveTab('chats')}
+          aria-label="会话"
+        >
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+            <path d="M12 3c5.5 0 10 3.58 10 8s-4.5 8-10 8c-1.24 0-2.43-.2-3.53-.55L4 21l1.55-3.66C4.04 15.7 3 13.9 3 11c0-4.42 4.5-8 9-8z"/>
+          </svg>
+        </button>
+
+        <button 
+          className={`nav-tab-btn ${activeTab === 'friends' ? 'active' : ''}`}
+          onClick={() => setActiveTab('friends')}
+          aria-label="通讯录"
+        >
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+          </svg>
+        </button>
+
+        <button 
+          className={`nav-tab-btn ${activeTab === 'blacklist' ? 'active' : ''}`}
+          onClick={() => setActiveTab('blacklist')}
+          aria-label="黑名单"
+        >
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8 0-1.85.63-3.55 1.69-4.9L16.9 18.31C15.55 19.37 13.85 20 12 20zm6.31-3.1L7.1 5.69C8.45 4.63 10.15 4 12 4c4.42 0 8 3.58 8 8 0 1.85-.63 3.55-1.69 4.9z"/>
+          </svg>
+        </button>
+      </div>
+
+      <div className="left-nav-bottom">
+        <div className="nav-menu-wrapper" onClick={(e) => { e.stopPropagation(); setShowStatusMenu(!showStatusMenu); }}>
+           <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" onClick={toggleUserPanel} style={{cursor:'pointer', opacity:0.6}}>
+             <circle cx="12" cy="12" r="2" />
+             <circle cx="12" cy="5" r="2" />
+             <circle cx="12" cy="19" r="2" />
+           </svg>
+           {showStatusMenu && (
+            <div className="nav-status-menu" onClick={(e) => e.stopPropagation()}>
+              <div className="status-menu-item" onClick={() => { handleChangeStatus('online'); setShowStatusMenu(false); }}>
+                <span className="status-menu-icon">🟢</span>
+                <span className="status-menu-text">在线</span>
+                {userStatus === 'online' && <span className="status-menu-check">✓</span>}
+              </div>
+              <div className="status-menu-item" onClick={() => { handleChangeStatus('busy'); setShowStatusMenu(false); }}>
+                <span className="status-menu-icon">🔴</span>
+                <span className="status-menu-text">忙碌</span>
+                {userStatus === 'busy' && <span className="status-menu-check">✓</span>}
+              </div>
+              <div className="status-menu-item" onClick={() => { handleChangeStatus('away'); setShowStatusMenu(false); }}>
+                <span className="status-menu-icon">🟡</span>
+                <span className="status-menu-text">离开</span>
+                {userStatus === 'away' && <span className="status-menu-check">✓</span>}
+              </div>
+              <div className="status-menu-item" onClick={() => { handleChangeStatus('invisible'); setShowStatusMenu(false); }}>
+                <span className="status-menu-icon">🌙</span>
+                <span className="status-menu-text">隐身</span>
+                {userStatus === 'invisible' && <span className="status-menu-check">✓</span>}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </nav>
+  )
+}
+
+export default LeftNav
