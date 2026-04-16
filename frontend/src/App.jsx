@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import {
   INITIAL_CUSTOM_GROUPS,
@@ -78,11 +78,10 @@ function App() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false) // 退出登录二次确认
   const [sessionFilter, setSessionFilter] = useState('all') // 会话筛选：all-全部 | personal-个人 | group-群聊
   const [searchQuery, setSearchQuery] = useState('') // 搜索关键词
-  const [chatlistWidth, setChatlistWidth] = useState(320) // 会话列表宽度
-  const [isResizing, setIsResizing] = useState(false) // 是否正在调整宽度（左侧）
-  const resizeDragOffsetRef = useRef(0) // 拖拽时鼠标X与侧边栏宽度的偏移量
+  const [chatlistWidth] = useState(320) // 会话列表宽度（固定，不再支持拖拽）
   const [composerHeight, setComposerHeight] = useState(120) // 输入框高度
   const [isComposingResizing, setIsComposingResizing] = useState(false) // 是否正在调整输入框高度
+  const [lightboxImage, setLightboxImage] = useState(null) // 图片查看灯箱：{ url, name }
   const [showEmojiPicker, setShowEmojiPicker] = useState(false) // 表情选择器显示状态
   const [showRegisterForm, setShowRegisterForm] = useState(false) // 注册表单显示状态
   const [contextMenu, setContextMenu] = useState(null) // 右键菜单：{ messageId, x, y, type }
@@ -1919,34 +1918,9 @@ function App() {
     )
   }
 
-  // 开始拖拽左侧会话列表宽度
-  const handleResizeStart = (e) => {
-    // 记录按下时鼠标X与当前宽度的差值，防止拖拽时宽度跳位
-    resizeDragOffsetRef.current = e.clientX - chatlistWidth
-    setIsResizing(true)
-    e.preventDefault()
-  }
-
-  // 处理拖拽左侧会话列表宽度
-  const handleResizeMove = (e) => {
-    if (!isResizing) return
-    const MIN_WIDTH = 200
-    const MAX_WIDTH = 600
-    // 用鼠标当前X减去按下时的偏移，得到真实目标宽度
-    const newWidth = e.clientX - resizeDragOffsetRef.current
-    if (newWidth < MIN_WIDTH) {
-      setChatlistWidth(MIN_WIDTH)
-    } else if (newWidth > MAX_WIDTH) {
-      setChatlistWidth(MAX_WIDTH)
-    } else {
-      setChatlistWidth(newWidth)
-    }
-  }
-
-  // 结束拖拽左侧会话列表宽度
-  const handleResizeEnd = () => {
-    setIsResizing(false)
-  }
+  // 打开图片灯箱
+  const openLightbox = (url, name, type = 'image') => setLightboxImage({ url, name, type })
+  const closeLightbox = () => setLightboxImage(null)
 
   // 开始拖拽输入框高度
   const handleComposerResizeStart = (e) => {
@@ -1976,18 +1950,7 @@ function App() {
 
   // 添加全局鼠标事件监听
   useEffect(() => {
-    // 左侧会话列表拖拽
-    if (isResizing) {
-      document.addEventListener('mousemove', handleResizeMove)
-      document.addEventListener('mouseup', handleResizeEnd)
-      document.body.style.cursor = 'col-resize'
-      document.body.style.userSelect = 'none'
-    } else {
-      document.removeEventListener('mousemove', handleResizeMove)
-      document.removeEventListener('mouseup', handleResizeEnd)
-      document.body.style.cursor = ''
-      document.body.style.userSelect = ''
-    }
+    // 左侧会话列表拖拽 - 已移除
     
     // 输入框高度拖拽
     if (isComposingResizing) {
@@ -2004,12 +1967,10 @@ function App() {
     // (status menu removed)
     
     return () => {
-      document.removeEventListener('mousemove', handleResizeMove)
-      document.removeEventListener('mouseup', handleResizeEnd)
       document.removeEventListener('mousemove', handleComposerResizeMove)
       document.removeEventListener('mouseup', handleComposerResizeEnd)
     }
-  }, [isResizing, isComposingResizing]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isComposingResizing]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 点击在线人数
   // eslint-disable-next-line no-unused-vars
@@ -2179,12 +2140,8 @@ function App() {
           onOpenBlacklistChat={handleOpenBlacklistChat}
         />
 
-        {/* 左侧会话列表和聊天窗口之间的拖拽分隔线 */}
-        <div 
-          className={`resize-handle ${isResizing ? 'resizing' : ''}`}
-          onMouseDown={handleResizeStart}
-        >
-        </div>
+        {/* 侧边栏与聊天窗口的固定分隔线 */}
+        <div className="resize-handle" />
 
         <ChatMainView
           getCurrentSession={getCurrentSession}
@@ -2212,6 +2169,7 @@ function App() {
           handleSendVideo={handleSendVideo}
           isComposingResizing={isComposingResizing}
           handleComposerResizeStart={handleComposerResizeStart}
+          onOpenLightbox={openLightbox}
         />
       </main>
 
@@ -2353,6 +2311,38 @@ function App() {
         handleToggleSelectFriend={handleToggleSelectFriend}
         handleCreateGroup={handleCreateGroup}
       />
+
+      {/* 图片/视频全屏灯箱 */}
+      {lightboxImage && (
+        <div
+          className="lightbox-overlay"
+          onClick={closeLightbox}
+          role="dialog"
+          aria-modal="true"
+          aria-label="查看图片"
+        >
+          <button className="lightbox-close" onClick={closeLightbox} aria-label="关闭">✕</button>
+          {lightboxImage.type === 'video' ? (
+            <video
+              className="lightbox-media"
+              src={lightboxImage.url}
+              controls
+              autoPlay
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <img
+              className="lightbox-media"
+              src={lightboxImage.url}
+              alt={lightboxImage.name || '图片'}
+              onClick={(e) => e.stopPropagation()}
+            />
+          )}
+          {lightboxImage.name && (
+            <div className="lightbox-caption">{lightboxImage.name}</div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
