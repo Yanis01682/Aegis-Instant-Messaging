@@ -552,7 +552,7 @@ function App() {
   // 获取当前会话信息
   const getCurrentSession = () => {
     const allSessions = [...dynamicSessions, ...sessions]
-    return allSessions.find(s => s.id === currentChat) || allSessions[0] || EMPTY_SESSION
+    return allSessions.find(s => s.id === currentChat) || EMPTY_SESSION
   }
 
   // 根据被点击的消息，解析对方资料（群聊/私聊）
