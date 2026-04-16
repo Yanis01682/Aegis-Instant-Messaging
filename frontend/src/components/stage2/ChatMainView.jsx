@@ -9,8 +9,6 @@ function ChatMainView({
   getCurrentSession,
   // 群成员数据，用于统计在线人数。
   groupMembers,
-  // 好友列表，用于获取对方状态
-  myFriends,
   // 当前会话 id。
   currentChat,
   // 当前用户头像（文字或 base64 图片）。
@@ -63,10 +61,7 @@ function ChatMainView({
   const currentSession = getCurrentSession()
   const hasActiveConversation = Boolean(currentSession?.id)
 
-  const renderMessageAvatar = (avatarValue, onClick, status) => {
-    // 如果有status参数且不是自己的消息，则显示状态点
-    const showStatusDot = status && typeof status === 'string'
-    
+  const renderMessageAvatar = (avatarValue, onClick) => {
     if (typeof avatarValue === 'string' && avatarValue.startsWith('data:image')) {
       return (
         <div className="message-avatar-wrapper">
@@ -80,7 +75,6 @@ function ChatMainView({
               cursor: onClick ? 'pointer' : 'default'
             }}
           ></div>
-          {showStatusDot && <span className={`message-status-dot status-${status}`}></span>}
         </div>
       )
     }
@@ -90,8 +84,14 @@ function ChatMainView({
         <div className="message-avatar" onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default' }}>
           {avatarValue || '用'}
         </div>
-        {showStatusDot && <span className={`message-status-dot status-${status}`}></span>}
       </div>
+    )
+  }
+
+  if (!hasActiveConversation) {
+    return (
+      <section className="panel chat-panel empty-wechat-panel">
+      </section>
     )
   }
 
@@ -102,34 +102,10 @@ function ChatMainView({
           <div className="avatar large">{currentSession.avatar}</div>
           <div>
             <h2>{currentSession.title}</h2>
-            {currentSession.isGroup ? (
-              (() => {
-                const members = groupMembers[currentChat] || []
-                return (
-                  <span className="online-status clickable" onClick={handleOpenMemberList} style={{ cursor: 'pointer' }}>
-                    {members.length}位成员
-                  </span>
-                )
-              })()
-            ) : (
-              (() => {
-                // 私聊：从好友列表获取对方的真实在线状态
-                const friend = myFriends.find(f => f.name === currentSession.realName || f.id === currentSession.id || f.id?.toString() === currentSession.title)
-                const friendStatus = friend?.status || 'offline'
-                const statusText = {
-                  'online': '在线',
-                  'busy': '忙碌',
-                  'away': '离开',
-                  'invisible': '隐身',
-                  'offline': '离线'
-                }
-                return (
-                  <span className="online-status">
-                    <span className={`online-dot ${friendStatus}`}></span>
-                    {hasActiveConversation ? (statusText[friendStatus] || '离线') : '等待开始聊天'}
-                  </span>
-                )
-              })()
+            {currentSession.isGroup && (
+              <span className="online-status clickable" onClick={handleOpenMemberList} style={{ cursor: 'pointer' }}>
+                {(groupMembers[currentChat] || []).length}位成员
+              </span>
             )}
           </div>
         </div>
@@ -140,29 +116,14 @@ function ChatMainView({
       </header>
 
       <div className="chat-messages" onClick={handleMessagesClick}>
-        {!hasActiveConversation && (
-          <div className="empty-chat-state">
-            <p>还没有真实会话</p>
-            <p>去好友面板添加一个真实账号开始聊天吧。</p>
-          </div>
-        )}
         {messages[currentChat]?.map((msg, index) => {
           // 在群聊中，根据消息发送者 ID 获取真实的成员头像和名称
           let peerAvatar = currentSession.avatar
-          let peerStatus = null
-          
           if (currentSession.isGroup && msg.sender !== 'me' && msg.sender !== 'system') {
             const members = groupMembers[currentChat] || []
             const member = members.find((m) => m.id === msg.senderId) || members.find((m) => m.name === msg.senderName)
             if (member) {
               peerAvatar = member.avatar || currentSession.avatar
-            }
-          } else if (!currentSession.isGroup && msg.sender !== 'me' && msg.sender !== 'system') {
-            // 私聊才显示头像状态点
-            // 私聊中，从好友列表获取状态
-            const friend = myFriends.find((f) => f.id === msg.senderId || f.name === msg.senderName)
-            if (friend) {
-              peerStatus = friend.status || null
             }
           }
 
@@ -176,7 +137,7 @@ function ChatMainView({
             {msg.sender !== 'system' && (
               msg.sender === 'me'
                 ? renderMessageAvatar(userAvatar, handleOpenProfile)
-                : renderMessageAvatar(peerAvatar, () => handleOpenPeerProfile(msg), peerStatus)
+                : renderMessageAvatar(peerAvatar, () => handleOpenPeerProfile(msg))
             )}
             <div className="message-content">
               <div className="bubble">

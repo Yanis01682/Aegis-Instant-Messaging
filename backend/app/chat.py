@@ -44,6 +44,10 @@ class FriendRequestPayload(BaseModel):
     friend_id: int
 
 
+class FriendRemarkPayload(BaseModel):
+    remark: str
+
+
 class GroupCreatePayload(BaseModel):
     name: str
     member_ids: list[int]
@@ -198,7 +202,7 @@ def _is_session_pinned(db: Session, conversation_id: int, user_id: int):
     )
 
 
-def _serialize_user(user: models.User):
+def _serialize_user(user: models.User, remark: Optional[str] = None):
     display_name = user.username
     # 隐身状态在对方视角显示为离线
     status = user.status or "online"
@@ -209,12 +213,12 @@ def _serialize_user(user: models.User):
         "userId": user.username,
         "accountId": str(user.id),
         "name": display_name,
-        "avatar": display_name[:1].upper(),
-        "signature": "",
+        "avatar": user.avatar or display_name[:1].upper(),
+        "signature": user.bio or "",
         "email": user.email or "",
         "status": status,
         "group": "常用",
-        "remark": "",
+        "remark": remark or "",
     }
 
 
@@ -408,12 +412,12 @@ def read_friends(
         .filter(models.Friendship.user_id == current_user.id, models.Friendship.status == "accepted")
         .all()
     )
-    friend_ids = [friendship.friend_id for friendship in friendships]
-    if not friend_ids:
+    if not friendships:
         return []
 
-    users = db.query(models.User).filter(models.User.id.in_(friend_ids)).order_by(models.User.username.asc()).all()
-    return [_serialize_user(user) for user in users]
+    friend_map = {f.friend_id: f.remark for f in friendships}
+    users = db.query(models.User).filter(models.User.id.in_(friend_map.keys())).order_by(models.User.username.asc()).all()
+    return [_serialize_user(user, friend_map.get(user.id)) for user in users]
 
 
 @router.get("/friends/requests")
@@ -659,6 +663,27 @@ def reject_friend_request(
     db.delete(request)
     db.commit()
     return {"message": "Friend request rejected"}
+
+
+@router.put("/friends/{friend_id}/remark")
+def update_friend_remark(
+    friend_id: int,
+    payload: FriendRemarkPayload,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    """更新好友备注"""
+    friendship = (
+        db.query(models.Friendship)
+        .filter(models.Friendship.user_id == current_user.id, models.Friendship.friend_id == friend_id)
+        .first()
+    )
+    if not friendship:
+        raise HTTPException(status_code=404, detail="Not your friend or friendship not found")
+    
+    friendship.remark = payload.remark.strip()
+    db.commit()
+    return {"message": "Remark updated", "remark": friendship.remark}
 
 
 @router.delete("/friends/{friend_id}")
@@ -938,6 +963,23 @@ def create_group(
     users = db.query(models.User).filter(models.User.id.in_(member_ids)).all()
     if len(users) != len(member_ids):
         raise HTTPException(status_code=404, detail="One or more users do not exist")
+
+    # Verify that all invited members (except self) are friends
+    other_member_ids = [uid for uid in payload.member_ids if uid != current_user.id]
+    if other_member_ids:
+        accepted_friend_ids = {
+            fs.friend_id
+            for fs in db.query(models.Friendship)
+            .filter(
+                models.Friendship.user_id == current_user.id,
+                models.Friendship.friend_id.in_(other_member_ids),
+                models.Friendship.status == "accepted",
+            )
+            .all()
+        }
+        non_friend_ids = [uid for uid in other_member_ids if uid not in accepted_friend_ids]
+        if non_friend_ids:
+            raise HTTPException(status_code=403, detail=ERR_INVITE_NON_FRIEND)
 
     conversation = models.Conversation(is_group=True, name=group_name)
     db.add(conversation)

@@ -32,13 +32,13 @@ import {
   sendVideoMessage,
   unpinChatSession,
   revokeMessage,
-  updateStatus,
   getProfile,
   updateProfile,
-  updateSensitiveInfo
+  updateSensitiveInfo,
+  updateFriendRemark
 } from './services/api'
 import AuthView from './components/stage2/AuthView'
-import TopBar from './components/stage2/TopBar'
+import LeftNav from './components/stage2/LeftNav'
 import SidebarPanel from './components/stage2/SidebarPanel'
 import ChatMainView from './components/stage2/ChatMainView'
 import Overlays from './components/stage2/Overlays'
@@ -77,7 +77,6 @@ function App() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false) // 注销账户二次确认
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false) // 退出登录二次确认
   const [sessionFilter, setSessionFilter] = useState('all') // 会话筛选：all-全部 | personal-个人 | group-群聊
-  const [showSearch, setShowSearch] = useState(false) // 搜索框显示/隐藏状态
   const [searchQuery, setSearchQuery] = useState('') // 搜索关键词
   const [chatlistWidth, setChatlistWidth] = useState(320) // 会话列表宽度
   const [isResizing, setIsResizing] = useState(false) // 是否正在调整宽度（左侧）
@@ -101,8 +100,7 @@ function App() {
     newPassword: '',
     confirmPassword: ''
   }) // 敏感信息修改表单
-  const [userStatus, setUserStatus] = useState('online') // 在线状态：online-在线，offline-离线，busy-忙碌，away-离开，invisible-隐身
-  const [showStatusMenu, setShowStatusMenu] = useState(false) // 状态选择菜单
+
   const [showChatDetail, setShowChatDetail] = useState(false) // 聊天详情模态框
   const [activeTab, setActiveTab] = useState('chats') // 当前激活的标签页：chats-会话，friends-好友
   const [blacklist, setBlacklist] = useState([]) // 黑名单列表
@@ -148,11 +146,7 @@ function App() {
   const syncProfileFromUser = async (user) => {
     if (!user) return
     setCurrentUserId(user.id ?? null)
-    // 同步后端返回的在线状态
-    if (user.status) {
-      setUserStatus(user.status)
-      localStorage.setItem('userStatus', user.status)
-    }
+    // (status removed)
     try {
       const profile = await getProfile()
       setProfileData({
@@ -179,14 +173,23 @@ function App() {
       getSessions()
     ])
 
-    setMyFriends(
-      fetchedFriends.map((friend) => ({
-        ...friend,
-        group: friend.group || _customGroups[0] || '我的好友',
-        remark: friend.remark || ''
-      }))
-    )
-    setSessions(fetchedSessions)
+    const mappedFriends = fetchedFriends.map((friend) => ({
+      ...friend,
+      group: friend.group || _customGroups[0] || '我的好友',
+      remark: friend.remark || ''
+    }))
+    setMyFriends(mappedFriends)
+    
+    const mappedSessions = fetchedSessions.map(session => {
+      if (!session.isGroup) {
+        const friend = mappedFriends.find(f => f.name === session.realName || f.id === session.id || f.id?.toString() === session.title)
+        if (friend && friend.remark) {
+          return { ...session, title: friend.remark }
+        }
+      }
+      return session
+    })
+    setSessions(mappedSessions)
     setPinnedChatIds((prev) => {
       const localPinnedDynamicIds = prev.filter((id) => dynamicSessions.some((session) => session.id === id))
       const serverPinnedIds = fetchedSessions.filter((session) => session.isPinned).map((session) => session.id)
@@ -198,7 +201,7 @@ function App() {
       if (nextChatId && fetchedSessions.some((session) => session.id === nextChatId)) {
         return nextChatId
       }
-      return fetchedSessions[0]?.id ?? null
+      return null
     })
   }
 
@@ -321,11 +324,7 @@ function App() {
     if (savedProfile) {
       setProfileData(JSON.parse(savedProfile))
     }
-    // 加载保存的在线状态
-    const savedStatus = localStorage.getItem('userStatus')
-    if (savedStatus) {
-      setUserStatus(savedStatus)
-    }
+    // (status removed)
 
     const savedArchivedGroupIds = localStorage.getItem('archivedGroupIds')
     if (savedArchivedGroupIds) {
@@ -541,51 +540,7 @@ function App() {
     }
   }
 
-  // 切换在线状态
-  const handleChangeStatus = async (status) => {
-    setUserStatus(status)
-    localStorage.setItem('userStatus', status)
-    setShowStatusMenu(false)
-    
-    // 调用后端 API 更新数据库中的状态
-    try {
-      await updateStatus(status)
-      // 更新后重新获取好友列表，这样其他用户就能看到新状态
-      await refreshRealtimeChatData()
-    } catch (error) {
-      console.error('更新状态失败:', error)
-    }
-  }
 
-  // 获取状态文本
-  const getStatusText = (status) => {
-    const statusMap = {
-      'online': '在线',
-      'offline': '离线',
-      'busy': '忙碌',
-      'away': '离开',
-      'invisible': '隐身'
-    }
-    return statusMap[status] || '在线'
-  }
-
-  // 获取状态图标
-  const getStatusIcon = (status) => {
-    if (status === 'invisible') {
-      return (
-        <svg className="status-icon-svg status-icon-invisible" viewBox="0 0 24 24" width="16" height="16">
-          <path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/>
-        </svg>
-      )
-    }
-    const iconMap = {
-      'online': '🟢',
-      'offline': '⚫',
-      'busy': '🔴',
-      'away': '🟡'
-    }
-    return iconMap[status] || '🟢'
-  }
 
   // 打开聊天详情
   const handleOpenChatDetail = () => {
@@ -607,7 +562,7 @@ function App() {
   // 获取当前会话信息
   const getCurrentSession = () => {
     const allSessions = [...dynamicSessions, ...sessions]
-    return allSessions.find(s => s.id === currentChat) || allSessions[0] || EMPTY_SESSION
+    return allSessions.find(s => s.id === currentChat) || EMPTY_SESSION
   }
 
   // 根据被点击的消息，解析对方资料（群聊/私聊）
@@ -901,17 +856,23 @@ function App() {
   }
 
   // 修改好友备注
-  const handleUpdateRemark = (friendId, newRemark) => {
-    setMyFriends(prev => 
-      prev.map(f => f.id === friendId ? { ...f, remark: newRemark } : f)
-    )
-    alert('备注已保存')
+  const handleUpdateRemark = async (friendId, newRemark) => {
+    try {
+      await updateFriendRemark(friendId, newRemark)
+      setMyFriends(prev => 
+        prev.map(f => f.id === friendId ? { ...f, remark: newRemark } : f)
+      )
+      alert('备注已保存')
+    } catch (err) {
+      console.error('更新备注失败', err)
+      alert('保存备注失败，请稍后重试')
+    }
   }
 
   // 开始编辑备注
   const handleStartEditRemark = () => {
     const currentSession = getCurrentSession()
-    const friend = myFriends.find(f => f.name === currentSession.realName || f.id.toString() === currentSession.title)
+    const friend = myFriends.find(f => f.name === currentSession.realName || f.id === currentSession.id || f.id?.toString() === currentSession.title)
     setTempRemark(friend?.remark || '')
     setIsEditingRemark(true)
   }
@@ -919,12 +880,18 @@ function App() {
   // 保存备注
   const handleSaveRemark = () => {
     const currentSession = getCurrentSession()
-    const friend = myFriends.find(f => f.name === currentSession.realName)
+    const friend = myFriends.find(f => f.name === currentSession.realName || f.id === currentSession.id || f.id?.toString() === currentSession.title)
     if (friend) {
       handleUpdateRemark(friend.id, tempRemark)
       setIsEditingRemark(false)
       // 更新动态会话的标题
       setDynamicSessions(prev => 
+        prev.map(s => s.id === currentSession.id 
+          ? { ...s, title: tempRemark || friend.name } 
+          : s
+        )
+      )
+      setSessions(prev => 
         prev.map(s => s.id === currentSession.id 
           ? { ...s, title: tempRemark || friend.name } 
           : s
@@ -1806,8 +1773,7 @@ function App() {
 
   // 确认退出登录
   const confirmLogout = () => {
-    // 保存当前状态到 localStorage（下次登录恢复）
-    localStorage.setItem('lastStatus', userStatus)
+    // (status removed from localStorage backup)
     
     logout()
     setIsLoggedIn(false)
@@ -1848,7 +1814,7 @@ function App() {
       try {
         localStorage.removeItem('archivedGroupIds')
         localStorage.removeItem('blacklist')
-        localStorage.removeItem('userStatus')
+        // userStatus removed
         localStorage.removeItem('userAvatar')
       } catch {
         // ignore
@@ -2028,20 +1994,13 @@ function App() {
       document.body.style.cursor = ''
     }
     
-    // 点击其他地方关闭状态菜单
-    const handleClickOutside = (e) => {
-      if (!e.target.closest('.status-selector') && !e.target.closest('.user-status-selector')) {
-        setShowStatusMenu(false)
-      }
-    }
-    document.addEventListener('click', handleClickOutside)
+    // (status menu removed)
     
     return () => {
       document.removeEventListener('mousemove', handleResizeMove)
       document.removeEventListener('mouseup', handleResizeEnd)
       document.removeEventListener('mousemove', handleComposerResizeMove)
       document.removeEventListener('mouseup', handleComposerResizeEnd)
-      document.removeEventListener('click', handleClickOutside)
     }
   }, [isResizing, isComposingResizing]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -2172,15 +2131,11 @@ function App() {
   // 已登录时显示聊天界面
   return (
     <div className={`im-shell ${isNightMode ? 'night-mode' : ''}`}>
-      <TopBar
-        showStatusMenu={showStatusMenu}
-        setShowStatusMenu={setShowStatusMenu}
-        getStatusIcon={getStatusIcon}
-        getStatusText={getStatusText}
-        userStatus={userStatus}
-        handleChangeStatus={handleChangeStatus}
-        toggleUserPanel={toggleUserPanel}
+      <LeftNav
         userAvatar={userAvatar}
+        toggleUserPanel={toggleUserPanel}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
       />
 
       <main className="im-layout">
@@ -2192,8 +2147,6 @@ function App() {
           setShowFriendSearch={setShowFriendSearch}
           friendSearchQuery={friendSearchQuery}
           setFriendSearchQuery={setFriendSearchQuery}
-          showSearch={showSearch}
-          setShowSearch={setShowSearch}
           searchQuery={searchQuery}
           handleSearchChange={handleSearchChange}
           handleClearSearch={handleClearSearch}
@@ -2229,7 +2182,6 @@ function App() {
         <ChatMainView
           getCurrentSession={getCurrentSession}
           groupMembers={groupMembers}
-          myFriends={myFriends}
           currentChat={currentChat}
           userAvatar={userAvatar}
           handleOpenPeerProfile={handleOpenPeerProfile}
@@ -2279,11 +2231,7 @@ function App() {
         closeUserPanel={closeUserPanel}
         userAvatar={userAvatar}
         profileData={profileData}
-        showStatusMenu={showStatusMenu}
-        setShowStatusMenu={setShowStatusMenu}
-        getStatusIcon={getStatusIcon}
-        getStatusText={getStatusText}
-        userStatus={userStatus}
+
         handleOpenProfile={handleOpenProfile}
         toggleNightMode={toggleNightMode}
         isNightMode={isNightMode}

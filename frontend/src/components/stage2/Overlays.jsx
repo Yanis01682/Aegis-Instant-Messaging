@@ -31,13 +31,7 @@ function Overlays({
   closeUserPanel,
   userAvatar,
   profileData,
-  // eslint-disable-next-line no-unused-vars
-  showStatusMenu,
-  // eslint-disable-next-line no-unused-vars
-  setShowStatusMenu,
-  getStatusIcon,
-  getStatusText,
-  userStatus,
+
   handleOpenProfile,
   toggleNightMode,
   isNightMode,
@@ -179,14 +173,7 @@ function Overlays({
         avatar: currentSession.avatar
       }
   const currentGroupOwner = (groupMembers[currentChat] || []).find((member) => member.role === 'owner')
-  const currentPrivateStatus = currentPrivateFriend?.status || (currentSession.online > 0 ? 'online' : 'offline')
-  const currentPrivateStatusText = {
-    online: '🟢 在线',
-    busy: '🔴 忙碌',
-    away: '🟡 离开',
-    invisible: '🌙 隐身',
-    offline: '⚫ 离线',
-  }[currentPrivateStatus] || '⚫ 离线'
+
 
 
   return (
@@ -281,10 +268,7 @@ function Overlays({
                       {member.name}
                       <span className={`role-badge role-${member.role}`}>{member.role === 'owner' ? '群主' : member.role === 'admin' ? '管理员' : '成员'}</span>
                     </div>
-                    <div className="member-status">
-                      <span className={`online-indicator ${member.online ? 'online' : 'offline'}`}></span>
-                      {member.online ? '在线' : '离线'}
-                    </div>
+
                   </div>
                   {myRole[currentChat] === 'owner' && member.role === 'member' && (
                     <div className="member-actions">
@@ -368,7 +352,7 @@ function Overlays({
                   </div>
 
                   <div className="profile-info-list">
-                    <div className="profile-info-item"><span className="info-label">在线状态：</span><span className="info-value">{getStatusIcon(userStatus)} {getStatusText(userStatus)}</span></div>
+
                     <div className="profile-info-item"><span className="info-label">登录账号：</span><span className="info-value">{profileData.username || '--'}</span></div>
                     <div className="profile-info-item"><span className="info-label">昵称：</span><span className="info-value">{profileData.nickname || '未设置'}</span></div>
                     <div className="profile-info-item"><span className="info-label">性别：</span><span className="info-value">{profileData.gender === 'male' ? '男' : profileData.gender === 'female' ? '女' : '其他'}</span></div>
@@ -432,13 +416,10 @@ function Overlays({
                 <div className="peer-profile-avatar">{peerProfile.avatar}</div>
               </div>
               <h3 className="peer-profile-name">{peerProfile.name}</h3>
-              <p className="peer-profile-id">微信号：{peerProfile.wechatId || peerProfile.name}</p>
+              <p className="peer-profile-id">刀盾号：{peerProfile.wechatId || peerProfile.name}</p>
 
               <div className="peer-profile-info-list">
-                <div className="peer-profile-info-item">
-                  <span className="peer-profile-info-label">状态</span>
-                  <span className="peer-profile-info-value">{peerProfile.status === 'online' ? '在线' : '离线'}</span>
-                </div>
+
                 <div className="peer-profile-info-item">
                   <span className="peer-profile-info-label">来源</span>
                   <span className="peer-profile-info-value">{peerProfile.source === 'group' ? '群聊成员' : '私聊对象'}</span>
@@ -520,9 +501,13 @@ function Overlays({
                     </div>
                   </div>
                   <div className="detail-section"><div className="section-title">我在本群的昵称</div><div className="section-content"><div className="my-nickname">{profileData.nickname || '未设置'}<button className="edit-nickname-btn">编辑</button></div></div></div>
-                  <div className="detail-section"><div className="section-title">消息免打扰</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" /><span className="toggle-slider"></span></label></div></div>
                   <div className="detail-section"><div className="section-title">置顶聊天</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" checked={isChatPinned(currentChat)} onChange={() => handleTogglePinChat(currentChat)} /><span className="toggle-slider"></span></label></div></div>
-                  <div className="detail-section clickable" onClick={handleOpenSearchMessage}><div className="section-title">查找聊天记录</div><div className="section-content"><span className="arrow-icon">›</span></div></div>
+                  <div className="detail-section clickable" onClick={handleOpenSearchMessage}>
+                    <div className="section-content">
+                      <span className="section-title" style={{ marginBottom: 0 }}>查找聊天记录</span>
+                      <span className="arrow-icon">›</span>
+                    </div>
+                  </div>
 
                   <div className="detail-section">
                     <div className="section-title">群公告</div>
@@ -544,7 +529,12 @@ function Overlays({
                     </div>
                   </div>
 
-                  <div className="detail-section clickable" onClick={handleOpenMemberList}><div className="section-title">成员管理</div><div className="section-content"><span className="arrow-icon">›</span></div></div>
+                  <div className="detail-section clickable" onClick={handleOpenMemberList}>
+                    <div className="section-content">
+                      <span className="section-title" style={{ marginBottom: 0 }}>成员管理</span>
+                      <span className="arrow-icon">›</span>
+                    </div>
+                  </div>
 
                   {userRole === 'owner' && (
                     <>
@@ -564,7 +554,6 @@ function Overlays({
                   <div className="personal-info-section">
                     <div className="personal-avatar-large">{currentSession.avatar}</div>
                     <h2 className="personal-name">{currentSession.title}</h2>
-                    <p className="personal-status">{currentPrivateStatusText}</p>
                   </div>
 
                   <div className="detail-section">
@@ -587,15 +576,24 @@ function Overlays({
                     </div>
                   </div>
 
-                  <div className="detail-section"><div className="section-title">标签</div><div className="section-content"><span className="tag-placeholder">未设置标签</span><span className="arrow-icon">›</span></div></div>
-                  <div className="detail-section clickable"><div className="section-title">发消息</div><div className="section-content"><span className="arrow-icon">›</span></div></div>
-                  <div className="detail-section clickable"><div className="section-title">音视频通话</div><div className="section-content"><span className="arrow-icon">›</span></div></div>
-                  <div className="detail-section clickable" onClick={handleOpenSearchMessage}><div className="section-title">查找聊天记录</div><div className="section-content"><span className="arrow-icon">›</span></div></div>
-                  <div className="detail-section"><div className="section-title">消息免打扰</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" /><span className="toggle-slider"></span></label></div></div>
+
+                  <div className="detail-section clickable" onClick={handleOpenSearchMessage}>
+                    <div className="section-content">
+                      <span className="section-title" style={{ marginBottom: 0 }}>查找聊天记录</span>
+                      <span className="arrow-icon">›</span>
+                    </div>
+                  </div>
                   <div className="detail-section"><div className="section-title">置顶聊天</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" checked={isChatPinned(currentChat)} onChange={() => handleTogglePinChat(currentChat)} /><span className="toggle-slider"></span></label></div></div>
                   <div className="detail-section"><div className="section-title">添加到黑名单</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" checked={currentSession.isGroup ? false : isUserInBlacklist(blacklistTarget.id)} onChange={() => !currentSession.isGroup && handleToggleBlacklist(blacklistTarget)} /><span className="toggle-slider"></span></label></div></div>
-                  <div className="detail-section clickable danger"><div className="section-title">投诉</div><div className="section-content"><span className="arrow-icon">›</span></div></div>
-                  <div className={`detail-section clickable danger ${!currentPrivateFriend ? 'disabled' : ''}`}><div className="section-title">删除好友</div><div className="section-content" onClick={() => currentPrivateFriend && handleDeleteFriend(currentPrivateFriend.id)}><span className="arrow-icon">›</span></div></div>
+                  <div 
+                    className={`detail-section clickable danger ${!currentPrivateFriend ? 'disabled' : ''}`}
+                    onClick={() => currentPrivateFriend && handleDeleteFriend(currentPrivateFriend.id)}
+                  >
+                    <div className="section-content">
+                      <span className="section-title" style={{ marginBottom: 0 }}>删除好友</span>
+                      <span className="arrow-icon">›</span>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -612,7 +610,7 @@ function Overlays({
             </div>
             <div className="add-friend-modal-body">
               <div className="friend-search-section">
-                <input type="text" className="friend-search-input" placeholder="搜索用户名、昵称或微信号" value={friendSearchQuery} onChange={handleSearchFriend} autoFocus />
+                <input type="text" className="friend-search-input" placeholder="搜索用户名、昵称或刀盾号" value={friendSearchQuery} onChange={handleSearchFriend} autoFocus />
               </div>
               {friendSearchQuery && (
                 <div className="friend-search-results">
@@ -624,7 +622,7 @@ function Overlays({
                           <div className="result-avatar">{user.avatar}</div>
                           <div className="result-info">
                             <p className="result-name">{user.name}</p>
-                            <p className="result-subtitle">微信号：{user.userId}</p>
+                            <p className="result-subtitle">刀盾号：{user.userId}</p>
                           </div>
                           <button
                             className="send-request-btn"
@@ -692,7 +690,7 @@ function Overlays({
                       <div className="friend-list-avatar">{friend.avatar}</div>
                       <div className="friend-list-info">
                         <p className="friend-list-name">{friend.name}</p>
-                        <p className="friend-list-status">{friend.status === 'online' ? '🟢 在线' : friend.status === 'busy' ? '🔴 忙碌' : friend.status === 'away' ? '🟡 离开' : friend.status === 'invisible' ? '🌙 隐身' : '⚫ 离线'}</p>
+
                       </div>
                     </div>
                   ))}
@@ -700,7 +698,7 @@ function Overlays({
               )}
 
               {!friendSearchQuery && friendRequestList.length === 0 && (
-                <div className="add-friend-hint"><p>在上方搜索框中输入用户的微信号、昵称或手机号</p></div>
+                <div className="add-friend-hint"><p>在上方搜索框中输入用户的刀盾号、昵称或手机号</p></div>
               )}
             </div>
           </div>
@@ -758,7 +756,7 @@ function Overlays({
                   <div className="member-avatar">{currentGroupOwner?.avatar || '群'}</div>
                   <div className="member-info">
                     <p className="member-name">{currentGroupOwner?.name || '暂无群主'}</p>
-                    <p className="member-role"><span className={`status-dot ${currentGroupOwner?.online ? 'online' : 'offline'}`}></span>群主 {currentGroupOwner?.online ? '(在线)' : '(离线)'}</p>
+                    <p className="member-role">群主 </p>
                   </div>
                   {userRole === 'owner' && <button className="transfer-btn" onClick={() => handleTransferGroup(null)}>转让</button>}
                 </div>
@@ -771,7 +769,7 @@ function Overlays({
                     <div className="member-avatar">{member.avatar}</div>
                     <div className="member-info">
                       <p className="member-name">{member.name}</p>
-                      <p className="member-role"><span className={`status-dot ${member.online ? 'online' : 'offline'}`}></span>管理员 {member.online ? '(在线)' : '(离线)'}</p>
+                      <p className="member-role">管理员 </p>
                     </div>
                     {userRole === 'owner' && <button className="remove-btn" onClick={() => handleRemoveMember(member.id)}>移除</button>}
                   </div>
@@ -785,7 +783,7 @@ function Overlays({
                     <div className="member-avatar">{member.avatar}</div>
                     <div className="member-info">
                       <p className="member-name">{member.name}</p>
-                      <p className="member-role"><span className={`status-dot ${member.online ? 'online' : 'offline'}`}></span>普通成员 {member.online ? '(在线)' : '(离线)'}</p>
+                      <p className="member-role">普通成员 </p>
                     </div>
                     {(userRole === 'owner' || userRole === 'admin') && <button className="remove-btn" onClick={() => handleRemoveMember(member.id)}>移除</button>}
                   </div>

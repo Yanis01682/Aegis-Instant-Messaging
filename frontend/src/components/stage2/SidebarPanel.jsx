@@ -11,16 +11,10 @@ function SidebarPanel({
   setActiveTab,
   // 好友搜索框显示状态。
   showFriendSearch,
-  // 设置好友搜索框显示状态。
-  setShowFriendSearch,
   // 好友搜索关键字。
   friendSearchQuery,
   // 更新好友搜索关键字。
   setFriendSearchQuery,
-  // 会话搜索框显示状态。
-  showSearch,
-  // 设置会话搜索框显示状态。
-  setShowSearch,
   // 会话搜索关键字。
   searchQuery,
   // 会话搜索输入处理函数。
@@ -143,30 +137,6 @@ function SidebarPanel({
     setSessionContextMenu(null)
   }
 
-  const handleComposeClick = () => {
-    if (activeTab === 'friends') {
-      handleOpenCreateGroup()
-      return
-    }
-    if (activeTab === 'chats') {
-      setActiveTab('friends')
-      handleOpenAddFriend()
-      return
-    }
-    setActiveTab('chats')
-  }
-
-  const handleMenuClick = (e) => {
-    e.stopPropagation()
-    setHeaderMenu((prev) => (
-      prev
-        ? null
-        : {
-            x: e.clientX,
-            y: e.clientY,
-          }
-    ))
-  }
 
   const handleHeaderMenuAction = (action) => {
     setHeaderMenu(null)
@@ -180,49 +150,18 @@ function SidebarPanel({
       handleOpenCreateGroup()
       return
     }
-    if (action === 'toggle-search') {
-      if (activeTab === 'friends') {
-        setShowFriendSearch((prev) => !prev)
-      } else {
-        setShowSearch((prev) => !prev)
-      }
-      return
-    }
-    if (action === 'go-chats') {
-      setActiveTab('chats')
-      return
-    }
-    if (action === 'go-friends') {
-      setActiveTab('friends')
-      return
-    }
-    if (action === 'go-blacklist') {
-      setActiveTab('blacklist')
-    }
   }
 
   const renderSessionItem = (session) => {
-    // 获取好友的在线状态（只针对个人私聊）
-    let friendStatus = null
-    if (!session.isGroup) {
-      const friend = myFriends.find(f => f.name === session.realName || f.id === session.id || f.id.toString() === session.title)
-      if (friend) {
-        friendStatus = friend.status || null
-      }
-    }
-    
-    const showSessionStatusDot = !session.isGroup && Boolean(friendStatus)
-
     return (
       <li
         key={session.id}
-        className={`session-item ${currentChat === session.id ? 'active' : ''}`}
-        onClick={() => setCurrentChat(session.id)}
+        className={`session-item ${currentChat === session.id ? 'active' : ''} ${pinnedChatIds?.includes(session.id) ? 'pinned' : ''}`}
+        onClick={() => setCurrentChat(currentChat === session.id ? null : session.id)}
         onContextMenu={(e) => handleSessionContextMenu(e, session)}
       >
         <div className="avatar-wrapper">
           <div className="avatar">{session.avatar}</div>
-          {showSessionStatusDot && <span className={`session-status-dot status-${friendStatus}`}></span>}
         </div>
         <div className="session-main">
           <div className="session-row">
@@ -243,70 +182,54 @@ function SidebarPanel({
       className="panel chatlist-panel"
       style={{ width: `${chatlistWidth}px`, flex: 'none', '--chatlist-width': `${chatlistWidth}px` }}
     >
-      <div className="panel-header">
-        <h2>
-          {activeTab === 'chats' ? '会话' : activeTab === 'friends' ? '好友' : '黑名单'}
-        </h2>
-        <div className="header-actions">
-          <button
-            className={`icon-btn ${activeTab === 'friends' && showFriendSearch ? 'active' : showSearch ? 'active' : ''}`}
-            type="button"
-            aria-label="搜索"
-            onClick={() => {
+      <div className="panel-header wechat-panel-header">
+        <div className="wechat-search-wrapper">
+          <span className="wechat-search-icon">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          </span>
+          <input
+            type="text"
+            className="wechat-search-input"
+            placeholder="搜索"
+            value={activeTab === 'friends' ? friendSearchQuery : searchQuery}
+            onChange={(e) => {
               if (activeTab === 'friends') {
-                setShowFriendSearch(!showFriendSearch)
-                if (showFriendSearch) {
-                  setFriendSearchQuery('')
-                }
+                setFriendSearchQuery(e.target.value)
               } else {
-                setShowSearch(!showSearch)
+                handleSearchChange(e)
               }
             }}
-          >
-            🔍
-          </button>
-          {activeTab === 'friends' && (
-            <button className="icon-btn" type="button" aria-label="添加好友" onClick={handleOpenAddFriend}>
-              ➕
-            </button>
+          />
+          {(activeTab === 'friends' ? friendSearchQuery : searchQuery) && (
+            <button
+              className="wechat-search-clear"
+              type="button"
+              aria-label="清空搜索"
+              onClick={() => {
+                if (activeTab === 'friends') {
+                  setFriendSearchQuery('')
+                } else {
+                  handleClearSearch()
+                }
+              }}
+            >✕</button>
           )}
-          {activeTab === 'blacklist' && (
-            <button className="icon-btn" type="button" aria-label="管理黑名单">
-              ⚙️
-            </button>
-          )}
-          <button
-            className="icon-btn"
-            type="button"
-            aria-label={activeTab === 'friends' ? '创建群聊' : '新建会话'}
-            onClick={handleComposeClick}
+        </div>
+        <div className="wechat-add-btn-wrapper">
+          <button 
+            className="wechat-add-btn" 
+            onClick={(e) => {
+              e.stopPropagation()
+              setHeaderMenu(prev => prev ? null : {x: e.clientX, y: e.clientY})
+            }}
           >
-            ✎
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
           </button>
-          <button className="icon-btn" type="button" aria-label="菜单" onClick={handleMenuClick}>⋯</button>
         </div>
       </div>
 
       {activeTab === 'chats' && (
         <>
-          {showSearch && (
-            <div className="search-wrap">
-              <div className="search-input-wrapper">
-                <input
-                  type="text"
-                  placeholder="搜索会话或联系人"
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                  autoFocus
-                />
-                {searchQuery && (
-                  <button className="search-clear-btn" type="button" aria-label="清空搜索" onClick={handleClearSearch}>
-                    ✕
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
 
           <div className="session-tabs">
             <button className={`tab-btn ${sessionFilter === 'all' ? 'active' : ''}`} onClick={() => setSessionFilter('all')} type="button">全部</button>
@@ -401,7 +324,7 @@ function SidebarPanel({
                           >
                             <div className="qq-friend-avatar">
                               {friend.avatar}
-                              <span className={`qq-status-dot ${friend.status}`}></span>
+
                             </div>
                             <div className="qq-friend-info">
                               <div className="qq-friend-main">
@@ -409,9 +332,7 @@ function SidebarPanel({
                                   {friend.remark || friend.name}
                                   {friend.remark && <span className="friend-real-name">({friend.name})</span>}
                                 </p>
-                                <span className={`qq-status-icon ${friend.status}`}>
-                                  {friend.status === 'online' ? '●' : friend.status === 'busy' ? '●' : friend.status === 'away' ? '●' : friend.status === 'invisible' ? '●' : '○'}
-                                </span>
+
                               </div>
                               <p className="qq-friend-signature">{friend.signature || '这个人很懒，什么都没写~'}</p>
                             </div>
@@ -465,44 +386,17 @@ function SidebarPanel({
         </div>
       )}
 
-      <div className="bottom-tab-bar">
-        <button className={`tab-item ${activeTab === 'chats' ? 'active' : ''}`} onClick={() => setActiveTab('chats')}>
-          <span className="tab-icon">💬</span>
-          <span className="tab-label">会话</span>
-        </button>
-        <button className={`tab-item ${activeTab === 'friends' ? 'active' : ''}`} onClick={() => setActiveTab('friends')}>
-          <span className="tab-icon">👥</span>
-          <span className="tab-label">好友</span>
-        </button>
-        <button className={`tab-item ${activeTab === 'blacklist' ? 'active' : ''}`} onClick={() => setActiveTab('blacklist')}>
-          <span className="tab-icon">🚫</span>
-          <span className="tab-label">黑名单</span>
-        </button>
-      </div>
-
       {headerMenu && (
         <div
           className="session-context-menu"
           style={{ top: headerMenu.y, left: headerMenu.x }}
           onClick={(e) => e.stopPropagation()}
         >
-          <button type="button" className="session-context-item" onClick={() => handleHeaderMenuAction('new-friend')}>
-            添加好友
-          </button>
           <button type="button" className="session-context-item" onClick={() => handleHeaderMenuAction('new-group')}>
-            创建群聊
+            <span style={{marginRight:'8px'}}>💬</span> 发起群聊
           </button>
-          <button type="button" className="session-context-item" onClick={() => handleHeaderMenuAction('toggle-search')}>
-            {activeTab === 'friends' ? (showFriendSearch ? '关闭搜索' : '搜索好友') : (showSearch ? '关闭搜索' : '搜索会话')}
-          </button>
-          <button type="button" className="session-context-item" onClick={() => handleHeaderMenuAction('go-chats')}>
-            切换到会话
-          </button>
-          <button type="button" className="session-context-item" onClick={() => handleHeaderMenuAction('go-friends')}>
-            切换到好友
-          </button>
-          <button type="button" className="session-context-item" onClick={() => handleHeaderMenuAction('go-blacklist')}>
-            切换到黑名单
+          <button type="button" className="session-context-item" onClick={() => handleHeaderMenuAction('new-friend')}>
+            <span style={{marginRight:'8px'}}>👤</span> 添加好友
           </button>
         </div>
       )}
