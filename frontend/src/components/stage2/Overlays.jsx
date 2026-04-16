@@ -93,6 +93,12 @@ function Overlays({
   handleTransferGroup,
   handleDismissGroup,
   handleExitGroup,
+  isEditingGroupNickname,
+  tempGroupNickname,
+  setTempGroupNickname,
+  handleStartEditGroupNickname,
+  handleSaveGroupNickname,
+  handleCancelEditGroupNickname,
   isEditingRemark,
   tempRemark,
   setTempRemark,
@@ -215,31 +221,6 @@ function Overlays({
         </div>
       )}
 
-      {contextMenu && (
-        <div className="context-menu-overlay" onClick={closeContextMenu}>
-          <div className="context-menu" style={{ top: contextMenu.y, left: contextMenu.x }} onClick={(e) => e.stopPropagation()}>
-            {contextMenu.canReply && (
-              <button className="context-menu-item" onClick={handleReplyMessage} type="button">
-                <span className="menu-item-icon">↩️</span>
-                <span className="menu-item-text">回复</span>
-              </button>
-            )}
-            {contextMenu.canRevoke && (
-              <button className="context-menu-item revoke" onClick={handleRevokeMessage} type="button">
-                <span className="menu-item-icon">↩️</span>
-                <span className="menu-item-text">撤回</span>
-              </button>
-            )}
-            {contextMenu.canDelete && (
-              <button className="context-menu-item delete" onClick={handleDeleteMessage} type="button">
-                <span className="menu-item-icon">🗑️</span>
-                <span className="menu-item-text">删除</span>
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
       {showMemberModal && (
         <div className="modal-overlay" onClick={closeMemberModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -247,8 +228,8 @@ function Overlays({
               <h3>{(sessions.find((session) => session.id === currentChat)?.title || '当前群聊')} - 群成员</h3>
               <button className="modal-close" onClick={closeMemberModal}>×</button>
             </div>
+            
             <div className="group-info-card">
-              <div className="info-row"><span className="info-label">群主：</span><span className="info-value">{getCurrentOwner()}</span></div>
               <div className="info-row">
                 <span className="info-label">我的角色：</span>
                 <span className="info-value">
@@ -259,23 +240,56 @@ function Overlays({
               </div>
               <div className="info-row"><span className="info-label">总人数：</span><span className="info-value">{groupMembers[currentChat]?.length || 0}人</span></div>
             </div>
+
             <div className="member-list">
               {(groupMembers[currentChat] || []).map((member) => (
                 <div key={member.id} className="member-item">
                   <div className="member-avatar">{member.avatar}</div>
                   <div className="member-info">
                     <div className="member-name">
-                      {member.name}
+                      {member.displayName}
                       <span className={`role-badge role-${member.role}`}>{member.role === 'owner' ? '群主' : member.role === 'admin' ? '管理员' : '成员'}</span>
                     </div>
-
+                    {member.displayName !== member.name && (
+                      <div className="member-username">账号: {member.name}</div>
+                    )}
                   </div>
-                  {myRole[currentChat] === 'owner' && member.role === 'member' && (
-                    <div className="member-actions">
-                      <button className="action-btn make-admin" onClick={() => handleMakeAdmin(member.id)}>任命管理员</button>
-                      <button className="action-btn remove-member" onClick={() => handleRemoveMember(member.id)}>移出群聊</button>
-                    </div>
-                  )}
+                  
+                  <div className="member-actions">
+                    {/* 群主的操作权限 */}
+                    {myRole[currentChat] === 'owner' && member.id !== profileData.userId && (
+                      <div className="action-button-group">
+                        <button 
+                          className="action-btn make-admin" 
+                          onClick={() => handleMakeAdmin(member.id, member.role !== 'admin')}
+                        >
+                          {member.role === 'admin' ? '取消管理员' : '设为管理员'}
+                        </button>
+                        <button 
+                          className="action-btn transfer-owner" 
+                          onClick={() => handleTransferGroup(member.id)}
+                        >
+                          转让群主
+                        </button>
+                        <button 
+                          className="action-btn remove-member" 
+                          onClick={() => handleRemoveMember(member.id)}
+                        >
+                          移出群聊
+                        </button>
+                      </div>
+                    )}
+                    
+                    {/* 管理员的操作权限 */}
+                    {myRole[currentChat] === 'admin' && member.role === 'member' && (
+                      <button 
+                        className="action-btn remove-member" 
+                        onClick={() => handleRemoveMember(member.id)}
+                      >
+                        移出群聊
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -576,6 +590,32 @@ function Overlays({
                     </div>
                   </div>
 
+
+                  <div className="detail-section">
+                    <div className="section-title">我在本群的昵称</div>
+                    <div className="section-content">
+                      {isEditingGroupNickname ? (
+                        <div className="inline-edit">
+                          <input 
+                            type="text" 
+                            className="inline-input" 
+                            value={tempGroupNickname} 
+                            onChange={(e) => setTempGroupNickname(e.target.value)}
+                            autoFocus
+                          />
+                          <div className="edit-actions">
+                            <button className="edit-save-btn" onClick={handleSaveGroupNickname}>保存</button>
+                            <button className="edit-cancel-btn" onClick={handleCancelEditGroupNickname}>取消</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="value-with-edit" onClick={handleStartEditGroupNickname}>
+                          <span className="value-text">{groupMembers[currentChat]?.find(m => m.id === profileData.userId)?.groupNickname || '未设置'}</span>
+                          <span className="edit-icon-small">✎</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
                   <div className="detail-section clickable" onClick={handleOpenSearchMessage}>
                     <div className="section-content">
@@ -889,7 +929,7 @@ function Overlays({
 
               <div className="create-group-actions">
                 <button className="cancel-create-btn" onClick={handleCloseCreateGroup}>取消</button>
-                <button className="create-group-submit-btn" onClick={handleCreateGroup} disabled={selectedFriends.length === 0 || !groupName.trim()}>
+                <button className="create-group-submit-btn" onClick={handleCreateGroup}>
                   创建群聊 ({selectedFriends.length + 1}人)
                 </button>
               </div>

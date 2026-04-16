@@ -112,6 +112,34 @@ def initialize_database():
                     connection.commit()
                     logger.info("Migrated: added conversation_members.read_index column")
 
+            # 增加 role 字段（owner/admin/member，默认 member）
+            with engine.connect() as connection:
+                try:
+                    connection.execute(text("SELECT role FROM conversation_members LIMIT 1"))
+                except Exception:
+                    connection.execute(text("ALTER TABLE conversation_members ADD COLUMN role VARCHAR(16) NOT NULL DEFAULT 'member'"))
+                    # 把最早加入的成员（id最小）设为 owner
+                    connection.execute(text("""
+                        UPDATE conversation_members cm
+                        JOIN (
+                            SELECT conversation_id, MIN(id) AS min_id
+                            FROM conversation_members
+                            GROUP BY conversation_id
+                        ) AS first ON cm.id = first.min_id
+                        SET cm.role = 'owner'
+                    """))
+                    connection.commit()
+                    logger.info("Migrated: added conversation_members.role column and set owners")
+
+            # 增加 group_nickname 字段（在本群的昵称）
+            with engine.connect() as connection:
+                try:
+                    connection.execute(text("SELECT group_nickname FROM conversation_members LIMIT 1"))
+                except Exception:
+                    connection.execute(text("ALTER TABLE conversation_members ADD COLUMN group_nickname VARCHAR(64)"))
+                    connection.commit()
+                    logger.info("Migrated: added conversation_members.group_nickname column")
+
             # 兼容更旧数据库：增加 is_group 字段
             with engine.connect() as connection:
                 try:

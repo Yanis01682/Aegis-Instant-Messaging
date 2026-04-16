@@ -15,12 +15,15 @@
    ======================================== */
 .resize-handle {
   width: 1px;
-  background: transparent;
-  cursor: col-resize;
-  transition: background 0.2s ease;
+  background: #e5e5e5;
+  cursor: default;
   flex-shrink: 0;
   position: relative;
   z-index: 10;
+}
+
+.resize-handle:hover {
+  background: #e5e5e5;
 }
 
 .resize-handle:hover,
