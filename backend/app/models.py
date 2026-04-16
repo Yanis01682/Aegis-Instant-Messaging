@@ -76,4 +76,5 @@ class Friendship(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     friend_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     status = Column(String(32), default="pending")
+    remark = Column(String(64), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
