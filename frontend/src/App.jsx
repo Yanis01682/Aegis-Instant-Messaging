@@ -2186,6 +2186,7 @@ function App() {
         toggleUserPanel={toggleUserPanel}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        friendRequestCount={friendRequestList.length}
       />
 
       <main className="im-layout">
@@ -2220,6 +2221,9 @@ function App() {
           onTogglePinChat={handleTogglePinChat}
           onRemoveFromBlacklist={handleRemoveFromBlacklist}
           onOpenBlacklistChat={handleOpenBlacklistChat}
+          friendRequestList={friendRequestList}
+          handleAcceptRequest={handleAcceptRequest}
+          handleRejectRequest={handleRejectRequest}
         />
 
         {/* 侧边栏与聊天窗口的固定分隔线 */}
