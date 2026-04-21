@@ -158,6 +158,7 @@ function App() {
       const resolvedAvatar =
         profile.avatar || (profile.nickname || user.username || '我').slice(0, 1).toUpperCase()
       setProfileData({
+        id: user.id ?? null,
         username: user.username || '',
         nickname: profile.nickname || '',
         email: profile.email || user.email || '',
@@ -171,6 +172,7 @@ function App() {
       const fallbackAvatar = (user.username || '我').slice(0, 1).toUpperCase()
       setProfileData((prev) => ({
         ...prev,
+        id: user.id ?? prev.id ?? null,
         username: user.username || '',
         nickname: prev.nickname || '',
         email: user.email ?? prev.email ?? '',
@@ -585,9 +587,10 @@ function App() {
       const friendByName = myFriends.find((f) => f.name === candidate?.name)
       const friend = friendById || friendByName
       const email = friend?.email || `${candidate?.name || 'member'}@example.com`
+      const displayName = candidate?.displayName || friend?.remark || friend?.name || candidate?.name || '群成员'
 
       return {
-        name: candidate?.name || '群成员',
+        name: displayName,
         userId: userId ? String(userId) : `group_${candidate?.name || 'member'}`,
         avatar: candidate?.avatar || currentSession.avatar,
         status: candidate?.online ? 'online' : 'offline',
@@ -646,7 +649,7 @@ function App() {
     const email = friend?.email || `${owner.name}@example.com`
 
     const profile = {
-      name: owner.name,
+      name: owner.displayName || owner.name,
       userId: userId ? String(userId) : `group_${owner.name}`,
       avatar: owner.avatar,
       status: owner.online ? 'online' : 'offline',
@@ -670,7 +673,7 @@ function App() {
     const email = friend?.email || `${member.name}@example.com`
 
     const profile = {
-      name: member.name,
+      name: member.displayName || member.name,
       userId: String(userId),
       avatar: member.avatar,
       status: member.online ? 'online' : 'offline',
@@ -1005,6 +1008,10 @@ function App() {
   // 打开邀请成员模态框
   const handleOpenInviteMember = () => {
     setSelectedInviteFriends([])
+    const currentSession = getCurrentSession()
+    if (currentSession?.isGroup) {
+      refreshGroupConversationMembers(currentSession.id)
+    }
     setShowInviteMemberModal(true)
   }
 
@@ -1102,7 +1109,9 @@ function App() {
   const handleStartEditGroupNickname = () => {
     const currentSession = getCurrentSession()
     if (!currentSession?.isGroup) return
-    const myMember = groupMembers[currentSession.id]?.find(m => m.id === profileData.userId)
+    const myMember = groupMembers[currentSession.id]?.find(
+      (member) => member.id === currentUserId || member.name === profileData.username
+    )
     setTempGroupNickname(myMember?.groupNickname || '')
     setIsEditingGroupNickname(true)
   }

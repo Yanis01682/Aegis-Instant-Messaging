@@ -60,12 +60,15 @@ function ChatMainView({
 }) {
   const imageInputRef = useRef(null)
   const videoInputRef = useRef(null)
-  const messagesEndRef = useRef(null)
+  const messagesContainerRef = useRef(null)
 
-  // Scroll to the bottom whenever messages change or the active chat changes
+  // Keep the active conversation pinned to the bottom instead of aligning the
+  // sentinel to the top, which leaves a large blank area under short histories.
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'instant' })
-  }, [messages, currentChat])
+    const container = messagesContainerRef.current
+    if (!container) return
+    container.scrollTop = container.scrollHeight
+  }, [currentChat, messages])
   const currentSession = getCurrentSession()
   const hasActiveConversation = Boolean(currentSession?.id)
 
@@ -125,7 +128,7 @@ function ChatMainView({
         </div>
       </header>
 
-      <div className="chat-messages" onClick={handleMessagesClick}>
+      <div className="chat-messages" onClick={handleMessagesClick} ref={messagesContainerRef}>
         {messages[currentChat]?.map((msg, index) => {
           // 在群聊中，根据消息发送者 ID 获取真实的成员头像和名称
           let peerAvatar = currentSession.avatar
@@ -197,8 +200,6 @@ function ChatMainView({
           </div>
           )
         })}
-        {/* Sentinel element – always sits at the very bottom of the list */}
-        <div ref={messagesEndRef} />
       </div>
 
       {replyToMessage && (

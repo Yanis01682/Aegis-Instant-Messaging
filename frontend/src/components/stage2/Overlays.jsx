@@ -79,7 +79,6 @@ function Overlays({
   showChatDetail,
   handleCloseChatDetail,
   getCurrentSession,
-  // eslint-disable-next-line no-unused-vars
   handleOpenChatDetailPeerProfile,
   handleOpenOwnerProfile,
   handleOpenMemberProfile,
@@ -109,12 +108,12 @@ function Overlays({
   handleTransferGroup,
   handleDismissGroup,
   handleExitGroup,
-  isEditingGroupNickname: _isEditingGroupNickname,
-  tempGroupNickname: _tempGroupNickname,
-  setTempGroupNickname: _setTempGroupNickname,
-  handleStartEditGroupNickname: _handleStartEditGroupNickname,
-  handleSaveGroupNickname: _handleSaveGroupNickname,
-  handleCancelEditGroupNickname: _handleCancelEditGroupNickname,
+  isEditingGroupNickname,
+  tempGroupNickname,
+  setTempGroupNickname,
+  handleStartEditGroupNickname,
+  handleSaveGroupNickname,
+  handleCancelEditGroupNickname,
   isEditingRemark,
   tempRemark,
   setTempRemark,
@@ -297,7 +296,7 @@ function Overlays({
                   
                   <div className="member-actions">
                     {/* 群主的操作权限 */}
-                    {myRole[currentChat] === 'owner' && member.id !== profileData.userId && (
+                    {myRole[currentChat] === 'owner' && member.id !== profileData.id && (
                       <div className="action-button-group">
                         <button 
                           className="action-btn make-admin" 
@@ -545,20 +544,20 @@ function Overlays({
                   </div>
 
                   <div className="detail-section"><div className="section-title">群公告</div><div className="section-content"><p>欢迎加入{getCurrentSession().title}！请遵守群规，文明交流。</p></div></div>
-                  <div className="detail-section"><div className="section-title">群主</div><div className="section-content owner-info"><div className="owner-avatar" onClick={() => handleOpenOwnerProfile()} style={{ cursor: 'pointer' }}>{getCurrentOwner().charAt(0)}</div><div className="owner-info"><div className="owner-name">{getCurrentOwner()}</div><div className="owner-role">群主</div></div></div></div>
+                  <div className="detail-section"><div className="section-title">群主</div><div className="section-content owner-info"><div onClick={() => handleOpenOwnerProfile()} style={{ cursor: 'pointer' }}>{renderAvatar(currentGroupOwner?.avatar || getCurrentSession().avatar, 'owner-avatar')}</div><div className="owner-info"><div className="owner-name">{currentGroupOwner?.displayName || getCurrentOwner()}</div><div className="owner-role">群主</div></div></div></div>
 
                   <div className="detail-section">
                     <div className="section-title">成员</div>
                     <div className="section-content members-preview">
                       {groupMembers[currentChat]?.slice(0, 8).map((member, index) => (
-                        <div key={index} className="member-avatar-small" title={member.name} onClick={() => handleOpenMemberProfile(member)} style={{ cursor: 'pointer' }}>
+                        <div key={index} className="member-avatar-small" title={member.displayName || member.name} onClick={() => handleOpenMemberProfile(member)} style={{ cursor: 'pointer' }}>
                           {renderAvatar(member.avatar, 'member-avatar-small-inner')}
                         </div>
                       ))}
                       <div className="view-all-members invite-action" onClick={handleOpenInviteMember} title="邀请好友">+</div>
                     </div>
                   </div>
-                  <div className="detail-section"><div className="section-title">我在本群的昵称</div><div className="section-content"><div className="my-nickname">{profileData.nickname || '未设置'}<button className="edit-nickname-btn">编辑</button></div></div></div>
+                  <div className="detail-section"><div className="section-title">我在本群的昵称</div><div className="section-content">{!isEditingGroupNickname ? (<div className="my-nickname">{(groupMembers[currentChat] || []).find((member) => member.name === profileData.username)?.groupNickname || '未设置'}<button className="edit-nickname-btn" onClick={handleStartEditGroupNickname}>编辑</button></div>) : (<div className="remark-edit-form"><input type="text" value={tempGroupNickname} onChange={(e) => setTempGroupNickname(e.target.value)} placeholder="请输入我在本群的昵称" autoFocus /><div className="remark-actions"><button className="save-remark-btn" onClick={handleSaveGroupNickname}>保存</button><button className="cancel-remark-btn" onClick={handleCancelEditGroupNickname}>取消</button></div></div>)}</div></div>
                   <div className="detail-section"><div className="section-title">置顶聊天</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" checked={isChatPinned(currentChat)} onChange={() => handleTogglePinChat(currentChat)} /><span className="toggle-slider"></span></label></div></div>
                   <div className="detail-section clickable" onClick={handleOpenSearchMessage}>
                     <div className="section-content">
@@ -596,7 +595,7 @@ function Overlays({
 
                   {userRole === 'owner' && (
                     <>
-                      <div className="detail-section"><div className="section-title">群主操作</div><div className="section-content"><button className="danger-btn" onClick={() => handleTransferGroup(null)}>转让群主</button></div></div>
+                      <div className="detail-section"><div className="section-title">群主操作</div><div className="section-content"><button className="danger-btn" onClick={handleOpenMemberList}>选择新群主</button></div></div>
                       <div className="detail-section"><div className="section-title">危险操作</div><div className="section-content"><button className="danger-btn" onClick={handleDismissGroup}>解散群聊</button></div></div>
                     </>
                   )}
@@ -610,7 +609,9 @@ function Overlays({
               ) : (
                 <div className="personal-chat-detail">
                   <div className="personal-info-section">
-                    <div className="personal-avatar-large">{currentSession.avatar}</div>
+                    <div onClick={handleOpenChatDetailPeerProfile} style={{ cursor: 'pointer' }}>
+                      {renderAvatar(currentSession.avatar, 'personal-avatar-large')}
+                    </div>
                     <h2 className="personal-name">{currentSession.title}</h2>
                   </div>
 
@@ -705,7 +706,7 @@ function Overlays({
                   <h4>待我审批 ({friendRequestList.length})</h4>
                   {friendRequestList.map((request) => (
                     <div key={request.id} className="request-item">
-                      <div className="request-avatar">{request.avatar}</div>
+                      {renderAvatar(request.avatar, 'request-avatar')}
                       <div className="request-info"><p className="request-name">{request.name}</p><p className="request-message">想添加你为好友</p></div>
                       <div className="request-actions">
                         <button className="accept-btn" onClick={() => handleAcceptRequest(request.id)}>接受</button>
@@ -721,7 +722,7 @@ function Overlays({
                   <h4>我发出的申请 ({sentFriendRequests.length})</h4>
                   {sentFriendRequests.map((request) => (
                     <div key={request.id} className="request-item">
-                      <div className="request-avatar">{request.avatar}</div>
+                      {renderAvatar(request.avatar, 'request-avatar')}
                       <div className="request-info">
                         <p className="request-name">{request.name}</p>
                         <p className="request-message">
@@ -813,7 +814,7 @@ function Overlays({
                 <div className="member-item">
                   {renderAvatar(currentGroupOwner?.avatar, 'member-avatar')}
                   <div className="member-info">
-                    <p className="member-name">{currentGroupOwner?.name || '暂无群主'}</p>
+                    <p className="member-name">{currentGroupOwner?.displayName || currentGroupOwner?.name || '暂无群主'}</p>
                     <p className="member-role">群主 </p>
                   </div>
                   {userRole === 'owner' && <button className="transfer-btn" onClick={() => handleTransferGroup(null)}>转让</button>}
@@ -826,7 +827,7 @@ function Overlays({
                   <div key={index} className="member-item">
                     {renderAvatar(member.avatar, 'member-avatar')}
                     <div className="member-info">
-                      <p className="member-name">{member.name}</p>
+                      <p className="member-name">{member.displayName || member.name}</p>
                       <p className="member-role">管理员 </p>
                     </div>
                     {userRole === 'owner' && <button className="remove-btn" onClick={() => handleRemoveMember(member.id)}>移除</button>}
@@ -840,7 +841,7 @@ function Overlays({
                   <div key={index} className="member-item">
                     {renderAvatar(member.avatar, 'member-avatar')}
                     <div className="member-info">
-                      <p className="member-name">{member.name}</p>
+                      <p className="member-name">{member.displayName || member.name}</p>
                       <p className="member-role">普通成员 </p>
                     </div>
                     {(userRole === 'owner' || userRole === 'admin') && <button className="remove-btn" onClick={() => handleRemoveMember(member.id)}>移除</button>}
@@ -925,7 +926,7 @@ function Overlays({
                   {myFriends.map((friend) => (
                     <label key={friend.id} className={`friend-checkbox ${selectedFriends.includes(friend.id) ? 'selected' : ''}`}>
                       <input type="checkbox" checked={selectedFriends.includes(friend.id)} onChange={() => handleToggleSelectFriend(friend.id)} />
-                      <div className="friend-checkbox-avatar">{friend.avatar}</div>
+                      {renderAvatar(friend.avatar, 'friend-checkbox-avatar')}
                       <span className="friend-checkbox-name">{friend.remark || friend.name}{friend.remark && <span className="real-name">({friend.name})</span>}</span>
                     </label>
                   ))}
@@ -938,7 +939,7 @@ function Overlays({
                   <div className="selected-avatars">
                     {selectedFriends.map((id) => {
                       const friend = myFriends.find((f) => f.id === id)
-                      return <div key={id} className="selected-avatar" title={friend?.remark || friend?.name}>{friend?.avatar}</div>
+                      return <div key={id} title={friend?.remark || friend?.name}>{renderAvatar(friend?.avatar, 'selected-avatar')}</div>
                     })}
                     <div className="selected-avatar self">我</div>
                   </div>
