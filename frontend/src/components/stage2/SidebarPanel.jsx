@@ -214,18 +214,19 @@ function SidebarPanel({
           <input
             type="text"
             className="wechat-search-input"
-            placeholder="搜索"
+            placeholder={activeTab === 'requests' ? '申请列表无需搜索' : '搜索'}
             autoComplete="off"
-            value={activeTab === 'friends' ? friendSearchQuery : searchQuery}
+            value={activeTab === 'friends' ? friendSearchQuery : activeTab === 'requests' ? '' : searchQuery}
             onChange={(e) => {
               if (activeTab === 'friends') {
                 setFriendSearchQuery(e.target.value)
-              } else {
+              } else if (activeTab !== 'requests') {
                 handleSearchChange(e)
               }
             }}
+            disabled={activeTab === 'requests'}
           />
-          {(activeTab === 'friends' ? friendSearchQuery : searchQuery) && (
+          {(activeTab === 'friends' ? friendSearchQuery : activeTab === 'requests' ? '' : searchQuery) && (
             <button
               className="wechat-search-clear"
               type="button"
@@ -233,7 +234,7 @@ function SidebarPanel({
               onClick={() => {
                 if (activeTab === 'friends') {
                   setFriendSearchQuery('')
-                } else {
+                } else if (activeTab !== 'requests') {
                   handleClearSearch()
                 }
               }}
@@ -290,42 +291,6 @@ function SidebarPanel({
 
       {activeTab === 'friends' && (
         <div className="friends-container">
-          {groupInviteRequests.length > 0 && (
-            <div className="friend-requests-section" style={{ margin: '0 0 8px 0', padding: '8px 12px' }}>
-              <h4>群申请待审批 ({groupInviteRequests.length})</h4>
-              {groupInviteRequests.map((request) => (
-                <div key={request.id} className="request-item">
-                  {renderAvatar(request.inviteeAvatar, 'request-avatar')}
-                  <div className="request-info">
-                    <p className="request-name">{request.groupName}</p>
-                    <p className="request-message">{request.requesterName} 申请邀请 {request.inviteeName} 入群</p>
-                  </div>
-                  <div className="request-actions">
-                    <button className="accept-btn" onClick={() => handleApproveGroupInviteRequest(request.id, request.conversationId)}>接受</button>
-                    <button className="reject-btn" onClick={() => handleRejectGroupInviteRequest(request.id)}>拒绝</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          {friendRequestList.length > 0 && (
-            <div className="friend-requests-section" style={{ margin: '0 0 8px 0', padding: '8px 12px' }}>
-              <h4>新的申请 ({friendRequestList.length})</h4>
-              {friendRequestList.map((request) => (
-                <div key={request.id} className="request-item">
-                  {renderAvatar(request.avatar, 'request-avatar')}
-                  <div className="request-info">
-                    <p className="request-name">{request.name}</p>
-                    <p className="request-message">想添加你为好友</p>
-                  </div>
-                  <div className="request-actions">
-                    <button className="accept-btn" onClick={() => handleAcceptRequest(request.id)}>接受</button>
-                    <button className="reject-btn" onClick={() => handleRejectRequest(request.id)}>拒绝</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
           {showFriendSearch && (
             <div className="friend-search-wrap">
               <div className="friend-search-input-wrapper">
@@ -408,6 +373,54 @@ function SidebarPanel({
             <div className="empty-friends-hint">
               <p>暂无好友</p>
               <button onClick={handleOpenAddFriend}>添加好友</button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'requests' && (
+        <div className="friends-container">
+          {groupInviteRequests.length > 0 && (
+            <div className="friend-requests-section" style={{ margin: '0 0 8px 0', padding: '8px 12px' }}>
+              <h4>群申请待审批 ({groupInviteRequests.length})</h4>
+              {groupInviteRequests.map((request) => (
+                <div key={request.id} className="request-item">
+                  {renderAvatar(request.inviteeAvatar, 'request-avatar')}
+                  <div className="request-info">
+                    <p className="request-name">{request.groupName}</p>
+                    <p className="request-message">{request.requesterName} 申请邀请 {request.inviteeName} 入群</p>
+                  </div>
+                  <div className="request-actions">
+                    <button className="accept-btn" onClick={() => handleApproveGroupInviteRequest(request.id, request.conversationId)}>接受</button>
+                    <button className="reject-btn" onClick={() => handleRejectGroupInviteRequest(request.id)}>拒绝</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {friendRequestList.length > 0 && (
+            <div className="friend-requests-section" style={{ margin: '0 0 8px 0', padding: '8px 12px' }}>
+              <h4>好友申请待审批 ({friendRequestList.length})</h4>
+              {friendRequestList.map((request) => (
+                <div key={request.id} className="request-item">
+                  {renderAvatar(request.avatar, 'request-avatar')}
+                  <div className="request-info">
+                    <p className="request-name">{request.name}</p>
+                    <p className="request-message">想添加你为好友</p>
+                  </div>
+                  <div className="request-actions">
+                    <button className="accept-btn" onClick={() => handleAcceptRequest(request.id)}>接受</button>
+                    <button className="reject-btn" onClick={() => handleRejectRequest(request.id)}>拒绝</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {groupInviteRequests.length === 0 && friendRequestList.length === 0 && (
+            <div className="empty-friends-hint">
+              <p>暂无待处理申请</p>
             </div>
           )}
         </div>

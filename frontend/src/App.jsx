@@ -2281,7 +2281,7 @@ function App() {
           toggleUserPanel={toggleUserPanel}
           activeTab={activeTab}
           setActiveTab={setActiveTab}
-          friendRequestCount={friendRequestList.length + groupInviteRequests.length}
+          pendingRequestCount={friendRequestList.length + groupInviteRequests.length}
         />
 
       <main className="im-layout">
