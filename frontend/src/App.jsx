@@ -13,6 +13,12 @@ import {
   exitGroup,
   dismissGroup,
   inviteGroupMembers,
+  createGroupInviteRequest,
+  getGroupInviteRequests,
+  approveGroupInviteRequest,
+  rejectGroupInviteRequest,
+  getGroupAnnouncements,
+  publishGroupAnnouncement,
   renameGroup,
   getFriendRequests,
   getGroupMembers,
@@ -117,6 +123,8 @@ function App() {
   const [currentResultIndex, setCurrentResultIndex] = useState(0) // 当前搜索结果索引
   const [userRole, setUserRole] = useState('member') // 用户在当前群的角色：owner-群主，admin-管理员，member-普通成员
   const [groupAnnouncement, setGroupAnnouncement] = useState('') // 群公告
+  const [groupAnnouncementHistory, setGroupAnnouncementHistory] = useState([])
+  const [showAnnouncementHistoryModal, setShowAnnouncementHistoryModal] = useState(false)
   const [isEditingAnnouncement, setIsEditingAnnouncement] = useState(false) // 是否正在编辑公告
   const [tempAnnouncement, setTempAnnouncement] = useState('') // 临时公告内容
   const [isEditingGroupName, setIsEditingGroupName] = useState(false)
@@ -137,6 +145,7 @@ function App() {
   const [archivedGroupIds, setArchivedGroupIds] = useState([]) // 手动收纳的群聊 id 列表
   const [friendRequestList, setFriendRequestList] = useState([]) // 收到的好友请求（待我审批）
   const [sentFriendRequests, setSentFriendRequests] = useState([]) // 我发出的好友申请（用于展示审批状态）
+  const [groupInviteRequests, setGroupInviteRequests] = useState([])
   const [myFriends, setMyFriends] = useState([]) // 我的好友列表
   const [collapsedGroups, setCollapsedGroups] = useState([]) // 已折叠的分组
   const [_customGroups, _setCustomGroups] = useState(INITIAL_CUSTOM_GROUPS) // 自定义分组列表
@@ -226,9 +235,13 @@ function App() {
   }
 
   const refreshFriendRequests = async () => {
-    const data = await getFriendRequests()
+    const [data, inviteRequests] = await Promise.all([
+      getFriendRequests(),
+      getGroupInviteRequests().catch(() => []),
+    ])
     setFriendRequestList(data.incoming || [])
     setSentFriendRequests(data.outgoing || [])
+    setGroupInviteRequests(inviteRequests || [])
   }
 
   const refreshConversationMessages = async (conversationId) => {
@@ -556,6 +569,15 @@ function App() {
     if (currentSession?.isGroup) {
       setTempGroupName(currentSession.title || '')
       setIsEditingGroupName(false)
+      getGroupAnnouncements(currentSession.id)
+        .then((items) => {
+          setGroupAnnouncementHistory(items)
+          setGroupAnnouncement(items[0]?.content || '')
+        })
+        .catch(() => {
+          setGroupAnnouncementHistory([])
+          setGroupAnnouncement('')
+        })
     }
     setShowChatDetail(true)
   }
@@ -565,6 +587,7 @@ function App() {
     setShowChatDetail(false)
     setIsEditingGroupName(false)
     setTempGroupName('')
+    setShowAnnouncementHistoryModal(false)
   }
 
   // 获取当前会话信息
@@ -855,6 +878,29 @@ function App() {
     }
   }
 
+  const handleApproveGroupInviteRequest = async (requestId, conversationId) => {
+    try {
+      await approveGroupInviteRequest(requestId)
+      await refreshFriendRequests()
+      if (currentChat === conversationId) {
+        await refreshGroupConversationMembers(conversationId)
+      }
+      alert('已通过入群申请')
+    } catch (err) {
+      alert(err.response?.data?.detail || '审批失败')
+    }
+  }
+
+  const handleRejectGroupInviteRequest = async (requestId) => {
+    try {
+      await rejectGroupInviteRequest(requestId)
+      await refreshFriendRequests()
+      alert('已拒绝入群申请')
+    } catch (err) {
+      alert(err.response?.data?.detail || '审批失败')
+    }
+  }
+
   // 切换分组折叠状态
   const toggleGroupCollapse = (groupName) => {
     setCollapsedGroups(prev => 
@@ -1051,9 +1097,18 @@ function App() {
     }
 
     try {
-      await inviteGroupMembers(currentChat, selectedInviteFriends)
-      await refreshGroupConversationMembers(currentChat)
-      alert(`已成功邀请 ${selectedInviteFriends.length} 位好友`)
+      const currentSession = getCurrentSession()
+      if (userRole === 'owner' || userRole === 'admin') {
+        await inviteGroupMembers(currentChat, selectedInviteFriends)
+        await refreshGroupConversationMembers(currentChat)
+        alert(`已成功邀请 ${selectedInviteFriends.length} 位好友`)
+      } else {
+        await Promise.all(
+          selectedInviteFriends.map((friendId) => createGroupInviteRequest(currentSession.id, friendId))
+        )
+        await refreshFriendRequests()
+        alert(`已提交 ${selectedInviteFriends.length} 位好友的入群申请，等待群主或管理员审核`)
+      }
       handleCloseInviteMember()
     } catch (err) {
       alert(err.response?.data?.detail || '邀请失败')
@@ -1196,15 +1251,33 @@ function App() {
 
   // 保存群公告
   const handleSaveAnnouncement = () => {
-    setGroupAnnouncement(tempAnnouncement)
-    setIsEditingAnnouncement(false)
-    alert('群公告已保存')
+    const currentSession = getCurrentSession()
+    if (!currentSession?.isGroup) return
+    publishGroupAnnouncement(currentSession.id, tempAnnouncement)
+      .then(async () => {
+        const items = await getGroupAnnouncements(currentSession.id)
+        setGroupAnnouncementHistory(items)
+        setGroupAnnouncement(items[0]?.content || '')
+        setIsEditingAnnouncement(false)
+        alert('群公告已保存')
+      })
+      .catch((err) => {
+        alert(err.response?.data?.detail || '群公告保存失败')
+      })
   }
 
   // 取消编辑群公告
   const handleCancelEditAnnouncement = () => {
     setIsEditingAnnouncement(false)
     setTempAnnouncement('')
+  }
+
+  const handleOpenAnnouncementHistory = () => {
+    setShowAnnouncementHistoryModal(true)
+  }
+
+  const handleCloseAnnouncementHistory = () => {
+    setShowAnnouncementHistoryModal(false)
   }
 
   // 移除群成员（踢人）
@@ -2203,13 +2276,13 @@ function App() {
   // 已登录时显示聊天界面
   return (
     <div className={`im-shell ${isNightMode ? 'night-mode' : ''}`}>
-      <LeftNav
-        userAvatar={userAvatar}
-        toggleUserPanel={toggleUserPanel}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        friendRequestCount={friendRequestList.length}
-      />
+        <LeftNav
+          userAvatar={userAvatar}
+          toggleUserPanel={toggleUserPanel}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          friendRequestCount={friendRequestList.length + groupInviteRequests.length}
+        />
 
       <main className="im-layout">
         <SidebarPanel
@@ -2347,6 +2420,8 @@ function App() {
         handleOpenSearchMessage={handleOpenSearchMessage}
         isEditingAnnouncement={isEditingAnnouncement}
         groupAnnouncement={groupAnnouncement}
+        groupAnnouncementHistory={groupAnnouncementHistory}
+        showAnnouncementHistoryModal={showAnnouncementHistoryModal}
         userRole={userRole}
         canRenameCurrentGroup={canRenameCurrentGroup}
         isEditingGroupName={isEditingGroupName}
@@ -2361,6 +2436,8 @@ function App() {
         setTempAnnouncement={setTempAnnouncement}
         handleSaveAnnouncement={handleSaveAnnouncement}
         handleCancelEditAnnouncement={handleCancelEditAnnouncement}
+        handleOpenAnnouncementHistory={handleOpenAnnouncementHistory}
+        handleCloseAnnouncementHistory={handleCloseAnnouncementHistory}
         handleOpenMemberList={handleOpenMemberList}
         handleOpenInviteMember={handleOpenInviteMember}
         handleCloseInviteMember={handleCloseInviteMember}
@@ -2401,8 +2478,11 @@ function App() {
         handleSendFriendRequest={handleSendFriendRequest}
         friendRequestList={friendRequestList}
         sentFriendRequests={sentFriendRequests}
+        groupInviteRequests={groupInviteRequests}
         handleAcceptRequest={handleAcceptRequest}
         handleRejectRequest={handleRejectRequest}
+        handleApproveGroupInviteRequest={handleApproveGroupInviteRequest}
+        handleRejectGroupInviteRequest={handleRejectGroupInviteRequest}
         showSearchMessageModal={showSearchMessageModal}
         handleCloseSearchMessage={handleCloseSearchMessage}
         searchMessageQuery={searchMessageQuery}

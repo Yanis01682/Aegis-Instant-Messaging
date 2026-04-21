@@ -85,6 +85,8 @@ function Overlays({
   handleOpenSearchMessage,
   isEditingAnnouncement,
   groupAnnouncement,
+  groupAnnouncementHistory,
+  showAnnouncementHistoryModal,
   userRole,
   canRenameCurrentGroup,
   isEditingGroupName,
@@ -99,6 +101,8 @@ function Overlays({
   setTempAnnouncement,
   handleSaveAnnouncement,
   handleCancelEditAnnouncement,
+  handleOpenAnnouncementHistory,
+  handleCloseAnnouncementHistory,
   handleOpenMemberList,
   handleOpenInviteMember,
   handleTogglePinChat,
@@ -132,8 +136,11 @@ function Overlays({
   handleSendFriendRequest,
   friendRequestList,
   sentFriendRequests,
+  groupInviteRequests,
   handleAcceptRequest,
   handleRejectRequest,
+  handleApproveGroupInviteRequest,
+  handleRejectGroupInviteRequest,
   // 查找消息。
   showSearchMessageModal,
   handleCloseSearchMessage,
@@ -573,7 +580,10 @@ function Overlays({
                       {!isEditingAnnouncement ? (
                         <div className="announcement-display">
                           <p className="announcement-text">{groupAnnouncement || '暂无公告'}</p>
-                          {(userRole === 'owner' || userRole === 'admin') && <button className="edit-announcement-btn" onClick={handleStartEditAnnouncement}>编辑</button>}
+                          <div className="remark-actions">
+                            <button className="edit-remark-btn" onClick={handleOpenAnnouncementHistory}>历史公告</button>
+                            {(userRole === 'owner' || userRole === 'admin') && <button className="edit-announcement-btn" onClick={handleStartEditAnnouncement}>编辑</button>}
+                          </div>
                         </div>
                       ) : (
                         <div className="announcement-edit-form">
@@ -699,6 +709,25 @@ function Overlays({
                 </div>
               )}
 
+              {groupInviteRequests.length > 0 && (
+                <div className="friend-requests-section">
+                  <h4>群申请待审批 ({groupInviteRequests.length})</h4>
+                  {groupInviteRequests.map((request) => (
+                    <div key={request.id} className="request-item">
+                      {renderAvatar(request.inviteeAvatar, 'request-avatar')}
+                      <div className="request-info">
+                        <p className="request-name">{request.groupName}</p>
+                        <p className="request-message">{request.requesterName} 申请邀请 {request.inviteeName} 入群</p>
+                      </div>
+                      <div className="request-actions">
+                        <button className="accept-btn" onClick={() => handleApproveGroupInviteRequest(request.id, request.conversationId)}>接受</button>
+                        <button className="reject-btn" onClick={() => handleRejectGroupInviteRequest(request.id)}>拒绝</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {friendRequestList.length > 0 && (
                 <div className="friend-requests-section">
                   <h4>待我审批 ({friendRequestList.length})</h4>
@@ -796,6 +825,29 @@ function Overlays({
                 <div className="no-results"><p>未找到相关消息</p></div>
               ) : (
                 <div className="search-placeholder"><p>请输入关键词搜索聊天内容</p></div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAnnouncementHistoryModal && (
+        <div className="search-message-overlay" onClick={handleCloseAnnouncementHistory}>
+          <div className="search-message-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="search-message-header"><h3>历史公告</h3><button className="close-btn" onClick={handleCloseAnnouncementHistory}>✕</button></div>
+            <div className="search-message-body">
+              {groupAnnouncementHistory.length > 0 ? (
+                <div className="search-results-list">
+                  {groupAnnouncementHistory.map((item) => (
+                    <div key={item.id} className="search-result-item">
+                      <div className="result-sender">{item.publisherName}</div>
+                      <div className="result-text">{item.content}</div>
+                      <div className="result-time">{item.createdAt ? item.createdAt.replace('T', ' ').slice(0, 16) : ''}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="search-placeholder"><p>暂无历史公告</p></div>
               )}
             </div>
           </div>
