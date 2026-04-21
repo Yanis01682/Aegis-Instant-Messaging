@@ -7,7 +7,8 @@ function LeftNav({
   userAvatar,
   toggleUserPanel,
   activeTab,
-  setActiveTab
+  setActiveTab,
+  friendRequestCount = 0,
 }) {
   return (
     <nav className="left-nav">
@@ -32,15 +33,20 @@ function LeftNav({
           </svg>
         </button>
 
-        <button 
-          className={`nav-tab-btn ${activeTab === 'friends' ? 'active' : ''}`}
-          onClick={() => setActiveTab('friends')}
-          aria-label="通讯录"
-        >
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-          </svg>
-        </button>
+        <div style={{ position: 'relative', width: '100%' }}>
+          <button 
+            className={`nav-tab-btn ${activeTab === 'friends' ? 'active' : ''}`}
+            onClick={() => setActiveTab('friends')}
+            aria-label="通讯录"
+          >
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
+          </button>
+          {friendRequestCount > 0 && (
+            <span className="nav-tab-badge">{friendRequestCount > 99 ? '99+' : friendRequestCount}</span>
+          )}
+        </div>
 
         <button 
           className={`nav-tab-btn ${activeTab === 'blacklist' ? 'active' : ''}`}

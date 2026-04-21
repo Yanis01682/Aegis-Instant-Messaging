@@ -59,15 +59,15 @@ def initialize_database():
                 connection.execute(text("SELECT 1"))
             models.Base.metadata.create_all(bind=engine)
             # 兼容旧数据库：若 users.status 列不存在则补加
-            with engine.connect() as connection:
-                try:
+            try:
+                with engine.connect() as connection:
                     connection.execute(text("SELECT status FROM users LIMIT 1"))
-                except Exception:
+            except Exception:
+                with engine.connect() as connection:
                     connection.execute(text("ALTER TABLE users ADD COLUMN status VARCHAR(32) DEFAULT 'offline'"))
                     connection.commit()
-                    logger.info("Migrated: added users.status column")
-            with engine.connect() as connection:
-                for col, definition in [
+                logger.info("Migrated: added users.status column")
+            for col, definition in [
                     ("nickname", "VARCHAR(64)"),
                     ("gender", "VARCHAR(16)"),
                     ("phone", "VARCHAR(32)"),
@@ -75,48 +75,63 @@ def initialize_database():
                     ("last_status", "VARCHAR(32) DEFAULT 'online'"),
                     ("avatar", "VARCHAR(500)"),
                 ]:
-                    try:
+                try:
+                    with engine.connect() as connection:
                         connection.execute(text(f"SELECT {col} FROM users LIMIT 1"))
-                    except Exception:
+                except Exception:
+                    with engine.connect() as connection:
                         connection.execute(text(f"ALTER TABLE users ADD COLUMN {col} {definition}"))
                         connection.commit()
-                        logger.info("Migrated: added users.%s column", col)
-            with engine.connect() as connection:
-                for col, definition in [
+                    logger.info("Migrated: added users.%s column", col)
+            # 将 avatar 列从 VARCHAR(500) 扩展为 TEXT（仅 MySQL，SQLite 无此限制）
+            if engine.dialect.name == "mysql":
+                with engine.connect() as connection:
+                    try:
+                        connection.execute(text("ALTER TABLE users MODIFY COLUMN avatar MEDIUMTEXT"))
+                        connection.commit()
+                        logger.info("Migrated: users.avatar → MEDIUMTEXT")
+                    except Exception:
+                        pass  # 已经是 TEXT 或迁移失败则忽略
+            for col, definition in [
                     ("reply_to_id", "INTEGER"),
                     ("message_type", "VARCHAR(20) NOT NULL DEFAULT 'text'"),
                     ("media_url", "VARCHAR(500)"),
                     ("media_name", "VARCHAR(200)"),
                 ]:
-                    try:
+                try:
+                    with engine.connect() as connection:
                         connection.execute(text(f"SELECT {col} FROM messages LIMIT 1"))
-                    except Exception:
+                except Exception:
+                    with engine.connect() as connection:
                         connection.execute(text(f"ALTER TABLE messages ADD COLUMN {col} {definition}"))
                         connection.commit()
-                        logger.info("Migrated: added messages.%s column", col)
+                    logger.info("Migrated: added messages.%s column", col)
 
-            with engine.connect() as connection:
-                try:
+            try:
+                with engine.connect() as connection:
                     connection.execute(text("SELECT remark FROM friendships LIMIT 1"))
-                except Exception:
+            except Exception:
+                with engine.connect() as connection:
                     connection.execute(text("ALTER TABLE friendships ADD COLUMN remark VARCHAR(64)"))
                     connection.commit()
-                    logger.info("Migrated: added friendships.remark column")
+                logger.info("Migrated: added friendships.remark column")
 
             # 兼容旧数据库：增加 read_index 字段
-            with engine.connect() as connection:
-                try:
+            try:
+                with engine.connect() as connection:
                     connection.execute(text("SELECT read_index FROM conversation_members LIMIT 1"))
-                except Exception:
+            except Exception:
+                with engine.connect() as connection:
                     connection.execute(text("ALTER TABLE conversation_members ADD COLUMN read_index INTEGER DEFAULT 0"))
                     connection.commit()
-                    logger.info("Migrated: added conversation_members.read_index column")
+                logger.info("Migrated: added conversation_members.read_index column")
 
             # 增加 role 字段（owner/admin/member，默认 member）
-            with engine.connect() as connection:
-                try:
+            try:
+                with engine.connect() as connection:
                     connection.execute(text("SELECT role FROM conversation_members LIMIT 1"))
-                except Exception:
+            except Exception:
+                with engine.connect() as connection:
                     connection.execute(text("ALTER TABLE conversation_members ADD COLUMN role VARCHAR(16) NOT NULL DEFAULT 'member'"))
                     # 把最早加入的成员（id最小）设为 owner
                     connection.execute(text("""
@@ -129,32 +144,35 @@ def initialize_database():
                         SET cm.role = 'owner'
                     """))
                     connection.commit()
-                    logger.info("Migrated: added conversation_members.role column and set owners")
+                logger.info("Migrated: added conversation_members.role column and set owners")
 
             # 增加 group_nickname 字段（在本群的昵称）
-            with engine.connect() as connection:
-                try:
+            try:
+                with engine.connect() as connection:
                     connection.execute(text("SELECT group_nickname FROM conversation_members LIMIT 1"))
-                except Exception:
+            except Exception:
+                with engine.connect() as connection:
                     connection.execute(text("ALTER TABLE conversation_members ADD COLUMN group_nickname VARCHAR(64)"))
                     connection.commit()
-                    logger.info("Migrated: added conversation_members.group_nickname column")
+                logger.info("Migrated: added conversation_members.group_nickname column")
 
             # 兼容更旧数据库：增加 is_group 字段
-            with engine.connect() as connection:
-                try:
+            try:
+                with engine.connect() as connection:
                     connection.execute(text("SELECT is_group FROM conversations LIMIT 1"))
-                except Exception:
+            except Exception:
+                with engine.connect() as connection:
                     connection.execute(text("ALTER TABLE conversations ADD COLUMN is_group BOOLEAN DEFAULT FALSE"))
                     connection.commit()
-                    logger.info("Migrated: added conversations.is_group column")
+                logger.info("Migrated: added conversations.is_group column")
 
             # 检查并创建 conversation_pins 表（如果 create_all 没生效）
-            with engine.connect() as connection:
-                try:
+            try:
+                with engine.connect() as connection:
                     connection.execute(text("SELECT 1 FROM conversation_pins LIMIT 1"))
-                except Exception:
-                    logger.info("Migrated: creating conversation_pins table manually")
+            except Exception:
+                logger.info("Migrated: creating conversation_pins table manually")
+                with engine.connect() as connection:
                     connection.execute(text("""
                         CREATE TABLE conversation_pins (
                             id INTEGER PRIMARY KEY AUTO_INCREMENT,

@@ -1,6 +1,7 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Text, Boolean, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy.dialects.mysql import MEDIUMTEXT as _MySQLMEDIUMTEXT
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.sql import func
 
@@ -23,7 +24,7 @@ class User(Base):
     gender = Column(String(16), nullable=True)
     phone = Column(String(32), nullable=True)
     bio = Column(String(500), nullable=True)
-    avatar = Column(String(500), nullable=True)  # 头像 URL 或 base64 数据
+    avatar = Column(Text().with_variant(_MySQLMEDIUMTEXT(), 'mysql'), nullable=True)  # 头像：SQLite TEXT / MySQL MEDIUMTEXT
 
 
 class Conversation(Base):

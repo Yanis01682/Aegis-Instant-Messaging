@@ -62,7 +62,13 @@ function SidebarPanel({
   // 移出黑名单回调
   onRemoveFromBlacklist,
   // 从黑名单打开聊天回调
-  onOpenBlacklistChat
+  onOpenBlacklistChat,
+  // 待我审批的好友申请列表
+  friendRequestList = [],
+  // 接受好友申请
+  handleAcceptRequest,
+  // 拒绝好友申请
+  handleRejectRequest,
 }) {
   const [isGroupFolderOpen, setIsGroupFolderOpen] = useState(false)
   const [sessionContextMenu, setSessionContextMenu] = useState(null)
@@ -265,6 +271,24 @@ function SidebarPanel({
 
       {activeTab === 'friends' && (
         <div className="friends-container">
+          {friendRequestList.length > 0 && (
+            <div className="friend-requests-section" style={{ margin: '0 0 8px 0', padding: '8px 12px' }}>
+              <h4>新的申请 ({friendRequestList.length})</h4>
+              {friendRequestList.map((request) => (
+                <div key={request.id} className="request-item">
+                  <div className="request-avatar">{request.avatar}</div>
+                  <div className="request-info">
+                    <p className="request-name">{request.name}</p>
+                    <p className="request-message">想添加你为好友</p>
+                  </div>
+                  <div className="request-actions">
+                    <button className="accept-btn" onClick={() => handleAcceptRequest(request.id)}>接受</button>
+                    <button className="reject-btn" onClick={() => handleRejectRequest(request.id)}>拒绝</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
           {showFriendSearch && (
             <div className="friend-search-wrap">
               <div className="friend-search-input-wrapper">

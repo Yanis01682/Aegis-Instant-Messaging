@@ -203,7 +203,7 @@ def _is_session_pinned(db: Session, conversation_id: int, user_id: int):
 
 
 def _serialize_user(user: models.User, remark: Optional[str] = None):
-    display_name = user.username
+    display_name = user.nickname or user.username
     # 隐身状态在对方视角显示为离线
     status = user.status or "online"
     if status == "invisible":
@@ -343,9 +343,9 @@ def _serialize_session(db: Session, conversation: models.Conversation, current_u
         peer_id = next((member_id for member_id in member_ids if member_id != current_user.id), None)
         peer_user = db.query(models.User).filter(models.User.id == peer_id).first() if peer_id else None
         if peer_user:
-            title = peer_user.username
-            real_name = peer_user.username
-            avatar = peer_user.username[:1].upper()
+            title = peer_user.nickname or peer_user.username
+            real_name = peer_user.nickname or peer_user.username
+            avatar = peer_user.avatar or title[:1].upper()
             online_count = 0 if peer_user.status in ("offline", "invisible") else 1
 
     return {
