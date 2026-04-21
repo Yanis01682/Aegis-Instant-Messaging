@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 
 /**
  * 聊天主窗体组件。
@@ -60,6 +60,12 @@ function ChatMainView({
 }) {
   const imageInputRef = useRef(null)
   const videoInputRef = useRef(null)
+  const messagesEndRef = useRef(null)
+
+  // Scroll to the bottom whenever messages change or the active chat changes
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'instant' })
+  }, [messages, currentChat])
   const currentSession = getCurrentSession()
   const hasActiveConversation = Boolean(currentSession?.id)
 
@@ -191,6 +197,8 @@ function ChatMainView({
           </div>
           )
         })}
+        {/* Sentinel element – always sits at the very bottom of the list */}
+        <div ref={messagesEndRef} />
       </div>
 
       {replyToMessage && (

@@ -611,32 +611,6 @@ function Overlays({
                   </div>
 
 
-                  <div className="detail-section">
-                    <div className="section-title">我在本群的昵称</div>
-                    <div className="section-content">
-                      {isEditingGroupNickname ? (
-                        <div className="inline-edit">
-                          <input 
-                            type="text" 
-                            className="inline-input" 
-                            value={tempGroupNickname} 
-                            onChange={(e) => setTempGroupNickname(e.target.value)}
-                            autoFocus
-                          />
-                          <div className="edit-actions">
-                            <button className="edit-save-btn" onClick={handleSaveGroupNickname}>保存</button>
-                            <button className="edit-cancel-btn" onClick={handleCancelEditGroupNickname}>取消</button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="value-with-edit" onClick={handleStartEditGroupNickname}>
-                          <span className="value-text">{groupMembers[currentChat]?.find(m => m.id === profileData.userId)?.groupNickname || '未设置'}</span>
-                          <span className="edit-icon-small">✎</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
                   <div className="detail-section clickable" onClick={handleOpenSearchMessage}>
                     <div className="section-content">
                       <span className="section-title" style={{ marginBottom: 0 }}>查找聊天记录</span>
