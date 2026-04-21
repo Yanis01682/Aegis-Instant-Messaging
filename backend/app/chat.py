@@ -235,7 +235,7 @@ def _serialize_user(user: models.User, remark: Optional[str] = None):
 
 
 def _serialize_reply_reference(reply_message: models.Message, current_user_id: int, sender: Optional[models.User]):
-    sender_name = sender.username if sender else "系统"
+    sender_name = (sender.nickname or sender.username) if sender else "系统"
     return {
         "id": reply_message.id,
         "text": reply_message.content,
@@ -252,7 +252,7 @@ def _serialize_message(
     reply_message: Optional[models.Message] = None,
     reply_sender: Optional[models.User] = None,
 ):
-    sender_name = sender.username if sender else "系统"
+    sender_name = (sender.nickname or sender.username) if sender else "系统"
     # 确保 message_type 有默认值
     msg_type = message.message_type if message.message_type else "text"
     payload = {
@@ -348,7 +348,7 @@ def _serialize_session(db: Session, conversation: models.Conversation, current_u
         peer_user = db.query(models.User).filter(models.User.id == peer_id).first() if peer_id else None
         if peer_user:
             title = peer_user.nickname or peer_user.username
-            real_name = peer_user.nickname or peer_user.username
+            real_name = peer_user.username
             avatar = peer_user.avatar or title[:1].upper()
 
     return {
