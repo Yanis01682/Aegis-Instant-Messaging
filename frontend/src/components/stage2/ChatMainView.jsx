@@ -101,7 +101,9 @@ function ChatMainView({
     <section className="panel chat-panel">
       <header className="chat-topbar">
         <div className="chat-user">
-          <div className="avatar large">{currentSession.avatar}</div>
+          {typeof currentSession.avatar === 'string' && currentSession.avatar.startsWith('data:image')
+            ? <div className="avatar large" style={{ backgroundImage: `url(${currentSession.avatar})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+            : <div className="avatar large">{currentSession.avatar}</div>}
           <div>
             <h2>{currentSession.title}</h2>
             {currentSession.isGroup && (

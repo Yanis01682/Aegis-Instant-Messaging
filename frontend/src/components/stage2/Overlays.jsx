@@ -5,6 +5,22 @@
  */
 import { useState } from 'react'
 
+/**
+ * Render an avatar: if the value is a base64 data URL, display it as an
+ * image background; otherwise render the text initial inside a span.
+ */
+function renderAvatar(av, className) {
+  if (typeof av === 'string' && av.startsWith('data:image')) {
+    return (
+      <div
+        className={className}
+        style={{ backgroundImage: `url(${av})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+      />
+    )
+  }
+  return <div className={className}><span>{av || '?'}</span></div>
+}
+
 function Overlays({
   // 表情面板显示控制。
   showEmojiPicker,
@@ -244,7 +260,7 @@ function Overlays({
             <div className="member-list">
               {(groupMembers[currentChat] || []).map((member) => (
                 <div key={member.id} className="member-item">
-                  <div className="member-avatar">{member.avatar}</div>
+                  {renderAvatar(member.avatar, 'member-avatar')}
                   <div className="member-info">
                     <div className="member-name">
                       {member.displayName}
@@ -427,7 +443,7 @@ function Overlays({
 
             <div className="peer-profile-body">
               <div className="peer-profile-avatar-wrap">
-                <div className="peer-profile-avatar">{peerProfile.avatar}</div>
+                {renderAvatar(peerProfile.avatar, 'peer-profile-avatar')}
               </div>
               <h3 className="peer-profile-name">{peerProfile.name}</h3>
               <p className="peer-profile-id">刀盾号：{peerProfile.wechatId || peerProfile.name}</p>
@@ -470,7 +486,7 @@ function Overlays({
               {getCurrentSession().isGroup ? (
                 <div className="group-chat-detail">
                   <div className="group-info-section">
-                    <div className="group-avatar-large">{getCurrentSession().avatar}</div>
+                    {renderAvatar(getCurrentSession().avatar, 'group-avatar-large')}
                     {!isEditingGroupName ? (
                       <div className="group-name-row">
                         <h2 className="group-name">{getCurrentSession().title}</h2>
@@ -510,7 +526,11 @@ function Overlays({
                   <div className="detail-section">
                     <div className="section-title">成员</div>
                     <div className="section-content members-preview">
-                      {groupMembers[currentChat]?.slice(0, 8).map((member, index) => <div key={index} className="member-avatar-small" title={member.name} onClick={() => handleOpenMemberProfile(member)} style={{ cursor: 'pointer' }}>{member.avatar}</div>)}
+                      {groupMembers[currentChat]?.slice(0, 8).map((member, index) => (
+                        <div key={index} className="member-avatar-small" title={member.name} onClick={() => handleOpenMemberProfile(member)} style={{ cursor: 'pointer' }}>
+                          {renderAvatar(member.avatar, 'member-avatar-small-inner')}
+                        </div>
+                      ))}
                       <div className="view-all-members invite-action" onClick={handleOpenInviteMember} title="邀请好友">+</div>
                     </div>
                   </div>
@@ -557,7 +577,7 @@ function Overlays({
                     </>
                   )}
 
-                  {userRole === 'member' && (
+                  {(userRole === 'member' || userRole === 'admin') && (
                     <div className="detail-section"><div className="section-title">危险操作</div><div className="section-content"><button className="danger-btn" onClick={handleExitGroup}>退出群聊</button></div></div>
                   )}
 
@@ -659,7 +679,7 @@ function Overlays({
                       const alreadyFriend = isAlreadyFriend(user.userId, user.name)
                       return (
                         <div key={user.userId} className="search-result-item">
-                          <div className="result-avatar">{user.avatar}</div>
+                          <div className="result-avatar">{renderAvatar(user.avatar, 'result-avatar-img')}</div>
                           <div className="result-info">
                             <p className="result-name">{user.name}</p>
                             <p className="result-subtitle">刀盾号：{user.userId}</p>
@@ -727,7 +747,7 @@ function Overlays({
                   <h4>我的好友 ({myFriends.length})</h4>
                   {myFriends.map((friend) => (
                     <div key={friend.id} className="friend-list-item">
-                      <div className="friend-list-avatar">{friend.avatar}</div>
+                      {renderAvatar(friend.avatar, 'friend-list-avatar')}
                       <div className="friend-list-info">
                         <p className="friend-list-name">{friend.name}</p>
 
@@ -793,7 +813,7 @@ function Overlays({
               <div className="member-list-section">
                 <h4>群主</h4>
                 <div className="member-item">
-                  <div className="member-avatar">{currentGroupOwner?.avatar || '群'}</div>
+                  {renderAvatar(currentGroupOwner?.avatar, 'member-avatar')}
                   <div className="member-info">
                     <p className="member-name">{currentGroupOwner?.name || '暂无群主'}</p>
                     <p className="member-role">群主 </p>
@@ -806,7 +826,7 @@ function Overlays({
                 <h4>管理员 ({groupMembers[currentChat]?.filter((m) => m.role === 'admin').length || 0})</h4>
                 {groupMembers[currentChat]?.filter((m) => m.role === 'admin').map((member, index) => (
                   <div key={index} className="member-item">
-                    <div className="member-avatar">{member.avatar}</div>
+                    {renderAvatar(member.avatar, 'member-avatar')}
                     <div className="member-info">
                       <p className="member-name">{member.name}</p>
                       <p className="member-role">管理员 </p>
@@ -820,7 +840,7 @@ function Overlays({
                 <h4>普通成员 ({groupMembers[currentChat]?.filter((m) => m.role === 'member').length || 0})</h4>
                 {groupMembers[currentChat]?.filter((m) => m.role === 'member').map((member, index) => (
                   <div key={index} className="member-item">
-                    <div className="member-avatar">{member.avatar}</div>
+                    {renderAvatar(member.avatar, 'member-avatar')}
                     <div className="member-info">
                       <p className="member-name">{member.name}</p>
                       <p className="member-role">普通成员 </p>
@@ -838,8 +858,9 @@ function Overlays({
       {showInviteMemberModal && (() => {
         const existingMemberIds = getCurrentGroupMemberIds()
         // Only show friends who are NOT already in the group
+        // Use accountId (string from backend) with Number() conversion, fall back to id
         const invitableFriends = myFriends.filter(
-          (f) => !existingMemberIds.has(Number(f.accountId))
+          (f) => !existingMemberIds.has(Number(f.accountId ?? f.id))
         )
         return (
           <div className="invite-member-overlay" onClick={handleCloseInviteMember}>
@@ -867,7 +888,7 @@ function Overlays({
                             checked={isSelected}
                             onChange={() => handleToggleInviteFriend(friendId)}
                           />
-                          <div className="friend-avatar-small">{friend.avatar}</div>
+                          <div className="friend-avatar-small">{renderAvatar(friend.avatar, 'friend-avatar-img')}</div>
                           <span className="friend-name">{friend.remark || friend.name}</span>
                         </label>
                       )
