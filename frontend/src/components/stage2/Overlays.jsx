@@ -85,6 +85,8 @@ function Overlays({
   handleOpenSearchMessage,
   isEditingAnnouncement,
   groupAnnouncement,
+  groupAnnouncementHistory,
+  showAnnouncementHistoryModal,
   userRole,
   canRenameCurrentGroup,
   isEditingGroupName,
@@ -99,6 +101,8 @@ function Overlays({
   setTempAnnouncement,
   handleSaveAnnouncement,
   handleCancelEditAnnouncement,
+  handleOpenAnnouncementHistory,
+  handleCloseAnnouncementHistory,
   handleOpenMemberList,
   handleOpenInviteMember,
   handleTogglePinChat,
@@ -132,8 +136,11 @@ function Overlays({
   handleSendFriendRequest,
   friendRequestList,
   sentFriendRequests,
+  groupInviteRequests,
   handleAcceptRequest,
   handleRejectRequest,
+  handleApproveGroupInviteRequest,
+  handleRejectGroupInviteRequest,
   // 查找消息。
   showSearchMessageModal,
   handleCloseSearchMessage,
@@ -177,6 +184,7 @@ function Overlays({
   const currentPrivateFriend = !currentSession.isGroup
     ? myFriends.find(
         (friend) =>
+          (currentSession.peerUserId != null && String(friend.accountId) === String(currentSession.peerUserId)) ||
           friend.name === currentSession.realName ||
           friend.name === currentSession.title ||
           friend.remark === currentSession.title
@@ -572,7 +580,10 @@ function Overlays({
                       {!isEditingAnnouncement ? (
                         <div className="announcement-display">
                           <p className="announcement-text">{groupAnnouncement || '暂无公告'}</p>
-                          {(userRole === 'owner' || userRole === 'admin') && <button className="edit-announcement-btn" onClick={handleStartEditAnnouncement}>编辑</button>}
+                          <div className="remark-actions">
+                            <button className="edit-remark-btn" onClick={handleOpenAnnouncementHistory}>历史公告</button>
+                            {(userRole === 'owner' || userRole === 'admin') && <button className="edit-announcement-btn" onClick={handleStartEditAnnouncement}>编辑</button>}
+                          </div>
                         </div>
                       ) : (
                         <div className="announcement-edit-form">
@@ -594,10 +605,7 @@ function Overlays({
                   </div>
 
                   {userRole === 'owner' && (
-                    <>
-                      <div className="detail-section"><div className="section-title">群主操作</div><div className="section-content"><button className="danger-btn" onClick={handleOpenMemberList}>选择新群主</button></div></div>
-                      <div className="detail-section"><div className="section-title">危险操作</div><div className="section-content"><button className="danger-btn" onClick={handleDismissGroup}>解散群聊</button></div></div>
-                    </>
+                    <div className="detail-section"><div className="section-title">危险操作</div><div className="section-content"><button className="danger-btn" onClick={handleDismissGroup}>解散群聊</button></div></div>
                   )}
 
                   {(userRole === 'member' || userRole === 'admin') && (
@@ -698,6 +706,25 @@ function Overlays({
                       <p>未找到匹配的用户</p>
                     </div>
                   )}
+                </div>
+              )}
+
+              {groupInviteRequests.length > 0 && (
+                <div className="friend-requests-section">
+                  <h4>群申请待审批 ({groupInviteRequests.length})</h4>
+                  {groupInviteRequests.map((request) => (
+                    <div key={request.id} className="request-item">
+                      {renderAvatar(request.inviteeAvatar, 'request-avatar')}
+                      <div className="request-info">
+                        <p className="request-name">{request.groupName}</p>
+                        <p className="request-message">{request.requesterName} 申请邀请 {request.inviteeName} 入群</p>
+                      </div>
+                      <div className="request-actions">
+                        <button className="accept-btn" onClick={() => handleApproveGroupInviteRequest(request.id, request.conversationId)}>接受</button>
+                        <button className="reject-btn" onClick={() => handleRejectGroupInviteRequest(request.id)}>拒绝</button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
 
@@ -804,6 +831,29 @@ function Overlays({
         </div>
       )}
 
+      {showAnnouncementHistoryModal && (
+        <div className="search-message-overlay" onClick={handleCloseAnnouncementHistory}>
+          <div className="search-message-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="search-message-header"><h3>历史公告</h3><button className="close-btn" onClick={handleCloseAnnouncementHistory}>✕</button></div>
+            <div className="search-message-body">
+              {groupAnnouncementHistory.length > 0 ? (
+                <div className="search-results-list">
+                  {groupAnnouncementHistory.map((item) => (
+                    <div key={item.id} className="search-result-item">
+                      <div className="result-sender">{item.publisherName}</div>
+                      <div className="result-text">{item.content}</div>
+                      <div className="result-time">{item.createdAt ? item.createdAt.replace('T', ' ').slice(0, 16) : ''}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="search-placeholder"><p>暂无历史公告</p></div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {showMemberListModal && (
         <div className="member-list-overlay" onClick={handleCloseMemberList}>
           <div className="member-list-modal" onClick={(e) => e.stopPropagation()}>
@@ -817,7 +867,7 @@ function Overlays({
                     <p className="member-name">{currentGroupOwner?.displayName || currentGroupOwner?.name || '暂无群主'}</p>
                     <p className="member-role">群主 </p>
                   </div>
-                  {userRole === 'owner' && <button className="transfer-btn" onClick={() => handleTransferGroup(null)}>转让</button>}
+                  {userRole === 'owner' && <span className="member-role">仅可在下方成员条目中操作</span>}
                 </div>
               </div>
 
@@ -830,7 +880,13 @@ function Overlays({
                       <p className="member-name">{member.displayName || member.name}</p>
                       <p className="member-role">管理员 </p>
                     </div>
-                    {userRole === 'owner' && <button className="remove-btn" onClick={() => handleRemoveMember(member.id)}>移除</button>}
+                    {userRole === 'owner' && (
+                      <div className="action-button-group">
+                        <button className="action-btn make-admin" onClick={() => handleMakeAdmin(member.id, false)}>取消群管</button>
+                        <button className="action-btn transfer-owner" onClick={() => handleTransferGroup(member.id)}>转让群主</button>
+                        <button className="action-btn remove-member" onClick={() => handleRemoveMember(member.id)}>移出群聊</button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -844,7 +900,14 @@ function Overlays({
                       <p className="member-name">{member.displayName || member.name}</p>
                       <p className="member-role">普通成员 </p>
                     </div>
-                    {(userRole === 'owner' || userRole === 'admin') && <button className="remove-btn" onClick={() => handleRemoveMember(member.id)}>移除</button>}
+                    {userRole === 'owner' && (
+                      <div className="action-button-group">
+                        <button className="action-btn make-admin" onClick={() => handleMakeAdmin(member.id, true)}>设为群管</button>
+                        <button className="action-btn transfer-owner" onClick={() => handleTransferGroup(member.id)}>转让群主</button>
+                        <button className="action-btn remove-member" onClick={() => handleRemoveMember(member.id)}>移出群聊</button>
+                      </div>
+                    )}
+                    {userRole === 'admin' && <button className="action-btn remove-member" onClick={() => handleRemoveMember(member.id)}>移出群聊</button>}
                   </div>
                 ))}
               </div>

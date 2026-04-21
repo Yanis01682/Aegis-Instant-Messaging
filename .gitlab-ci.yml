@@ -12,7 +12,7 @@ backend-test:
     - cd backend
     - pip install -r requirements.txt
     - pip install pytest httpx pytest-cov
-    - pytest --cov=app --cov-report=xml:coverage.xml --cov-report=term-missing
+    - pytest tests --cov=app --cov-fail-under=80 --cov-report=xml:coverage.xml --cov-report=term-missing
   artifacts:
     paths:
       - backend/coverage.xml

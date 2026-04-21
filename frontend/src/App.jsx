@@ -13,6 +13,12 @@ import {
   exitGroup,
   dismissGroup,
   inviteGroupMembers,
+  createGroupInviteRequest,
+  getGroupInviteRequests,
+  approveGroupInviteRequest,
+  rejectGroupInviteRequest,
+  getGroupAnnouncements,
+  publishGroupAnnouncement,
   renameGroup,
   getFriendRequests,
   getGroupMembers,
@@ -117,6 +123,8 @@ function App() {
   const [currentResultIndex, setCurrentResultIndex] = useState(0) // 当前搜索结果索引
   const [userRole, setUserRole] = useState('member') // 用户在当前群的角色：owner-群主，admin-管理员，member-普通成员
   const [groupAnnouncement, setGroupAnnouncement] = useState('') // 群公告
+  const [groupAnnouncementHistory, setGroupAnnouncementHistory] = useState([])
+  const [showAnnouncementHistoryModal, setShowAnnouncementHistoryModal] = useState(false)
   const [isEditingAnnouncement, setIsEditingAnnouncement] = useState(false) // 是否正在编辑公告
   const [tempAnnouncement, setTempAnnouncement] = useState('') // 临时公告内容
   const [isEditingGroupName, setIsEditingGroupName] = useState(false)
@@ -137,6 +145,7 @@ function App() {
   const [archivedGroupIds, setArchivedGroupIds] = useState([]) // 手动收纳的群聊 id 列表
   const [friendRequestList, setFriendRequestList] = useState([]) // 收到的好友请求（待我审批）
   const [sentFriendRequests, setSentFriendRequests] = useState([]) // 我发出的好友申请（用于展示审批状态）
+  const [groupInviteRequests, setGroupInviteRequests] = useState([])
   const [myFriends, setMyFriends] = useState([]) // 我的好友列表
   const [collapsedGroups, setCollapsedGroups] = useState([]) // 已折叠的分组
   const [_customGroups, _setCustomGroups] = useState(INITIAL_CUSTOM_GROUPS) // 自定义分组列表
@@ -196,7 +205,13 @@ function App() {
     
     const mappedSessions = fetchedSessions.map(session => {
       if (!session.isGroup) {
-        const friend = mappedFriends.find(f => f.name === session.realName || f.id === session.id || f.id?.toString() === session.title)
+        const friend = mappedFriends.find(
+          (f) =>
+            (session.peerUserId != null && String(f.accountId) === String(session.peerUserId)) ||
+            f.name === session.realName ||
+            f.id === session.id ||
+            f.id?.toString() === session.title
+        )
         if (friend && friend.remark) {
           return { ...session, title: friend.remark }
         }
@@ -220,9 +235,13 @@ function App() {
   }
 
   const refreshFriendRequests = async () => {
-    const data = await getFriendRequests()
+    const [data, inviteRequests] = await Promise.all([
+      getFriendRequests(),
+      getGroupInviteRequests().catch(() => []),
+    ])
     setFriendRequestList(data.incoming || [])
     setSentFriendRequests(data.outgoing || [])
+    setGroupInviteRequests(inviteRequests || [])
   }
 
   const refreshConversationMessages = async (conversationId) => {
@@ -550,6 +569,15 @@ function App() {
     if (currentSession?.isGroup) {
       setTempGroupName(currentSession.title || '')
       setIsEditingGroupName(false)
+      getGroupAnnouncements(currentSession.id)
+        .then((items) => {
+          setGroupAnnouncementHistory(items)
+          setGroupAnnouncement(items[0]?.content || '')
+        })
+        .catch(() => {
+          setGroupAnnouncementHistory([])
+          setGroupAnnouncement('')
+        })
     }
     setShowChatDetail(true)
   }
@@ -559,12 +587,28 @@ function App() {
     setShowChatDetail(false)
     setIsEditingGroupName(false)
     setTempGroupName('')
+    setShowAnnouncementHistoryModal(false)
   }
 
   // 获取当前会话信息
   const getCurrentSession = () => {
     const allSessions = [...dynamicSessions, ...sessions]
     return allSessions.find(s => s.id === currentChat) || EMPTY_SESSION
+  }
+
+  const findFriendForSession = (session) => {
+    if (!session || session.isGroup) return null
+    const peerUserId = session.peerUserId != null ? String(session.peerUserId) : null
+    return (
+      myFriends.find((friend) => peerUserId && String(friend.accountId) === peerUserId) ||
+      myFriends.find(
+        (friend) =>
+          friend.name === session.realName ||
+          friend.name === session.title ||
+          friend.remark === session.title
+      ) ||
+      null
+    )
   }
 
   // 根据被点击的消息，解析对方资料（群聊/私聊）
@@ -600,12 +644,7 @@ function App() {
       }
     }
 
-    const friend = myFriends.find(
-      (f) =>
-        f.name === currentSession.realName ||
-        f.name === currentSession.title ||
-        f.remark === currentSession.title
-    )
+    const friend = findFriendForSession(currentSession)
 
     const userId = friend?.accountId || `private_${currentSession.realName || currentSession.title}`
     const email = friend?.email || `${currentSession.realName || currentSession.title}@example.com`
@@ -690,12 +729,7 @@ function App() {
     const currentSession = getCurrentSession()
     if (!currentSession || currentSession.isGroup) return
 
-    const friend = myFriends.find(
-      (f) =>
-        f.name === currentSession.realName ||
-        f.name === currentSession.title ||
-        f.remark === currentSession.title
-    )
+    const friend = findFriendForSession(currentSession)
 
     const userId = friend?.accountId || `private_${currentSession.realName || currentSession.title}`
     const email = friend?.email || `${currentSession.realName || currentSession.title}@example.com`
@@ -777,6 +811,7 @@ function App() {
         currentSession &&
         !currentSession.isGroup &&
         (
+          (currentSession.peerUserId != null && String(currentSession.peerUserId) === String(friend.accountId)) ||
           currentSession.realName === friend.name ||
           currentSession.title === friend.name ||
           currentSession.title === friend.remark
@@ -797,6 +832,7 @@ function App() {
         setDynamicSessions((prev) =>
           prev.filter(
             (session) =>
+              String(session.peerUserId ?? '') !== String(friend.accountId) &&
               session.realName !== friend.name &&
               session.title !== friend.name &&
               session.title !== friend.remark
@@ -842,6 +878,29 @@ function App() {
     }
   }
 
+  const handleApproveGroupInviteRequest = async (requestId, conversationId) => {
+    try {
+      await approveGroupInviteRequest(requestId)
+      await refreshFriendRequests()
+      if (currentChat === conversationId) {
+        await refreshGroupConversationMembers(conversationId)
+      }
+      alert('已通过入群申请')
+    } catch (err) {
+      alert(err.response?.data?.detail || '审批失败')
+    }
+  }
+
+  const handleRejectGroupInviteRequest = async (requestId) => {
+    try {
+      await rejectGroupInviteRequest(requestId)
+      await refreshFriendRequests()
+      alert('已拒绝入群申请')
+    } catch (err) {
+      alert(err.response?.data?.detail || '审批失败')
+    }
+  }
+
   // 切换分组折叠状态
   const toggleGroupCollapse = (groupName) => {
     setCollapsedGroups(prev => 
@@ -875,7 +934,7 @@ function App() {
   // 开始编辑备注
   const handleStartEditRemark = () => {
     const currentSession = getCurrentSession()
-    const friend = myFriends.find(f => f.name === currentSession.realName || f.id === currentSession.id || f.id?.toString() === currentSession.title)
+    const friend = findFriendForSession(currentSession)
     setTempRemark(friend?.remark || '')
     setIsEditingRemark(true)
   }
@@ -883,7 +942,7 @@ function App() {
   // 保存备注
   const handleSaveRemark = () => {
     const currentSession = getCurrentSession()
-    const friend = myFriends.find(f => f.name === currentSession.realName || f.id === currentSession.id || f.id?.toString() === currentSession.title)
+    const friend = findFriendForSession(currentSession)
     if (friend) {
       handleUpdateRemark(friend.id, tempRemark)
       setIsEditingRemark(false)
@@ -1038,9 +1097,18 @@ function App() {
     }
 
     try {
-      await inviteGroupMembers(currentChat, selectedInviteFriends)
-      await refreshGroupConversationMembers(currentChat)
-      alert(`已成功邀请 ${selectedInviteFriends.length} 位好友`)
+      const currentSession = getCurrentSession()
+      if (userRole === 'owner' || userRole === 'admin') {
+        await inviteGroupMembers(currentChat, selectedInviteFriends)
+        await refreshGroupConversationMembers(currentChat)
+        alert(`已成功邀请 ${selectedInviteFriends.length} 位好友`)
+      } else {
+        await Promise.all(
+          selectedInviteFriends.map((friendId) => createGroupInviteRequest(currentSession.id, friendId))
+        )
+        await refreshFriendRequests()
+        alert(`已提交 ${selectedInviteFriends.length} 位好友的入群申请，等待群主或管理员审核`)
+      }
       handleCloseInviteMember()
     } catch (err) {
       alert(err.response?.data?.detail || '邀请失败')
@@ -1183,15 +1251,33 @@ function App() {
 
   // 保存群公告
   const handleSaveAnnouncement = () => {
-    setGroupAnnouncement(tempAnnouncement)
-    setIsEditingAnnouncement(false)
-    alert('群公告已保存')
+    const currentSession = getCurrentSession()
+    if (!currentSession?.isGroup) return
+    publishGroupAnnouncement(currentSession.id, tempAnnouncement)
+      .then(async () => {
+        const items = await getGroupAnnouncements(currentSession.id)
+        setGroupAnnouncementHistory(items)
+        setGroupAnnouncement(items[0]?.content || '')
+        setIsEditingAnnouncement(false)
+        alert('群公告已保存')
+      })
+      .catch((err) => {
+        alert(err.response?.data?.detail || '群公告保存失败')
+      })
   }
 
   // 取消编辑群公告
   const handleCancelEditAnnouncement = () => {
     setIsEditingAnnouncement(false)
     setTempAnnouncement('')
+  }
+
+  const handleOpenAnnouncementHistory = () => {
+    setShowAnnouncementHistoryModal(true)
+  }
+
+  const handleCloseAnnouncementHistory = () => {
+    setShowAnnouncementHistoryModal(false)
   }
 
   // 移除群成员（踢人）
@@ -1213,6 +1299,10 @@ function App() {
   const handleTransferGroup = async (memberId) => {
     const currentSession = getCurrentSession()
     if (!currentSession?.isGroup) return
+    if (!memberId) {
+      alert('请选择一位群成员作为新群主')
+      return
+    }
     if (!window.confirm('确定要转让群主吗？转让后您将成为普通成员。')) return
     try {
       await transferGroupOwnership(currentSession.id, memberId)
@@ -1496,6 +1586,10 @@ function App() {
         bio: profileData.bio || null,
         avatar: profileData.avatar || null,
       })
+      await refreshRealtimeChatData(currentChat)
+      if (currentChat && getCurrentSession().isGroup) {
+        await refreshGroupConversationMembers(currentChat)
+      }
       setIsEditingProfile(false)
       alert('个人信息保存成功！')
     } catch (err) {
@@ -1639,10 +1733,14 @@ function App() {
     reader.onload = async (event) => {
       const base64String = event.target.result
       try {
-        await updateProfile({ avatar: base64String })
-        setUserAvatar(base64String)
-        setProfileData(prev => ({ ...prev, avatar: base64String }))
-        alert('头像更换成功！')
+      await updateProfile({ avatar: base64String })
+      setUserAvatar(base64String)
+      setProfileData(prev => ({ ...prev, avatar: base64String }))
+      await refreshRealtimeChatData(currentChat)
+      if (currentChat && getCurrentSession().isGroup) {
+        await refreshGroupConversationMembers(currentChat)
+      }
+      alert('头像更换成功！')
       } catch (err) {
         alert(err.response?.data?.detail || '头像保存失败，请重试！')
       }
@@ -2046,6 +2144,8 @@ function App() {
   const handleMakeAdmin = async (memberId, isAdmin = true) => {
     const currentSession = getCurrentSession()
     if (!currentSession?.isGroup) return
+    const actionLabel = isAdmin ? '设为群管' : '取消群管'
+    if (!window.confirm(`确定要${actionLabel}吗？`)) return
     try {
       await setGroupAdmin(currentSession.id, memberId, isAdmin)
       await refreshGroupConversationMembers(currentSession.id)
@@ -2071,6 +2171,7 @@ function App() {
     const allSessions = [...sessions, ...dynamicSessions]
     const existingSession = allSessions.find(
       (session) =>
+        (session.peerUserId != null && String(session.peerUserId) === String(friend.accountId)) ||
         session.title === friend.name ||
         session.realName === friend.name ||
         session.title === friend.remark
@@ -2089,7 +2190,10 @@ function App() {
 
     const allSessions = [...sessions, ...dynamicSessions]
     const existingSession = allSessions.find(
-      (s) => s.title === peerProfile.name || s.realName === peerProfile.name
+      (s) =>
+        (s.peerUserId != null && String(s.peerUserId) === String(peerProfile.userId)) ||
+        s.title === peerProfile.name ||
+        s.realName === peerProfile.name
     )
 
     if (existingSession) {
@@ -2105,7 +2209,8 @@ function App() {
         badge: 0,
         online: peerProfile.status === 'online' ? 1 : 0,
         isGroup: false,
-        realName: peerProfile.name
+        realName: peerProfile.name,
+        peerUserId: Number(peerProfile.userId)
       }
       setDynamicSessions((prev) => [newSession, ...prev])
       setCurrentChat(newSessionId)
@@ -2171,13 +2276,13 @@ function App() {
   // 已登录时显示聊天界面
   return (
     <div className={`im-shell ${isNightMode ? 'night-mode' : ''}`}>
-      <LeftNav
-        userAvatar={userAvatar}
-        toggleUserPanel={toggleUserPanel}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        friendRequestCount={friendRequestList.length}
-      />
+        <LeftNav
+          userAvatar={userAvatar}
+          toggleUserPanel={toggleUserPanel}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          friendRequestCount={friendRequestList.length + groupInviteRequests.length}
+        />
 
       <main className="im-layout">
         <SidebarPanel
@@ -2315,6 +2420,8 @@ function App() {
         handleOpenSearchMessage={handleOpenSearchMessage}
         isEditingAnnouncement={isEditingAnnouncement}
         groupAnnouncement={groupAnnouncement}
+        groupAnnouncementHistory={groupAnnouncementHistory}
+        showAnnouncementHistoryModal={showAnnouncementHistoryModal}
         userRole={userRole}
         canRenameCurrentGroup={canRenameCurrentGroup}
         isEditingGroupName={isEditingGroupName}
@@ -2329,6 +2436,8 @@ function App() {
         setTempAnnouncement={setTempAnnouncement}
         handleSaveAnnouncement={handleSaveAnnouncement}
         handleCancelEditAnnouncement={handleCancelEditAnnouncement}
+        handleOpenAnnouncementHistory={handleOpenAnnouncementHistory}
+        handleCloseAnnouncementHistory={handleCloseAnnouncementHistory}
         handleOpenMemberList={handleOpenMemberList}
         handleOpenInviteMember={handleOpenInviteMember}
         handleCloseInviteMember={handleCloseInviteMember}
@@ -2369,8 +2478,11 @@ function App() {
         handleSendFriendRequest={handleSendFriendRequest}
         friendRequestList={friendRequestList}
         sentFriendRequests={sentFriendRequests}
+        groupInviteRequests={groupInviteRequests}
         handleAcceptRequest={handleAcceptRequest}
         handleRejectRequest={handleRejectRequest}
+        handleApproveGroupInviteRequest={handleApproveGroupInviteRequest}
+        handleRejectGroupInviteRequest={handleRejectGroupInviteRequest}
         showSearchMessageModal={showSearchMessageModal}
         handleCloseSearchMessage={handleCloseSearchMessage}
         searchMessageQuery={searchMessageQuery}

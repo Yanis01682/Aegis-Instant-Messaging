@@ -199,6 +199,38 @@ export async function inviteGroupMembers(conversationId, memberIds) {
   return res.data
 }
 
+export async function createGroupInviteRequest(conversationId, inviteeId) {
+  const res = await apiClient.post(`/api/chat/groups/${conversationId}/invite-requests`, {
+    invitee_id: inviteeId,
+  })
+  return res.data
+}
+
+export async function getGroupInviteRequests() {
+  const res = await apiClient.get('/api/chat/groups/invite-requests')
+  return res.data
+}
+
+export async function approveGroupInviteRequest(requestId) {
+  const res = await apiClient.post(`/api/chat/groups/invite-requests/${requestId}/approve`)
+  return res.data
+}
+
+export async function rejectGroupInviteRequest(requestId) {
+  const res = await apiClient.post(`/api/chat/groups/invite-requests/${requestId}/reject`)
+  return res.data
+}
+
+export async function getGroupAnnouncements(conversationId) {
+  const res = await apiClient.get(`/api/chat/groups/${conversationId}/announcements`)
+  return res.data
+}
+
+export async function publishGroupAnnouncement(conversationId, content) {
+  const res = await apiClient.post(`/api/chat/groups/${conversationId}/announcements`, { content })
+  return res.data
+}
+
 export async function sendChatMessage(conversationId, content, replyToId) {
   const payload = { conversation_id: conversationId, content }
   if (replyToId) payload.reply_to_id = replyToId
