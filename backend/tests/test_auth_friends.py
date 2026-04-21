@@ -115,6 +115,28 @@ def test_duplicate_email_in_sensitive_update_rejected():
     assert res.status_code == 400
 
 
+def test_duplicate_phone_in_sensitive_update_rejected():
+    u1, ue1 = unique("sens_dup_phone_a")
+    u2, ue2 = unique("sens_dup_phone_b")
+    h_a, _ = register_and_login(u1, ue1)
+    h_b, _ = register_and_login(u2, ue2)
+    phone = f"139{_counter[0]:08d}"
+
+    first_update = client.post(
+        "/auth/profile/sensitive",
+        json={"password": "secret123", "new_phone": phone},
+        headers=h_b,
+    )
+    assert first_update.status_code == 200
+
+    second_update = client.post(
+        "/auth/profile/sensitive",
+        json={"password": "secret123", "new_phone": phone},
+        headers=h_a,
+    )
+    assert second_update.status_code == 400
+
+
 # ---------------------------------------------------------------------------
 # chat.py: friend remark & edge cases
 # ---------------------------------------------------------------------------
