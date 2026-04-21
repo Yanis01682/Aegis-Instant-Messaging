@@ -61,10 +61,6 @@ class GroupInvitePayload(BaseModel):
     member_ids: list[int]
 
 
-class GroupInvitePayload(BaseModel):
-    member_ids: list[int]
-
-
 class ConnectionManager:
     def __init__(self):
         # 存储 active 链接: {user_id: [websocket1, websocket2]}
