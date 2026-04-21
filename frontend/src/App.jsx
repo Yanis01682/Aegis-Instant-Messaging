@@ -2317,8 +2317,11 @@ function App() {
           onRemoveFromBlacklist={handleRemoveFromBlacklist}
           onOpenBlacklistChat={handleOpenBlacklistChat}
           friendRequestList={friendRequestList}
+          groupInviteRequests={groupInviteRequests}
           handleAcceptRequest={handleAcceptRequest}
           handleRejectRequest={handleRejectRequest}
+          handleApproveGroupInviteRequest={handleApproveGroupInviteRequest}
+          handleRejectGroupInviteRequest={handleRejectGroupInviteRequest}
         />
 
         {/* 侧边栏与聊天窗口的固定分隔线 */}
