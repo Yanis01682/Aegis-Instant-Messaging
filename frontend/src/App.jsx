@@ -162,7 +162,12 @@ function App() {
         phone: profile.phone || '',
         bio: profile.bio || '',
         gender: profile.gender || 'male',
+        avatar: profile.avatar || '',
       })
+      if (profile.avatar) {
+        setUserAvatar(profile.avatar)
+        localStorage.setItem('userAvatar', profile.avatar)
+      }
     } catch {
       setProfileData((prev) => ({
         ...prev,
@@ -319,13 +324,13 @@ function App() {
     checkAuth()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 加载保存的头像
+  // 加载保存的头像（仅作初始值，登录后会被 syncProfileFromUser 覆盖）
   useEffect(() => {
     const savedAvatar = localStorage.getItem('userAvatar')
     if (savedAvatar) {
       setUserAvatar(savedAvatar)
     }
-    // 加载保存的个人信息
+    // 加载保存的个人信息（登录后会被后端数据覆盖）
     const savedProfile = localStorage.getItem('userProfile')
     if (savedProfile) {
       setProfileData(JSON.parse(savedProfile))
@@ -1278,6 +1283,10 @@ function App() {
         await login({ username: account, password })
       const user = await getCurrentUser()
       if (user) {
+        // 先清除旧头像，避免上一个账号的头像短暂显示
+        setUserAvatar('我')
+        localStorage.removeItem('userAvatar')
+        localStorage.removeItem('userProfile')
         syncProfileFromUser(user)
         setIsLoggedIn(true)
         await refreshRealtimeChatData()
@@ -1619,28 +1628,32 @@ function App() {
     const file = e.target.files[0]
     if (!file) return
 
-    // 验证文件类型
     if (!file.type.startsWith('image/')) {
       alert('请选择图片文件！')
       return
     }
 
-    // 验证文件大小（限制 2MB）
+    // 限制 2MB（MEDIUMTEXT 支持最大 16MB，base64 膨胀约 1.33 倍）
     if (file.size > 2 * 1024 * 1024) {
       alert('图片大小不能超过 2MB！')
       return
     }
 
-    // 读取文件并转换为 base64
     const reader = new FileReader()
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       const base64String = event.target.result
-      setUserAvatar(base64String)
-      localStorage.setItem('userAvatar', base64String)
-      alert('头像更换成功！')
+      try {
+        await updateProfile({ avatar: base64String })
+        setUserAvatar(base64String)
+        setProfileData(prev => ({ ...prev, avatar: base64String }))
+        localStorage.setItem('userAvatar', base64String)
+        alert('头像更换成功！')
+      } catch (err) {
+        alert(err.response?.data?.detail || '头像保存失败，请重试！')
+      }
     }
     reader.onerror = () => {
-      alert('头像上传失败，请重试！')
+      alert('头像读取失败，请重试！')
     }
     reader.readAsDataURL(file)
   }
@@ -1828,6 +1841,12 @@ function App() {
     setMyFriends([])
     setShowUserPanel(false)
     setShowLogoutConfirm(false)
+    // 清理头像和个人信息，避免下一个账号沿用
+    setUserAvatar('我')
+    try {
+      localStorage.removeItem('userAvatar')
+      localStorage.removeItem('userProfile')
+    } catch { /* ignore */ }
   }
 
   // 取消退出登录
