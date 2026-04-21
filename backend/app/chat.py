@@ -1,4 +1,5 @@
 from datetime import timezone, timedelta
+import base64
 import os
 import uuid
 from typing import Optional
@@ -55,10 +56,6 @@ class GroupCreatePayload(BaseModel):
 
 class GroupRenamePayload(BaseModel):
     name: str
-
-
-class GroupInvitePayload(BaseModel):
-    member_ids: list[int]
 
 
 class GroupInvitePayload(BaseModel):
@@ -224,10 +221,6 @@ def _is_session_pinned(db: Session, conversation_id: int, user_id: int):
 
 def _serialize_user(user: models.User, remark: Optional[str] = None):
     display_name = user.nickname or user.username
-    # 隐身状态在对方视角显示为离线
-    status = user.status or "online"
-    if status == "invisible":
-        status = "offline"
     return {
         "id": user.id,
         "userId": user.username,
@@ -236,7 +229,6 @@ def _serialize_user(user: models.User, remark: Optional[str] = None):
         "avatar": user.avatar or display_name[:1].upper(),
         "signature": user.bio or "",
         "email": user.email or "",
-        "status": status,
         "group": "常用",
         "remark": remark or "",
     }
@@ -275,8 +267,8 @@ def _serialize_message(
         "replyToId": message.reply_to_id,
     }
     # 添加图片消息的媒体信息
-    if msg_type == "image" and message.media_url:
-        payload["mediaUrl"] = message.media_url
+    if msg_type == "image" and (message.media_data or message.media_url):
+        payload["mediaUrl"] = message.media_data or message.media_url
         payload["mediaName"] = message.media_name
     # 添加视频消息的媒体信息
     if msg_type == "video" and message.media_url:
@@ -350,23 +342,14 @@ def _serialize_session(db: Session, conversation: models.Conversation, current_u
     title = conversation.name or "未命名会话"
     avatar = title[:1] if title else "会"
     real_name = title
-    online_count = 0
 
-    if conversation.is_group:
-        member_users = db.query(models.User).filter(models.User.id.in_(member_ids)).all() if member_ids else []
-        online_count = sum(
-            1
-            for user in member_users
-            if (user.status or "offline") not in ("offline", "invisible")
-        )
-    else:
+    if not conversation.is_group:
         peer_id = next((member_id for member_id in member_ids if member_id != current_user.id), None)
         peer_user = db.query(models.User).filter(models.User.id == peer_id).first() if peer_id else None
         if peer_user:
             title = peer_user.nickname or peer_user.username
             real_name = peer_user.nickname or peer_user.username
             avatar = peer_user.avatar or title[:1].upper()
-            online_count = 0 if peer_user.status in ("offline", "invisible") else 1
 
     return {
         "id": conversation.id,
@@ -376,7 +359,6 @@ def _serialize_session(db: Session, conversation: models.Conversation, current_u
         "time": _format_message_time(latest_message.timestamp) if latest_message else "",
         "timestamp": latest_message.timestamp.isoformat() if latest_message and latest_message.timestamp else None,
         "badge": 0,
-        "online": online_count,
         "isGroup": conversation.is_group,
         "realName": real_name,
         "isPinned": _is_session_pinned(db, conversation.id, current_user.id),
@@ -826,19 +808,6 @@ async def send_image_message(
     # 验证是否为会话成员
     _ensure_conversation_membership(db, conversation_id, current_user.id)
     
-    # 生成唯一的文件名
-    ext = ALLOWED_IMAGE_TYPES[file.content_type]
-    unique_filename = f"{uuid.uuid4().hex}.{ext}"
-    
-    # 确保上传目录存在
-    upload_dir = os.path.join(os.path.dirname(__file__), '..', 'uploads')
-    os.makedirs(upload_dir, exist_ok=True)
-    
-    # 保存文件
-    file_path = os.path.join(upload_dir, unique_filename)
-    with open(file_path, 'wb') as f:
-        f.write(content)
-    
     # 获取回复消息（如果有）
     reply_message = _get_reply_message_or_400(db, conversation_id, reply_to_id)
     reply_sender = None
@@ -846,14 +815,14 @@ async def send_image_message(
         reply_sender = db.query(models.User).filter(models.User.id == reply_message.sender_id).first()
     
     # 创建图片消息
-    media_url = f"/uploads/{unique_filename}"
+    media_data = f"data:{file.content_type};base64,{base64.b64encode(content).decode('ascii')}"
     new_message = models.Message(
         conversation_id=conversation_id,
         sender_id=current_user.id,
         reply_to_id=reply_to_id,
         message_type="image",
         content="[图片]",
-        media_url=media_url,
+        media_data=media_data,
         media_name=file.filename,
     )
     db.add(new_message)
@@ -1141,17 +1110,15 @@ def read_group_members(
         user = user_map.get(member.user_id)
         if not user:
             continue
-        display_name = member.group_nickname or user.username
+        display_name = member.group_nickname or user.nickname or user.username
         payload_list.append(
             {
                 "id": user.id,
                 "name": user.username,
                 "displayName": display_name,
                 "groupNickname": member.group_nickname or "",
-                "avatar": display_name[:1].upper(),
+                "avatar": user.avatar or display_name[:1].upper(),
                 "role": member.role or "member",
-                "status": user.status or "online",
-                "online": user.status not in ("offline", "invisible"),
             }
         )
     payload_list.sort(key=lambda x: role_order.get(x["role"], 2))
@@ -1172,6 +1139,7 @@ def exit_group(
         raise HTTPException(status_code=403, detail=ERR_OWNER_CANNOT_LEAVE)
 
     db.delete(membership)
+    db.flush()  # ensure delete is visible to subsequent queries in this session
 
     remaining_members = (
         db.query(models.ConversationMember)
@@ -1352,13 +1320,6 @@ def update_group_nickname(
 @router.websocket("/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: int, db: Session = Depends(get_db)):
     await manager.connect(websocket, user_id)
-    
-    # 建立连接时，如果是 offline，则自动转 online
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if user and user.status == "offline":
-        user.status = "online"
-        db.commit()
-
     try:
         while True:
             # 维持长连接，等待接收消息或心跳

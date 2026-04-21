@@ -1,5 +1,17 @@
 import { useEffect, useState } from 'react'
 
+function renderAvatar(av, className) {
+  if (typeof av === 'string' && av.startsWith('data:image')) {
+    return (
+      <div
+        className={className}
+        style={{ backgroundImage: `url(${av})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+      />
+    )
+  }
+  return <div className={className}><span>{av || '?'}</span></div>
+}
+
 /**
  * 左侧面板组件。
  * 功能：会话/好友 tab 切换、搜索筛选、分组折叠、打开私聊和创建群聊入口。
@@ -167,7 +179,7 @@ function SidebarPanel({
         onContextMenu={(e) => handleSessionContextMenu(e, session)}
       >
         <div className="avatar-wrapper">
-          <div className="avatar">{session.avatar}</div>
+          {renderAvatar(session.avatar, 'avatar')}
         </div>
         <div className="session-main">
           <div className="session-row">
@@ -197,6 +209,7 @@ function SidebarPanel({
             type="text"
             className="wechat-search-input"
             placeholder="搜索"
+            autoComplete="off"
             value={activeTab === 'friends' ? friendSearchQuery : searchQuery}
             onChange={(e) => {
               if (activeTab === 'friends') {
@@ -276,7 +289,7 @@ function SidebarPanel({
               <h4>新的申请 ({friendRequestList.length})</h4>
               {friendRequestList.map((request) => (
                 <div key={request.id} className="request-item">
-                  <div className="request-avatar">{request.avatar}</div>
+                  {renderAvatar(request.avatar, 'request-avatar')}
                   <div className="request-info">
                     <p className="request-name">{request.name}</p>
                     <p className="request-message">想添加你为好友</p>
@@ -347,8 +360,7 @@ function SidebarPanel({
                             }}
                           >
                             <div className="qq-friend-avatar">
-                              {friend.avatar}
-
+                              {renderAvatar(friend.avatar, 'qq-friend-avatar-img')}
                             </div>
                             <div className="qq-friend-info">
                               <div className="qq-friend-main">
@@ -388,7 +400,7 @@ function SidebarPanel({
               {blacklist.map(user => (
                 <li key={user.id} className="blacklist-item" onClick={() => onOpenBlacklistChat(user)}>
                   <div className="avatar-wrapper">
-                    <div className="avatar">{user.avatar}</div>
+                    {renderAvatar(user.avatar, 'avatar')}
                     <button 
                       className="remove-btn" 
                       onClick={(e) => {

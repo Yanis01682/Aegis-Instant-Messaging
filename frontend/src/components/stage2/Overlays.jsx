@@ -5,6 +5,22 @@
  */
 import { useState } from 'react'
 
+/**
+ * Render an avatar: if the value is a base64 data URL, display it as an
+ * image background; otherwise render the text initial inside a span.
+ */
+function renderAvatar(av, className) {
+  if (typeof av === 'string' && av.startsWith('data:image')) {
+    return (
+      <div
+        className={className}
+        style={{ backgroundImage: `url(${av})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+      />
+    )
+  }
+  return <div className={className}><span>{av || '?'}</span></div>
+}
+
 function Overlays({
   // 表情面板显示控制。
   showEmojiPicker,
@@ -12,7 +28,7 @@ function Overlays({
   handleEmojiSelect,
   // 消息右键菜单状态与动作。
   contextMenu,
-  closeContextMenu,
+  closeContextMenu: _closeContextMenu,
   handleReplyMessage,
   handleRevokeMessage,
   handleDeleteMessage,
@@ -93,12 +109,12 @@ function Overlays({
   handleTransferGroup,
   handleDismissGroup,
   handleExitGroup,
-  isEditingGroupNickname,
-  tempGroupNickname,
-  setTempGroupNickname,
-  handleStartEditGroupNickname,
-  handleSaveGroupNickname,
-  handleCancelEditGroupNickname,
+  isEditingGroupNickname: _isEditingGroupNickname,
+  tempGroupNickname: _tempGroupNickname,
+  setTempGroupNickname: _setTempGroupNickname,
+  handleStartEditGroupNickname: _handleStartEditGroupNickname,
+  handleSaveGroupNickname: _handleSaveGroupNickname,
+  handleCancelEditGroupNickname: _handleCancelEditGroupNickname,
   isEditingRemark,
   tempRemark,
   setTempRemark,
@@ -221,6 +237,30 @@ function Overlays({
         </div>
       )}
 
+      {contextMenu && (
+        <div
+          className="session-context-menu"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {contextMenu.canReply && (
+            <button type="button" className="session-context-item" onClick={handleReplyMessage}>
+              回复消息
+            </button>
+          )}
+          {contextMenu.canRevoke && (
+            <button type="button" className="session-context-item" onClick={handleRevokeMessage}>
+              撤回消息
+            </button>
+          )}
+          {contextMenu.canDelete && (
+            <button type="button" className="session-context-item" onClick={handleDeleteMessage}>
+              删除消息
+            </button>
+          )}
+        </div>
+      )}
+
       {showMemberModal && (
         <div className="modal-overlay" onClick={closeMemberModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -244,7 +284,7 @@ function Overlays({
             <div className="member-list">
               {(groupMembers[currentChat] || []).map((member) => (
                 <div key={member.id} className="member-item">
-                  <div className="member-avatar">{member.avatar}</div>
+                  {renderAvatar(member.avatar, 'member-avatar')}
                   <div className="member-info">
                     <div className="member-name">
                       {member.displayName}
@@ -427,7 +467,7 @@ function Overlays({
 
             <div className="peer-profile-body">
               <div className="peer-profile-avatar-wrap">
-                <div className="peer-profile-avatar">{peerProfile.avatar}</div>
+                {renderAvatar(peerProfile.avatar, 'peer-profile-avatar')}
               </div>
               <h3 className="peer-profile-name">{peerProfile.name}</h3>
               <p className="peer-profile-id">刀盾号：{peerProfile.wechatId || peerProfile.name}</p>
@@ -470,7 +510,7 @@ function Overlays({
               {getCurrentSession().isGroup ? (
                 <div className="group-chat-detail">
                   <div className="group-info-section">
-                    <div className="group-avatar-large">{getCurrentSession().avatar}</div>
+                    {renderAvatar(getCurrentSession().avatar, 'group-avatar-large')}
                     {!isEditingGroupName ? (
                       <div className="group-name-row">
                         <h2 className="group-name">{getCurrentSession().title}</h2>
@@ -510,7 +550,11 @@ function Overlays({
                   <div className="detail-section">
                     <div className="section-title">成员</div>
                     <div className="section-content members-preview">
-                      {groupMembers[currentChat]?.slice(0, 8).map((member, index) => <div key={index} className="member-avatar-small" title={member.name} onClick={() => handleOpenMemberProfile(member)} style={{ cursor: 'pointer' }}>{member.avatar}</div>)}
+                      {groupMembers[currentChat]?.slice(0, 8).map((member, index) => (
+                        <div key={index} className="member-avatar-small" title={member.name} onClick={() => handleOpenMemberProfile(member)} style={{ cursor: 'pointer' }}>
+                          {renderAvatar(member.avatar, 'member-avatar-small-inner')}
+                        </div>
+                      ))}
                       <div className="view-all-members invite-action" onClick={handleOpenInviteMember} title="邀请好友">+</div>
                     </div>
                   </div>
@@ -557,7 +601,7 @@ function Overlays({
                     </>
                   )}
 
-                  {userRole === 'member' && (
+                  {(userRole === 'member' || userRole === 'admin') && (
                     <div className="detail-section"><div className="section-title">危险操作</div><div className="section-content"><button className="danger-btn" onClick={handleExitGroup}>退出群聊</button></div></div>
                   )}
 
@@ -590,32 +634,6 @@ function Overlays({
                     </div>
                   </div>
 
-
-                  <div className="detail-section">
-                    <div className="section-title">我在本群的昵称</div>
-                    <div className="section-content">
-                      {isEditingGroupNickname ? (
-                        <div className="inline-edit">
-                          <input 
-                            type="text" 
-                            className="inline-input" 
-                            value={tempGroupNickname} 
-                            onChange={(e) => setTempGroupNickname(e.target.value)}
-                            autoFocus
-                          />
-                          <div className="edit-actions">
-                            <button className="edit-save-btn" onClick={handleSaveGroupNickname}>保存</button>
-                            <button className="edit-cancel-btn" onClick={handleCancelEditGroupNickname}>取消</button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="value-with-edit" onClick={handleStartEditGroupNickname}>
-                          <span className="value-text">{groupMembers[currentChat]?.find(m => m.id === profileData.userId)?.groupNickname || '未设置'}</span>
-                          <span className="edit-icon-small">✎</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
 
                   <div className="detail-section clickable" onClick={handleOpenSearchMessage}>
                     <div className="section-content">
@@ -659,7 +677,7 @@ function Overlays({
                       const alreadyFriend = isAlreadyFriend(user.userId, user.name)
                       return (
                         <div key={user.userId} className="search-result-item">
-                          <div className="result-avatar">{user.avatar}</div>
+                          <div className="result-avatar">{renderAvatar(user.avatar, 'result-avatar-img')}</div>
                           <div className="result-info">
                             <p className="result-name">{user.name}</p>
                             <p className="result-subtitle">刀盾号：{user.userId}</p>
@@ -727,7 +745,7 @@ function Overlays({
                   <h4>我的好友 ({myFriends.length})</h4>
                   {myFriends.map((friend) => (
                     <div key={friend.id} className="friend-list-item">
-                      <div className="friend-list-avatar">{friend.avatar}</div>
+                      {renderAvatar(friend.avatar, 'friend-list-avatar')}
                       <div className="friend-list-info">
                         <p className="friend-list-name">{friend.name}</p>
 
@@ -793,7 +811,7 @@ function Overlays({
               <div className="member-list-section">
                 <h4>群主</h4>
                 <div className="member-item">
-                  <div className="member-avatar">{currentGroupOwner?.avatar || '群'}</div>
+                  {renderAvatar(currentGroupOwner?.avatar, 'member-avatar')}
                   <div className="member-info">
                     <p className="member-name">{currentGroupOwner?.name || '暂无群主'}</p>
                     <p className="member-role">群主 </p>
@@ -806,7 +824,7 @@ function Overlays({
                 <h4>管理员 ({groupMembers[currentChat]?.filter((m) => m.role === 'admin').length || 0})</h4>
                 {groupMembers[currentChat]?.filter((m) => m.role === 'admin').map((member, index) => (
                   <div key={index} className="member-item">
-                    <div className="member-avatar">{member.avatar}</div>
+                    {renderAvatar(member.avatar, 'member-avatar')}
                     <div className="member-info">
                       <p className="member-name">{member.name}</p>
                       <p className="member-role">管理员 </p>
@@ -820,7 +838,7 @@ function Overlays({
                 <h4>普通成员 ({groupMembers[currentChat]?.filter((m) => m.role === 'member').length || 0})</h4>
                 {groupMembers[currentChat]?.filter((m) => m.role === 'member').map((member, index) => (
                   <div key={index} className="member-item">
-                    <div className="member-avatar">{member.avatar}</div>
+                    {renderAvatar(member.avatar, 'member-avatar')}
                     <div className="member-info">
                       <p className="member-name">{member.name}</p>
                       <p className="member-role">普通成员 </p>
@@ -838,8 +856,9 @@ function Overlays({
       {showInviteMemberModal && (() => {
         const existingMemberIds = getCurrentGroupMemberIds()
         // Only show friends who are NOT already in the group
+        // Use accountId (string from backend) with Number() conversion, fall back to id
         const invitableFriends = myFriends.filter(
-          (f) => !existingMemberIds.has(Number(f.accountId))
+          (f) => !existingMemberIds.has(Number(f.accountId ?? f.id))
         )
         return (
           <div className="invite-member-overlay" onClick={handleCloseInviteMember}>
@@ -867,7 +886,7 @@ function Overlays({
                             checked={isSelected}
                             onChange={() => handleToggleInviteFriend(friendId)}
                           />
-                          <div className="friend-avatar-small">{friend.avatar}</div>
+                          <div className="friend-avatar-small">{renderAvatar(friend.avatar, 'friend-avatar-img')}</div>
                           <span className="friend-name">{friend.remark || friend.name}</span>
                         </label>
                       )
@@ -975,6 +994,7 @@ function Overlays({
 
       {showChangePasswordModal && (
         <ChangePasswordModal
+          username={profileData?.username || ''}
           handleCloseChangePassword={handleCloseChangePassword}
           changePasswordForm={changePasswordForm}
           handleChangePasswordInput={handleChangePasswordInput}
@@ -1011,6 +1031,7 @@ function EyeIcon({ visible }) {
  * 修改密码弹窗子组件，自管理三个密码框的显示/隐藏状态。
  */
 function ChangePasswordModal({
+  username,
   handleCloseChangePassword,
   changePasswordForm,
   handleChangePasswordInput,
@@ -1028,6 +1049,14 @@ function ChangePasswordModal({
           <button className="change-password-close" onClick={handleCloseChangePassword}>×</button>
         </div>
         <div className="change-password-body">
+          <input
+            type="text"
+            value={username}
+            autoComplete="username"
+            readOnly
+            tabIndex={-1}
+            style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', height: 0 }}
+          />
           <div className="form-group">
             <label htmlFor="oldPassword">原密码</label>
             <div className="password-input-wrapper">
@@ -1037,6 +1066,7 @@ function ChangePasswordModal({
                 value={changePasswordForm.oldPassword}
                 onChange={(e) => handleChangePasswordInput('oldPassword', e.target.value)}
                 placeholder="请输入原密码"
+                autoComplete="current-password"
               />
               <button type="button" className="password-toggle-btn" onClick={() => setShowOld(!showOld)} aria-label={showOld ? '隐藏密码' : '显示密码'}>
                 <EyeIcon visible={showOld} />
@@ -1052,6 +1082,7 @@ function ChangePasswordModal({
                 value={changePasswordForm.newPassword}
                 onChange={(e) => handleChangePasswordInput('newPassword', e.target.value)}
                 placeholder="请输入新密码（至少 6 位）"
+                autoComplete="new-password"
               />
               <button type="button" className="password-toggle-btn" onClick={() => setShowNew(!showNew)} aria-label={showNew ? '隐藏密码' : '显示密码'}>
                 <EyeIcon visible={showNew} />
@@ -1067,6 +1098,7 @@ function ChangePasswordModal({
                 value={changePasswordForm.confirmPassword}
                 onChange={(e) => handleChangePasswordInput('confirmPassword', e.target.value)}
                 placeholder="请再次输入新密码"
+                autoComplete="new-password"
               />
               <button type="button" className="password-toggle-btn" onClick={() => setShowConfirm(!showConfirm)} aria-label={showConfirm ? '隐藏密码' : '显示密码'}>
                 <EyeIcon visible={showConfirm} />

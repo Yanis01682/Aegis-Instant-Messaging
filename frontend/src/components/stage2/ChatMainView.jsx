@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 
 /**
  * 聊天主窗体组件。
@@ -60,6 +60,12 @@ function ChatMainView({
 }) {
   const imageInputRef = useRef(null)
   const videoInputRef = useRef(null)
+  const messagesEndRef = useRef(null)
+
+  // Scroll to the bottom whenever messages change or the active chat changes
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'instant' })
+  }, [messages, currentChat])
   const currentSession = getCurrentSession()
   const hasActiveConversation = Boolean(currentSession?.id)
 
@@ -101,7 +107,9 @@ function ChatMainView({
     <section className="panel chat-panel">
       <header className="chat-topbar">
         <div className="chat-user">
-          <div className="avatar large">{currentSession.avatar}</div>
+          {typeof currentSession.avatar === 'string' && currentSession.avatar.startsWith('data:image')
+            ? <div className="avatar large" style={{ backgroundImage: `url(${currentSession.avatar})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+            : <div className="avatar large">{currentSession.avatar}</div>}
           <div>
             <h2>{currentSession.title}</h2>
             {currentSession.isGroup && (
@@ -189,6 +197,8 @@ function ChatMainView({
           </div>
           )
         })}
+        {/* Sentinel element – always sits at the very bottom of the list */}
+        <div ref={messagesEndRef} />
       </div>
 
       {replyToMessage && (

@@ -1,4 +1,4 @@
-﻿/* ========================================
+/* ========================================
    9. 缇ゆ垚鍛樼鐞嗘ā鎬佹 - 寮瑰嚭绐楀彛
    浣嶇疆锛氱偣鍑?鍦ㄧ嚎浜烘暟"鍚庡脊鍑虹殑鍏ㄥ睆閬僵灞傚拰瀵硅瘽妗?
    ======================================== */
@@ -383,7 +383,7 @@
 /* 鐢ㄦ埛闈㈡澘閬僵灞?*/
 .user-panel-overlay {
   position: fixed;
-  top: 60px; /* 椤堕儴瀵艰埅鏍忛珮搴?*/
+  top: 0; /* cover full viewport so panel aligns with header */
   right: 0;
   bottom: 0;
   left: 0;
@@ -403,7 +403,7 @@
   top: 0;
   right: 0;
   width: 320px;
-  height: calc(100vh - 60px);
+  height: 100vh;
   background: #ffffff;
   box-shadow: -4px 0 16px rgba(0, 0, 0, 0.15);
   display: flex;

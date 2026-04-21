@@ -12,7 +12,7 @@ from . import models
 from .chat import manager
 from sqlalchemy import or_, text
 from sqlalchemy.exc import SQLAlchemyError
-from .auth import UserStatus, router as auth_router, get_current_user
+from .auth import router as auth_router, get_current_user
 from .chat import router as chat_router
 from .database import engine, get_db
 from . import models
@@ -100,6 +100,7 @@ def initialize_database():
                     ("reply_to_id", "INTEGER"),
                     ("message_type", "VARCHAR(20) NOT NULL DEFAULT 'text'"),
                     ("media_url", "VARCHAR(500)"),
+                    ("media_data", "TEXT"),
                     ("media_name", "VARCHAR(200)"),
                 ]:
                 try:
@@ -110,6 +111,14 @@ def initialize_database():
                         connection.execute(text(f"ALTER TABLE messages ADD COLUMN {col} {definition}"))
                         connection.commit()
                     logger.info("Migrated: added messages.%s column", col)
+            if engine.dialect.name == "mysql":
+                with engine.connect() as connection:
+                    try:
+                        connection.execute(text("ALTER TABLE messages MODIFY COLUMN media_data MEDIUMTEXT"))
+                        connection.commit()
+                        logger.info("Migrated: messages.media_data → MEDIUMTEXT")
+                    except Exception:
+                        pass
 
             try:
                 with engine.connect() as connection:
@@ -247,17 +256,6 @@ def delete_account(db: Session = Depends(get_db), current_user: models.User = De
     db.commit()
     return {"message": "Account deleted successfully"}
 
-@app.put("/api/users/me/status")
-def update_status(
-    new_status: UserStatus, 
-    current_user: models.User = Depends(get_current_user), 
-    db: Session = Depends(get_db)
-):
-    # 更新状态
-    current_user.status = new_status
-    db.commit()
-    db.refresh(current_user)
-    return {"status": current_user.status}
 
 app.include_router(auth_router)
 app.include_router(chat_router, prefix="/api/chat", tags=["chat"])
