@@ -272,6 +272,13 @@ function App() {
       ...prev,
       [conversationId]: withMarkedReplies
     }))
+    setSessions((prev) =>
+      prev.map((session) =>
+        session.id === conversationId
+          ? { ...session, badge: 0 }
+          : session
+      )
+    )
   }
 
   const refreshGroupConversationMembers = async (conversationId) => {
