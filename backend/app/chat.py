@@ -351,7 +351,7 @@ def _serialize_session(db: Session, conversation: models.Conversation, current_u
             real_name = peer_user.username
             avatar = peer_user.avatar or title[:1].upper()
 
-    return {
+    payload = {
         "id": conversation.id,
         "title": title,
         "avatar": avatar,
@@ -363,6 +363,9 @@ def _serialize_session(db: Session, conversation: models.Conversation, current_u
         "realName": real_name,
         "isPinned": _is_session_pinned(db, conversation.id, current_user.id),
     }
+    if not conversation.is_group and peer_id is not None:
+        payload["peerUserId"] = peer_id
+    return payload
 
 
 def _serialize_friend_request(friendship: models.Friendship, user: models.User, request_type: str):

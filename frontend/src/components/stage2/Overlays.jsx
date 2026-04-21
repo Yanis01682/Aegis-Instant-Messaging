@@ -177,6 +177,7 @@ function Overlays({
   const currentPrivateFriend = !currentSession.isGroup
     ? myFriends.find(
         (friend) =>
+          (currentSession.peerUserId != null && String(friend.accountId) === String(currentSession.peerUserId)) ||
           friend.name === currentSession.realName ||
           friend.name === currentSession.title ||
           friend.remark === currentSession.title
@@ -594,10 +595,7 @@ function Overlays({
                   </div>
 
                   {userRole === 'owner' && (
-                    <>
-                      <div className="detail-section"><div className="section-title">群主操作</div><div className="section-content"><button className="danger-btn" onClick={handleOpenMemberList}>选择新群主</button></div></div>
-                      <div className="detail-section"><div className="section-title">危险操作</div><div className="section-content"><button className="danger-btn" onClick={handleDismissGroup}>解散群聊</button></div></div>
-                    </>
+                    <div className="detail-section"><div className="section-title">危险操作</div><div className="section-content"><button className="danger-btn" onClick={handleDismissGroup}>解散群聊</button></div></div>
                   )}
 
                   {(userRole === 'member' || userRole === 'admin') && (
@@ -817,7 +815,7 @@ function Overlays({
                     <p className="member-name">{currentGroupOwner?.displayName || currentGroupOwner?.name || '暂无群主'}</p>
                     <p className="member-role">群主 </p>
                   </div>
-                  {userRole === 'owner' && <button className="transfer-btn" onClick={() => handleTransferGroup(null)}>转让</button>}
+                  {userRole === 'owner' && <span className="member-role">仅可在下方成员条目中操作</span>}
                 </div>
               </div>
 
@@ -830,7 +828,13 @@ function Overlays({
                       <p className="member-name">{member.displayName || member.name}</p>
                       <p className="member-role">管理员 </p>
                     </div>
-                    {userRole === 'owner' && <button className="remove-btn" onClick={() => handleRemoveMember(member.id)}>移除</button>}
+                    {userRole === 'owner' && (
+                      <div className="action-button-group">
+                        <button className="action-btn make-admin" onClick={() => handleMakeAdmin(member.id, false)}>取消群管</button>
+                        <button className="action-btn transfer-owner" onClick={() => handleTransferGroup(member.id)}>转让群主</button>
+                        <button className="action-btn remove-member" onClick={() => handleRemoveMember(member.id)}>移出群聊</button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -844,7 +848,14 @@ function Overlays({
                       <p className="member-name">{member.displayName || member.name}</p>
                       <p className="member-role">普通成员 </p>
                     </div>
-                    {(userRole === 'owner' || userRole === 'admin') && <button className="remove-btn" onClick={() => handleRemoveMember(member.id)}>移除</button>}
+                    {userRole === 'owner' && (
+                      <div className="action-button-group">
+                        <button className="action-btn make-admin" onClick={() => handleMakeAdmin(member.id, true)}>设为群管</button>
+                        <button className="action-btn transfer-owner" onClick={() => handleTransferGroup(member.id)}>转让群主</button>
+                        <button className="action-btn remove-member" onClick={() => handleRemoveMember(member.id)}>移出群聊</button>
+                      </div>
+                    )}
+                    {userRole === 'admin' && <button className="action-btn remove-member" onClick={() => handleRemoveMember(member.id)}>移出群聊</button>}
                   </div>
                 ))}
               </div>

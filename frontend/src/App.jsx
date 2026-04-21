@@ -196,7 +196,13 @@ function App() {
     
     const mappedSessions = fetchedSessions.map(session => {
       if (!session.isGroup) {
-        const friend = mappedFriends.find(f => f.name === session.realName || f.id === session.id || f.id?.toString() === session.title)
+        const friend = mappedFriends.find(
+          (f) =>
+            (session.peerUserId != null && String(f.accountId) === String(session.peerUserId)) ||
+            f.name === session.realName ||
+            f.id === session.id ||
+            f.id?.toString() === session.title
+        )
         if (friend && friend.remark) {
           return { ...session, title: friend.remark }
         }
@@ -567,6 +573,21 @@ function App() {
     return allSessions.find(s => s.id === currentChat) || EMPTY_SESSION
   }
 
+  const findFriendForSession = (session) => {
+    if (!session || session.isGroup) return null
+    const peerUserId = session.peerUserId != null ? String(session.peerUserId) : null
+    return (
+      myFriends.find((friend) => peerUserId && String(friend.accountId) === peerUserId) ||
+      myFriends.find(
+        (friend) =>
+          friend.name === session.realName ||
+          friend.name === session.title ||
+          friend.remark === session.title
+      ) ||
+      null
+    )
+  }
+
   // 根据被点击的消息，解析对方资料（群聊/私聊）
   const resolvePeerProfileFromMessage = (msg) => {
     if (!msg || msg.sender === 'me' || msg.sender === 'system') return null
@@ -600,12 +621,7 @@ function App() {
       }
     }
 
-    const friend = myFriends.find(
-      (f) =>
-        f.name === currentSession.realName ||
-        f.name === currentSession.title ||
-        f.remark === currentSession.title
-    )
+    const friend = findFriendForSession(currentSession)
 
     const userId = friend?.accountId || `private_${currentSession.realName || currentSession.title}`
     const email = friend?.email || `${currentSession.realName || currentSession.title}@example.com`
@@ -690,12 +706,7 @@ function App() {
     const currentSession = getCurrentSession()
     if (!currentSession || currentSession.isGroup) return
 
-    const friend = myFriends.find(
-      (f) =>
-        f.name === currentSession.realName ||
-        f.name === currentSession.title ||
-        f.remark === currentSession.title
-    )
+    const friend = findFriendForSession(currentSession)
 
     const userId = friend?.accountId || `private_${currentSession.realName || currentSession.title}`
     const email = friend?.email || `${currentSession.realName || currentSession.title}@example.com`
@@ -777,6 +788,7 @@ function App() {
         currentSession &&
         !currentSession.isGroup &&
         (
+          (currentSession.peerUserId != null && String(currentSession.peerUserId) === String(friend.accountId)) ||
           currentSession.realName === friend.name ||
           currentSession.title === friend.name ||
           currentSession.title === friend.remark
@@ -797,6 +809,7 @@ function App() {
         setDynamicSessions((prev) =>
           prev.filter(
             (session) =>
+              String(session.peerUserId ?? '') !== String(friend.accountId) &&
               session.realName !== friend.name &&
               session.title !== friend.name &&
               session.title !== friend.remark
@@ -875,7 +888,7 @@ function App() {
   // 开始编辑备注
   const handleStartEditRemark = () => {
     const currentSession = getCurrentSession()
-    const friend = myFriends.find(f => f.name === currentSession.realName || f.id === currentSession.id || f.id?.toString() === currentSession.title)
+    const friend = findFriendForSession(currentSession)
     setTempRemark(friend?.remark || '')
     setIsEditingRemark(true)
   }
@@ -883,7 +896,7 @@ function App() {
   // 保存备注
   const handleSaveRemark = () => {
     const currentSession = getCurrentSession()
-    const friend = myFriends.find(f => f.name === currentSession.realName || f.id === currentSession.id || f.id?.toString() === currentSession.title)
+    const friend = findFriendForSession(currentSession)
     if (friend) {
       handleUpdateRemark(friend.id, tempRemark)
       setIsEditingRemark(false)
@@ -1213,6 +1226,10 @@ function App() {
   const handleTransferGroup = async (memberId) => {
     const currentSession = getCurrentSession()
     if (!currentSession?.isGroup) return
+    if (!memberId) {
+      alert('请选择一位群成员作为新群主')
+      return
+    }
     if (!window.confirm('确定要转让群主吗？转让后您将成为普通成员。')) return
     try {
       await transferGroupOwnership(currentSession.id, memberId)
@@ -1496,6 +1513,10 @@ function App() {
         bio: profileData.bio || null,
         avatar: profileData.avatar || null,
       })
+      await refreshRealtimeChatData(currentChat)
+      if (currentChat && getCurrentSession().isGroup) {
+        await refreshGroupConversationMembers(currentChat)
+      }
       setIsEditingProfile(false)
       alert('个人信息保存成功！')
     } catch (err) {
@@ -1639,10 +1660,14 @@ function App() {
     reader.onload = async (event) => {
       const base64String = event.target.result
       try {
-        await updateProfile({ avatar: base64String })
-        setUserAvatar(base64String)
-        setProfileData(prev => ({ ...prev, avatar: base64String }))
-        alert('头像更换成功！')
+      await updateProfile({ avatar: base64String })
+      setUserAvatar(base64String)
+      setProfileData(prev => ({ ...prev, avatar: base64String }))
+      await refreshRealtimeChatData(currentChat)
+      if (currentChat && getCurrentSession().isGroup) {
+        await refreshGroupConversationMembers(currentChat)
+      }
+      alert('头像更换成功！')
       } catch (err) {
         alert(err.response?.data?.detail || '头像保存失败，请重试！')
       }
@@ -2046,6 +2071,8 @@ function App() {
   const handleMakeAdmin = async (memberId, isAdmin = true) => {
     const currentSession = getCurrentSession()
     if (!currentSession?.isGroup) return
+    const actionLabel = isAdmin ? '设为群管' : '取消群管'
+    if (!window.confirm(`确定要${actionLabel}吗？`)) return
     try {
       await setGroupAdmin(currentSession.id, memberId, isAdmin)
       await refreshGroupConversationMembers(currentSession.id)
@@ -2071,6 +2098,7 @@ function App() {
     const allSessions = [...sessions, ...dynamicSessions]
     const existingSession = allSessions.find(
       (session) =>
+        (session.peerUserId != null && String(session.peerUserId) === String(friend.accountId)) ||
         session.title === friend.name ||
         session.realName === friend.name ||
         session.title === friend.remark
@@ -2089,7 +2117,10 @@ function App() {
 
     const allSessions = [...sessions, ...dynamicSessions]
     const existingSession = allSessions.find(
-      (s) => s.title === peerProfile.name || s.realName === peerProfile.name
+      (s) =>
+        (s.peerUserId != null && String(s.peerUserId) === String(peerProfile.userId)) ||
+        s.title === peerProfile.name ||
+        s.realName === peerProfile.name
     )
 
     if (existingSession) {
@@ -2105,7 +2136,8 @@ function App() {
         badge: 0,
         online: peerProfile.status === 'online' ? 1 : 0,
         isGroup: false,
-        realName: peerProfile.name
+        realName: peerProfile.name,
+        peerUserId: Number(peerProfile.userId)
       }
       setDynamicSessions((prev) => [newSession, ...prev])
       setCurrentChat(newSessionId)
