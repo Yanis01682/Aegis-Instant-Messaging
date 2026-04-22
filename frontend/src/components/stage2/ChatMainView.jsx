@@ -27,6 +27,8 @@ function ChatMainView({
   handleMessagesClick,
   // 消息右键菜单触发函数。
   handleMessageContextMenu,
+  // 点击引用消息时跳转到原消息。
+  handleJumpToOriginalMessage,
   // 输入区高度。
   composerHeight,
   // 当前回复目标消息。
@@ -71,6 +73,13 @@ function ChatMainView({
   }, [currentChat, messages])
   const currentSession = getCurrentSession()
   const hasActiveConversation = Boolean(currentSession?.id)
+  const currentMessages = messages[currentChat] || []
+  const replyCountMap = {}
+  currentMessages.forEach((message) => {
+    if (message.replyToId) {
+      replyCountMap[message.replyToId] = (replyCountMap[message.replyToId] || 0) + 1
+    }
+  })
 
   const renderMessageAvatar = (avatarValue, onClick) => {
     if (typeof avatarValue === 'string' && avatarValue.startsWith('data:image')) {
@@ -129,7 +138,7 @@ function ChatMainView({
       </header>
 
       <div className="chat-messages" onClick={handleMessagesClick} ref={messagesContainerRef}>
-        {messages[currentChat]?.map((msg, index) => {
+        {currentMessages.map((msg, index) => {
           // 在群聊中，根据消息发送者 ID 获取真实的成员头像和名称
           let peerAvatar = currentSession.avatar
           if (currentSession.isGroup && msg.sender !== 'me' && msg.sender !== 'system') {
@@ -144,6 +153,7 @@ function ChatMainView({
           <div
             key={msg.id}
             data-message-index={index}
+            data-message-id={msg.id}
             className={`message ${msg.sender === 'me' ? 'outgoing' : msg.sender === 'system' ? 'system-message' : 'incoming'} ${msg.replyTo || msg.replyToId ? 'has-reply' : ''}`}
             onContextMenu={(e) => handleMessageContextMenu(e, msg)}
           >
@@ -180,7 +190,11 @@ function ChatMainView({
                 )}
               </div>
               {(msg.replyTo || msg.replyToId) && (
-                <div className={`message-reply${msg.replyTo?.deleted || (!msg.replyTo && msg.replyToId) ? ' reply-deleted' : ''}`}>
+                <button
+                  type="button"
+                  className={`message-reply${msg.replyTo?.deleted || (!msg.replyTo && msg.replyToId) ? ' reply-deleted' : ''}`}
+                  onClick={() => handleJumpToOriginalMessage?.(msg.replyTo?.id || msg.replyToId)}
+                >
                   {msg.replyTo?.deleted || (!msg.replyTo && msg.replyToId) ? (
                     <span className="reply-text reply-deleted-text">
                       {msg.replyTo?.deletedLabel || '该消息已撤回'}
@@ -193,9 +207,14 @@ function ChatMainView({
                       <span className="reply-text">{msg.replyTo.text}</span>
                     </>
                   )}
-                </div>
+                </button>
               )}
-              <span className="message-time">{msg.time}</span>
+              <div className="message-meta">
+                {replyCountMap[msg.id] > 0 && (
+                  <span className="reply-count-chip">被回复 {replyCountMap[msg.id]} 次</span>
+                )}
+                <span className="message-time">{msg.time}</span>
+              </div>
             </div>
           </div>
           )

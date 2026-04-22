@@ -75,6 +75,12 @@ function Overlays({
   handleCancelProfile,
   handleSaveProfile,
   handleChangeAvatar,
+  handleOpenSensitiveInfoModal,
+  showSensitiveInfoModal,
+  handleCloseSensitiveInfoModal,
+  sensitiveInfoForm,
+  handleSensitiveInfoChange,
+  handleSaveSensitiveInfo,
   // 聊天详情及群操作。
   showChatDetail,
   handleCloseChatDetail,
@@ -107,6 +113,8 @@ function Overlays({
   handleOpenInviteMember,
   handleTogglePinChat,
   isChatPinned,
+  handleToggleSessionMute,
+  isSessionMuted,
   handleToggleBlacklist,
   isUserInBlacklist,
   handleTransferGroup,
@@ -125,6 +133,15 @@ function Overlays({
   handleStartEditRemark,
   handleSaveRemark,
   handleCancelEditRemark,
+  isEditingFriendGroup,
+  tempFriendGroup,
+  setTempFriendGroup,
+  newFriendGroupName,
+  setNewFriendGroupName,
+  customGroups,
+  handleStartEditFriendGroup,
+  handleSaveFriendGroup,
+  handleCancelEditFriendGroup,
   handleDeleteFriend,
   // 添加好友审批流程相关。
   showAddFriendModal,
@@ -146,6 +163,8 @@ function Overlays({
   handleCloseSearchMessage,
   searchMessageQuery,
   handleSearchMessages,
+  messageHistoryFilters,
+  handleChangeHistoryFilter,
   searchResults,
   handlePreviousResult,
   currentResultIndex,
@@ -153,6 +172,7 @@ function Overlays({
   setCurrentResultIndex,
   handleJumpToMessage,
   highlightText,
+  handleClearChatHistory,
   // 成员列表与邀请成员。
   showMemberListModal,
   handleCloseMemberList,
@@ -202,6 +222,13 @@ function Overlays({
         avatar: currentSession.avatar
       }
   const currentGroupOwner = (groupMembers[currentChat] || []).find((member) => member.role === 'owner')
+  const groupSenderOptions = (groupMembers[currentChat] || []).filter((member) => member.id !== profileData.id)
+
+  const resolveResultSender = (result) => {
+    if (result.sender === 'me') return '我'
+    if (!currentSession.isGroup) return currentSession.title
+    return result.senderName || '群成员'
+  }
 
 
 
@@ -444,22 +471,95 @@ function Overlays({
                   </div>
                   <div className="form-group">
                     <label htmlFor="email">邮箱</label>
-                    <input type="email" id="email" value={profileData.email} onChange={(e) => handleProfileChange('email', e.target.value)} placeholder="请输入邮箱地址" />
+                    <input type="email" id="email" value={profileData.email} disabled placeholder="请在敏感信息里修改邮箱" />
                   </div>
                   <div className="form-group">
                     <label htmlFor="phone">手机号</label>
-                    <input type="tel" id="phone" value={profileData.phone} onChange={(e) => handleProfileChange('phone', e.target.value)} placeholder="请输入手机号" pattern="[0-9]{11}" />
+                    <input type="tel" id="phone" value={profileData.phone} disabled placeholder="请在敏感信息里修改手机号" pattern="[0-9]{11}" />
                   </div>
                   <div className="form-group">
                     <label htmlFor="bio">个人简介</label>
                     <textarea id="bio" value={profileData.bio} onChange={(e) => handleProfileChange('bio', e.target.value)} placeholder="介绍一下自己吧..." rows="4" />
                   </div>
                   <div className="profile-form-buttons">
+                    <button className="save-btn" onClick={handleOpenSensitiveInfoModal} type="button">修改敏感信息</button>
                     <button className="cancel-btn" onClick={handleCancelProfile}>取消</button>
                     <button className="save-btn" onClick={handleSaveProfile}>保存</button>
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSensitiveInfoModal && (
+        <div className="profile-modal-overlay" onClick={handleCloseSensitiveInfoModal}>
+          <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="profile-modal-header">
+              <h3>修改敏感信息</h3>
+              <button className="profile-modal-close" onClick={handleCloseSensitiveInfoModal}>×</button>
+            </div>
+            <div className="profile-modal-body">
+              <div className="profile-edit-form">
+                <div className="form-group">
+                  <label htmlFor="currentPassword">当前密码</label>
+                  <input
+                    type="password"
+                    id="currentPassword"
+                    value={sensitiveInfoForm.password}
+                    onChange={(e) => handleSensitiveInfoChange('password', e.target.value)}
+                    placeholder="请输入当前密码完成身份验证"
+                    autoComplete="current-password"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="sensitiveEmail">新邮箱</label>
+                  <input
+                    type="email"
+                    id="sensitiveEmail"
+                    value={sensitiveInfoForm.newEmail}
+                    onChange={(e) => handleSensitiveInfoChange('newEmail', e.target.value)}
+                    placeholder="留空表示不修改"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="sensitivePhone">新手机号</label>
+                  <input
+                    type="tel"
+                    id="sensitivePhone"
+                    value={sensitiveInfoForm.newPhone}
+                    onChange={(e) => handleSensitiveInfoChange('newPhone', e.target.value)}
+                    placeholder="留空表示不修改"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="sensitivePassword">新密码</label>
+                  <input
+                    type="password"
+                    id="sensitivePassword"
+                    value={sensitiveInfoForm.newPassword}
+                    onChange={(e) => handleSensitiveInfoChange('newPassword', e.target.value)}
+                    placeholder="至少 6 位，留空表示不修改"
+                    autoComplete="new-password"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="confirmSensitivePassword">确认新密码</label>
+                  <input
+                    type="password"
+                    id="confirmSensitivePassword"
+                    value={sensitiveInfoForm.confirmPassword}
+                    onChange={(e) => handleSensitiveInfoChange('confirmPassword', e.target.value)}
+                    placeholder="请再次输入新密码"
+                    autoComplete="new-password"
+                  />
+                </div>
+                <div className="profile-form-buttons">
+                  <button className="cancel-btn" onClick={handleCloseSensitiveInfoModal}>取消</button>
+                  <button className="save-btn" onClick={handleSaveSensitiveInfo}>确认修改</button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -567,12 +667,14 @@ function Overlays({
                   </div>
                   <div className="detail-section"><div className="section-title">我在本群的昵称</div><div className="section-content">{!isEditingGroupNickname ? (<div className="my-nickname">{(groupMembers[currentChat] || []).find((member) => member.name === profileData.username)?.groupNickname || '未设置'}<button type="button" className="edit-nickname-btn" onClick={handleStartEditGroupNickname}>编辑</button></div>) : (<div className="remark-edit-form"><input type="text" value={tempGroupNickname} onChange={(e) => setTempGroupNickname(e.target.value)} placeholder="请输入我在本群的昵称" autoFocus /><div className="remark-actions"><button type="button" className="save-remark-btn" onClick={handleSaveGroupNickname}>保存</button><button type="button" className="cancel-remark-btn" onClick={handleCancelEditGroupNickname}>取消</button></div></div>)}</div></div>
                   <div className="detail-section"><div className="section-title">置顶聊天</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" checked={isChatPinned(currentChat)} onChange={() => handleTogglePinChat(currentChat)} /><span className="toggle-slider"></span></label></div></div>
+                  <div className="detail-section"><div className="section-title">消息免打扰</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" checked={isSessionMuted(currentChat)} onChange={() => handleToggleSessionMute(currentChat)} /><span className="toggle-slider"></span></label></div></div>
                   <div className="detail-section clickable" onClick={handleOpenSearchMessage}>
                     <div className="section-content">
-                      <span className="section-title" style={{ marginBottom: 0 }}>查找聊天记录</span>
+                      <span className="section-title" style={{ marginBottom: 0 }}>聊天记录</span>
                       <span className="arrow-icon">›</span>
                     </div>
                   </div>
+                  <div className="detail-section"><div className="section-title">本机记录</div><div className="section-content"><button className="danger-btn" onClick={handleClearChatHistory}>清空聊天记录</button></div></div>
 
                   <div className="detail-section">
                     <div className="section-title">群公告</div>
@@ -642,15 +744,41 @@ function Overlays({
                       )}
                     </div>
                   </div>
+                  <div className="detail-section">
+                    <div className="section-title">好友分组</div>
+                    <div className="section-content">
+                      {!isEditingFriendGroup ? (
+                        <div className="remark-input">
+                          {currentPrivateFriend?.group || '未分组'}
+                          <button type="button" className="edit-remark-btn" onClick={handleStartEditFriendGroup}>编辑</button>
+                        </div>
+                      ) : (
+                        <div className="remark-edit-form">
+                          <select value={tempFriendGroup} onChange={(e) => setTempFriendGroup(e.target.value)}>
+                            {customGroups.map((groupName) => (
+                              <option key={groupName} value={groupName}>{groupName}</option>
+                            ))}
+                          </select>
+                          <input type="text" value={newFriendGroupName} onChange={(e) => setNewFriendGroupName(e.target.value)} placeholder="或输入新的分组名称" />
+                          <div className="remark-actions">
+                            <button type="button" className="save-remark-btn" onClick={handleSaveFriendGroup}>保存</button>
+                            <button type="button" className="cancel-remark-btn" onClick={handleCancelEditFriendGroup}>取消</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
 
                   <div className="detail-section clickable" onClick={handleOpenSearchMessage}>
                     <div className="section-content">
-                      <span className="section-title" style={{ marginBottom: 0 }}>查找聊天记录</span>
+                      <span className="section-title" style={{ marginBottom: 0 }}>聊天记录</span>
                       <span className="arrow-icon">›</span>
                     </div>
                   </div>
                   <div className="detail-section"><div className="section-title">置顶聊天</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" checked={isChatPinned(currentChat)} onChange={() => handleTogglePinChat(currentChat)} /><span className="toggle-slider"></span></label></div></div>
+                  <div className="detail-section"><div className="section-title">消息免打扰</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" checked={isSessionMuted(currentChat)} onChange={() => handleToggleSessionMute(currentChat)} /><span className="toggle-slider"></span></label></div></div>
+                  <div className="detail-section"><div className="section-title">本机记录</div><div className="section-content"><button className="danger-btn" onClick={handleClearChatHistory}>清空聊天记录</button></div></div>
                   <div className="detail-section"><div className="section-title">添加到黑名单</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" checked={currentSession.isGroup ? false : isUserInBlacklist(blacklistTarget.id)} onChange={() => !currentSession.isGroup && handleToggleBlacklist(blacklistTarget)} /><span className="toggle-slider"></span></label></div></div>
                   <div 
                     className={`detail-section clickable danger ${!currentPrivateFriend ? 'disabled' : ''}`}
@@ -794,18 +922,40 @@ function Overlays({
       {showSearchMessageModal && (
         <div className="search-message-overlay" onClick={handleCloseSearchMessage}>
           <div className="search-message-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="search-message-header"><h3>查找聊天记录</h3><button className="close-btn" onClick={handleCloseSearchMessage}>✕</button></div>
+            <div className="search-message-header"><h3>聊天记录</h3><button className="close-btn" onClick={handleCloseSearchMessage}>✕</button></div>
             <div className="search-message-body">
               <div className="message-search-section">
                 <input type="text" className="message-search-input" placeholder="搜索聊天内容" value={searchMessageQuery} onChange={handleSearchMessages} autoFocus />
               </div>
+              <div className="message-search-section">
+                <select className="message-search-input" value={messageHistoryFilters.sender} onChange={(e) => handleChangeHistoryFilter('sender', e.target.value)}>
+                  <option value="all">全部成员</option>
+                  <option value={profileData.id}>我</option>
+                  {groupSenderOptions.map((member) => (
+                    <option key={member.id} value={member.id}>{member.displayName || member.name}</option>
+                  ))}
+                </select>
+                <select className="message-search-input" value={messageHistoryFilters.dateRange} onChange={(e) => handleChangeHistoryFilter('dateRange', e.target.value)}>
+                  <option value="all">全部时间</option>
+                  <option value="today">今天</option>
+                  <option value="7d">最近 7 天</option>
+                  <option value="30d">最近 30 天</option>
+                </select>
+                <select className="message-search-input" value={messageHistoryFilters.type} onChange={(e) => handleChangeHistoryFilter('type', e.target.value)}>
+                  <option value="all">全部类型</option>
+                  <option value="text">文字</option>
+                  <option value="image">图片</option>
+                  <option value="video">视频</option>
+                  <option value="reply">回复消息</option>
+                </select>
+              </div>
 
               {searchResults.length > 0 && (
                 <div className="search-results-info">
-                  <span>找到 {searchResults.length} 条相关消息</span>
+                  <span>共展示 {searchResults.length} 条聊天记录</span>
                   <div className="result-navigation">
                     <button className="nav-btn" onClick={handlePreviousResult} disabled={currentResultIndex === 0}>↑ 上一条</button>
-                    <span className="result-index">{currentResultIndex + 1} / {searchResults.length}</span>
+                    <span className="result-index">{searchResults.length > 0 ? currentResultIndex + 1 : 0} / {searchResults.length}</span>
                     <button className="nav-btn" onClick={handleNextResult} disabled={currentResultIndex === searchResults.length - 1}>下一条 ↓</button>
                   </div>
                 </div>
@@ -815,16 +965,14 @@ function Overlays({
                 <div className="search-results-list">
                   {searchResults.map((result, index) => (
                     <div key={result.index} className={`search-result-item ${index === currentResultIndex ? 'active' : ''}`} onClick={() => { setCurrentResultIndex(index); handleJumpToMessage(result.index) }}>
-                      <div className="result-sender">{result.sender === 'me' ? '我' : getCurrentSession().title}</div>
+                      <div className="result-sender">{resolveResultSender(result)}</div>
                       <div className="result-text">{highlightText(result.text, searchMessageQuery)}</div>
                       <div className="result-time">{result.time}</div>
                     </div>
                   ))}
                 </div>
-              ) : searchMessageQuery.trim() ? (
-                <div className="no-results"><p>未找到相关消息</p></div>
               ) : (
-                <div className="search-placeholder"><p>请输入关键词搜索聊天内容</p></div>
+                <div className="search-placeholder"><p>当前筛选条件下暂无聊天记录</p></div>
               )}
             </div>
           </div>

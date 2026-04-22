@@ -266,6 +266,38 @@ def test_sessions_badge_reflects_unread_messages_and_clears_after_read():
     assert cleared_bob_sessions.json()[0]["badge"] == 0
 
 
+def test_muted_session_hides_unread_badge():
+    headers_alice, _ = register_and_login("mute_alice", "mute_alice@example.com")
+    headers_bob, bob_user = register_and_login("mute_bob", "mute_bob@example.com")
+
+    add_friend_res = client.post(
+        "/api/chat/friends/add",
+        json={"friend_id": bob_user["id"]},
+        headers=headers_alice,
+    )
+    conversation_id = add_friend_res.json()["conversation_id"]
+
+    mute_res = client.put(
+        f"/api/chat/sessions/{conversation_id}/mute",
+        json={"muted": True},
+        headers=headers_bob,
+    )
+    assert mute_res.status_code == 200
+    assert mute_res.json()["isMuted"] is True
+
+    send_response = client.post(
+        "/api/chat/messages/send",
+        json={"conversation_id": conversation_id, "content": "muted unread"},
+        headers=headers_alice,
+    )
+    assert send_response.status_code == 200
+
+    muted_sessions = client.get("/api/chat/sessions", headers=headers_bob)
+    assert muted_sessions.status_code == 200
+    assert muted_sessions.json()[0]["badge"] == 0
+    assert muted_sessions.json()[0]["isMuted"] is True
+
+
 def test_sender_can_revoke_own_message():
     headers_alice, _ = register_and_login("revoke_alice", "revoke_alice@example.com")
     headers_bob, bob_user = register_and_login("revoke_bob", "revoke_bob@example.com")

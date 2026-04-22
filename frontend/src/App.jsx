@@ -42,10 +42,12 @@ import {
   updateProfile,
   updateSensitiveInfo,
   updateFriendRemark,
+  updateFriendGroup,
   transferGroupOwnership,
   kickGroupMember,
   setGroupAdmin,
   updateGroupNickname,
+  updateSessionMute,
 } from './services/api'
 import AuthView from './components/stage2/AuthView'
 import LeftNav from './components/stage2/LeftNav'
@@ -65,6 +67,14 @@ const EMPTY_SESSION = {
   realName: '暂无会话'
 }
 
+const DEFAULT_FRIEND_GROUP = '我的好友'
+
+const createHistoryFilters = () => ({
+  sender: 'all',
+  type: 'all',
+  dateRange: 'all',
+})
+
 const formatLocalMessageTime = (date = new Date()) => {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -73,6 +83,38 @@ const formatLocalMessageTime = (date = new Date()) => {
   const minutes = String(date.getMinutes()).padStart(2, '0')
   return `${year}年${month}月${day}日 ${hours}:${minutes}`
 }
+
+const parseMessageDate = (value) => {
+  if (!value) return null
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}
+
+const matchesDateRange = (message, dateRange) => {
+  if (dateRange === 'all') return true
+  const date = parseMessageDate(message.timestamp)
+  if (!date) return false
+
+  const now = new Date()
+  if (dateRange === 'today') {
+    return date.toDateString() === now.toDateString()
+  }
+
+  const days = dateRange === '7d' ? 7 : 30
+  const diff = now.getTime() - date.getTime()
+  return diff >= 0 && diff <= days * 24 * 60 * 60 * 1000
+}
+
+const normalizeMessageText = (message) => (
+  [
+    message.text,
+    message.replyTo?.text,
+    message.senderName,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+)
 
 function App() {
   // 是否已登录，决定渲染认证视图还是 IM 主界面。
@@ -117,10 +159,14 @@ function App() {
   const [showAddFriendModal, setShowAddFriendModal] = useState(false) // 添加好友模态框
   const [isEditingRemark, setIsEditingRemark] = useState(false) // 是否正在编辑备注
   const [tempRemark, setTempRemark] = useState('') // 临时备注
-  const [showSearchMessageModal, setShowSearchMessageModal] = useState(false) // 查找消息模态框
+  const [isEditingFriendGroup, setIsEditingFriendGroup] = useState(false)
+  const [tempFriendGroup, setTempFriendGroup] = useState(DEFAULT_FRIEND_GROUP)
+  const [newFriendGroupName, setNewFriendGroupName] = useState('')
+  const [showSearchMessageModal, setShowSearchMessageModal] = useState(false) // 聊天记录模态框
   const [searchMessageQuery, setSearchMessageQuery] = useState('') // 搜索消息关键词
   const [searchResults, setSearchResults] = useState([]) // 搜索结果
   const [currentResultIndex, setCurrentResultIndex] = useState(0) // 当前搜索结果索引
+  const [messageHistoryFilters, setMessageHistoryFilters] = useState(createHistoryFilters)
   const [userRole, setUserRole] = useState('member') // 用户在当前群的角色：owner-群主，admin-管理员，member-普通成员
   const [groupAnnouncement, setGroupAnnouncement] = useState('') // 群公告
   const [groupAnnouncementHistory, setGroupAnnouncementHistory] = useState([])
@@ -157,6 +203,35 @@ function App() {
   const [messages, setMessages] = useState({})
   const [friendSearchResults, setFriendSearchResults] = useState([])
   const [currentUserId, setCurrentUserId] = useState(null)
+
+  const mergeFriendGroups = (groups = []) => {
+    const merged = [DEFAULT_FRIEND_GROUP, ...INITIAL_CUSTOM_GROUPS.filter((group) => group !== DEFAULT_FRIEND_GROUP)]
+    groups.forEach((groupName) => {
+      const trimmed = (groupName || '').trim()
+      if (trimmed && !merged.includes(trimmed)) {
+        merged.push(trimmed)
+      }
+    })
+    return merged
+  }
+
+  const getScopedStorageKey = (baseKey) => `${baseKey}:${currentUserId || 'guest'}`
+
+  const getLocalHistoryStore = (baseKey) => {
+    try {
+      return JSON.parse(localStorage.getItem(getScopedStorageKey(baseKey)) || '{}')
+    } catch {
+      return {}
+    }
+  }
+
+  const setLocalHistoryStore = (baseKey, value) => {
+    try {
+      localStorage.setItem(getScopedStorageKey(baseKey), JSON.stringify(value))
+    } catch {
+      // ignore
+    }
+  }
 
   const syncProfileFromUser = async (user) => {
     if (!user) return
@@ -196,9 +271,12 @@ function App() {
       getSessions()
     ])
 
+    const mergedGroups = mergeFriendGroups(fetchedFriends.map((friend) => friend.group))
+    _setCustomGroups(mergedGroups)
+
     const mappedFriends = fetchedFriends.map((friend) => ({
       ...friend,
-      group: friend.group || _customGroups[0] || '我的好友',
+      group: friend.group || mergedGroups[0] || DEFAULT_FRIEND_GROUP,
       remark: friend.remark || ''
     }))
     setMyFriends(mappedFriends)
@@ -256,18 +334,7 @@ function App() {
       console.log('[刷新消息] 最后一条消息:', { id: lastMsg.id, type: lastMsg.type, text: lastMsg.text?.substring(0, 20), mediaUrl: lastMsg.mediaUrl })
     }
     
-    const locallyDeleted = getLocallyDeleted(conversationId)
-    // 1. 过滤掉本地删除的消息
-    const filtered = locallyDeleted.size > 0 ? fetchedMessages.filter(m => !locallyDeleted.has(m.id)) : fetchedMessages
-    // 2. 将引用了本地删除消息的 replyTo 标记为已删除
-    const withMarkedReplies = locallyDeleted.size > 0
-      ? filtered.map(m => {
-          if (m.replyTo && locallyDeleted.has(m.replyTo.id)) {
-            return { ...m, replyTo: { ...m.replyTo, deleted: true, deletedLabel: '该消息已删除' } }
-          }
-          return m
-        })
-      : filtered
+    const withMarkedReplies = applyLocalMessageFilters(conversationId, fetchedMessages)
     setMessages((prev) => ({
       ...prev,
       [conversationId]: withMarkedReplies
@@ -309,19 +376,48 @@ function App() {
   // 初始加载时尝试获取用户信息
   // ===== 本地删除消息持久化 =====
   const getLocallyDeleted = (convId) => {
-    try {
-      const data = JSON.parse(localStorage.getItem('wtdd_deleted_msgs') || '{}')
-      return new Set(data[String(convId)] || [])
-    } catch { return new Set() }
+    const data = getLocalHistoryStore('wtdd_deleted_msgs')
+    return new Set(data[String(convId)] || [])
   }
   const addLocallyDeleted = (convId, msgId) => {
-    try {
-      const data = JSON.parse(localStorage.getItem('wtdd_deleted_msgs') || '{}')
-      const ids = new Set(data[String(convId)] || [])
-      ids.add(msgId)
-      data[String(convId)] = [...ids]
-      localStorage.setItem('wtdd_deleted_msgs', JSON.stringify(data))
-    } catch { /* ignore */ }
+    const data = getLocalHistoryStore('wtdd_deleted_msgs')
+    const ids = new Set(data[String(convId)] || [])
+    ids.add(msgId)
+    data[String(convId)] = [...ids]
+    setLocalHistoryStore('wtdd_deleted_msgs', data)
+  }
+  const getLocalClearBeforeId = (convId) => {
+    const data = getLocalHistoryStore('wtdd_cleared_conversations')
+    return Number(data[String(convId)] || 0)
+  }
+  const setLocalClearBeforeId = (convId, messageId) => {
+    const data = getLocalHistoryStore('wtdd_cleared_conversations')
+    data[String(convId)] = Number(messageId || 0)
+    setLocalHistoryStore('wtdd_cleared_conversations', data)
+  }
+  const applyLocalMessageFilters = (convId, rawMessages) => {
+    const locallyDeleted = getLocallyDeleted(convId)
+    const clearBeforeId = getLocalClearBeforeId(convId)
+    const visibleMessages = rawMessages.filter(
+      (message) => message.id > clearBeforeId && !locallyDeleted.has(message.id)
+    )
+
+    return visibleMessages.map((message) => {
+      if (!message.replyTo) {
+        return message
+      }
+      if (message.replyTo.id <= clearBeforeId || locallyDeleted.has(message.replyTo.id)) {
+        return {
+          ...message,
+          replyTo: {
+            ...message.replyTo,
+            deleted: true,
+            deletedLabel: message.replyTo.id <= clearBeforeId ? '该消息已清空' : '该消息已删除',
+          },
+        }
+      }
+      return message
+    })
   }
   const markReplyToDeleted = (convId, deletedMsgId, label) => {
     setMessages(prev => {
@@ -354,7 +450,9 @@ function App() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    const savedArchivedGroupIds = localStorage.getItem('archivedGroupIds')
+    if (!currentUserId) return
+
+    const savedArchivedGroupIds = localStorage.getItem(getScopedStorageKey('archivedGroupIds'))
     if (savedArchivedGroupIds) {
       try {
         const parsed = JSON.parse(savedArchivedGroupIds)
@@ -367,7 +465,7 @@ function App() {
     }
 
     // 加载保存的黑名单
-    const savedBlacklist = localStorage.getItem('blacklist')
+    const savedBlacklist = localStorage.getItem(getScopedStorageKey('blacklist'))
     if (savedBlacklist) {
       try {
         const parsed = JSON.parse(savedBlacklist)
@@ -378,7 +476,7 @@ function App() {
         console.warn('解析 blacklist 失败，使用默认值', err)
       }
     }
-  }, [])
+  }, [currentUserId])
 
   useEffect(() => {
     if (!isLoggedIn || !currentChat || dynamicSessions.some((session) => session.id === currentChat)) {
@@ -451,6 +549,13 @@ function App() {
   }, [currentChat, dynamicSessions, isLoggedIn]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    if (!showSearchMessageModal) return
+    const results = getFilteredHistoryMessages(searchMessageQuery, messageHistoryFilters)
+    setSearchResults(results)
+    setCurrentResultIndex(results.length > 0 ? Math.min(currentResultIndex, results.length - 1) : -1)
+  }, [showSearchMessageModal, searchMessageQuery, messageHistoryFilters, messages, currentChat]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
     if (!showAddFriendModal) return
 
     const loadUsers = async () => {
@@ -474,8 +579,9 @@ function App() {
 
   // 持久化手动收纳状态
   useEffect(() => {
-    localStorage.setItem('archivedGroupIds', JSON.stringify(archivedGroupIds))
-  }, [archivedGroupIds])
+    if (!currentUserId) return
+    localStorage.setItem(getScopedStorageKey('archivedGroupIds'), JSON.stringify(archivedGroupIds))
+  }, [archivedGroupIds, currentUserId])
 
   // 切换聊天置顶状态
   const handleTogglePinChat = async (chatId) => {
@@ -510,15 +616,34 @@ function App() {
     }
   }
 
+  const handleToggleSessionMute = async (chatId) => {
+    const targetSession = sessions.find((session) => session.id === chatId)
+    if (!targetSession) return
+
+    try {
+      const result = await updateSessionMute(chatId, !targetSession.isMuted)
+      setSessions((prev) => prev.map((session) => (
+        session.id === chatId
+          ? { ...session, isMuted: result.isMuted, badge: result.isMuted ? 0 : session.badge }
+          : session
+      )))
+    } catch (err) {
+      alert(err.response?.data?.detail || '更新免打扰失败')
+    }
+  }
+
   // 检查聊天是否置顶
   const isChatPinned = (chatId) => {
     return pinnedChatIds.includes(chatId) || sessions.some((session) => session.id === chatId && session.isPinned)
   }
 
+  const isSessionMuted = (chatId) => sessions.some((session) => session.id === chatId && session.isMuted)
+
   // 持久化黑名单状态
   useEffect(() => {
-    localStorage.setItem('blacklist', JSON.stringify(blacklist))
-  }, [blacklist])
+    if (!currentUserId) return
+    localStorage.setItem(getScopedStorageKey('blacklist'), JSON.stringify(blacklist))
+  }, [blacklist, currentUserId])
 
   // 切换黑名单状态
   const handleToggleBlacklist = (user) => {
@@ -586,6 +711,8 @@ function App() {
           setGroupAnnouncement('')
         })
     }
+    setIsEditingFriendGroup(false)
+    setNewFriendGroupName('')
     setShowChatDetail(true)
   }
 
@@ -593,6 +720,9 @@ function App() {
   const handleCloseChatDetail = () => {
     setShowChatDetail(false)
     setIsEditingGroupName(false)
+    setIsEditingFriendGroup(false)
+    setTempFriendGroup(DEFAULT_FRIEND_GROUP)
+    setNewFriendGroupName('')
     setTempGroupName('')
     setShowAnnouncementHistoryModal(false)
   }
@@ -917,11 +1047,42 @@ function App() {
     )
   }
 
-  // eslint-disable-next-line no-unused-vars
-  const handleMoveFriendToGroup = (friendId, newGroup) => {
-    setMyFriends(prev => 
-      prev.map(f => f.id === friendId ? { ...f, group: newGroup } : f)
-    )
+  const handleMoveFriendToGroup = async (friendId, newGroup) => {
+    const normalizedGroup = (newGroup || '').trim() || DEFAULT_FRIEND_GROUP
+    try {
+      await updateFriendGroup(friendId, normalizedGroup)
+      _setCustomGroups((prev) => mergeFriendGroups([...prev, normalizedGroup]))
+      setMyFriends(prev =>
+        prev.map((friend) => (friend.id === friendId ? { ...friend, group: normalizedGroup } : friend))
+      )
+      await refreshRealtimeChatData(currentChat)
+      return true
+    } catch (err) {
+      alert(err.response?.data?.detail || '好友分组更新失败')
+      return false
+    }
+  }
+
+  const handleClearChatHistory = () => {
+    const currentSession = getCurrentSession()
+    const currentMessages = messages[currentSession.id] || []
+    const lastMessageId = currentMessages[currentMessages.length - 1]?.id
+    if (!currentSession.id || !lastMessageId) {
+      alert('当前没有可清空的聊天记录')
+      return
+    }
+    if (!window.confirm('确定仅在当前设备清空这个会话的聊天记录吗？其他设备和其他账号不会受影响。')) {
+      return
+    }
+
+    setLocalClearBeforeId(currentSession.id, lastMessageId)
+    setMessages((prev) => ({
+      ...prev,
+      [currentSession.id]: [],
+    }))
+    setSearchResults([])
+    setCurrentResultIndex(0)
+    alert('已清空当前设备上的聊天记录')
   }
 
   // 修改好友备注
@@ -944,6 +1105,33 @@ function App() {
     const friend = findFriendForSession(currentSession)
     setTempRemark(friend?.remark || '')
     setIsEditingRemark(true)
+  }
+
+  const handleStartEditFriendGroup = () => {
+    const currentSession = getCurrentSession()
+    const friend = findFriendForSession(currentSession)
+    const currentGroup = friend?.group || DEFAULT_FRIEND_GROUP
+    setTempFriendGroup(currentGroup)
+    setNewFriendGroupName('')
+    setIsEditingFriendGroup(true)
+  }
+
+  const handleCancelEditFriendGroup = () => {
+    setIsEditingFriendGroup(false)
+    setTempFriendGroup(DEFAULT_FRIEND_GROUP)
+    setNewFriendGroupName('')
+  }
+
+  const handleSaveFriendGroup = async () => {
+    const currentSession = getCurrentSession()
+    const friend = findFriendForSession(currentSession)
+    if (!friend) return
+
+    const targetGroup = (newFriendGroupName || tempFriendGroup).trim() || DEFAULT_FRIEND_GROUP
+    const saved = await handleMoveFriendToGroup(friend.id, targetGroup)
+    if (saved) {
+      handleCancelEditFriendGroup()
+    }
   }
 
   // 保存备注
@@ -975,11 +1163,43 @@ function App() {
     setTempRemark('')
   }
 
-  // 打开查找消息模态框
+  const getFilteredHistoryMessages = (query, filters = messageHistoryFilters) => {
+    const currentMessages = messages[currentChat] || []
+    const normalizedQuery = query.trim().toLowerCase()
+
+    return currentMessages
+      .filter((message) => {
+        if (filters.sender !== 'all' && String(message.senderId) !== String(filters.sender)) {
+          return false
+        }
+        if (filters.type !== 'all') {
+          if (filters.type === 'reply' && !message.replyToId) {
+            return false
+          }
+          if (filters.type !== 'reply' && (message.type || 'text') !== filters.type) {
+            return false
+          }
+        }
+        if (!matchesDateRange(message, filters.dateRange)) {
+          return false
+        }
+        if (normalizedQuery && !normalizeMessageText(message).includes(normalizedQuery)) {
+          return false
+        }
+        return true
+      })
+      .map((message, index) => ({
+        ...message,
+        index,
+      }))
+  }
+
+  // 打开聊天记录模态框
   const handleOpenSearchMessage = () => {
     setShowSearchMessageModal(true)
     setSearchMessageQuery('')
-    setSearchResults([])
+    setMessageHistoryFilters(createHistoryFilters())
+    setSearchResults(getFilteredHistoryMessages('', createHistoryFilters()))
     setCurrentResultIndex(0)
   }
 
@@ -989,29 +1209,23 @@ function App() {
     setSearchMessageQuery('')
     setSearchResults([])
     setCurrentResultIndex(0)
+    setMessageHistoryFilters(createHistoryFilters())
+  }
+
+  const handleChangeHistoryFilter = (field, value) => {
+    const nextFilters = { ...messageHistoryFilters, [field]: value }
+    setMessageHistoryFilters(nextFilters)
+    const results = getFilteredHistoryMessages(searchMessageQuery, nextFilters)
+    setSearchResults(results)
+    setCurrentResultIndex(results.length > 0 ? 0 : -1)
   }
 
   // 搜索消息
   const handleSearchMessages = (e) => {
     const query = e.target.value
     setSearchMessageQuery(query)
-    
-    if (!query.trim()) {
-      setSearchResults([])
-      setCurrentResultIndex(0)
-      return
-    }
-    
-    // 在当前聊天中搜索消息
-    const currentMessages = messages[currentChat] || []
-    const results = currentMessages
-      .map((msg, index) => ({
-        ...msg,
-        index,
-        highlighted: (msg.text || '').toLowerCase().includes(query.toLowerCase())
-      }))
-      .filter(msg => msg.highlighted)
-    
+
+    const results = getFilteredHistoryMessages(query, messageHistoryFilters)
     setSearchResults(results)
     setCurrentResultIndex(results.length > 0 ? 0 : -1)
   }
@@ -1043,6 +1257,16 @@ function App() {
         }, 2000)
       }
     }, 100)
+  }
+
+  const handleJumpToOriginalMessage = (messageId) => {
+    if (!messageId) return
+    const messageIndex = (messages[currentChat] || []).findIndex((message) => message.id === messageId)
+    if (messageIndex < 0) {
+      alert('原消息已在当前设备被删除或清空，无法跳转')
+      return
+    }
+    handleJumpToMessage(messageIndex)
   }
 
   // 高亮文本中的关键词
@@ -1644,12 +1868,6 @@ function App() {
       return
     }
 
-    // 验证是否有需要更新的字段
-    if (!sensitiveInfoForm.newEmail && !sensitiveInfoForm.newPhone && !sensitiveInfoForm.newPassword) {
-      alert('请至少填写一项需要修改的信息')
-      return
-    }
-
     // 如果修改密码，验证新密码
     if (sensitiveInfoForm.newPassword) {
       if (sensitiveInfoForm.newPassword.length < 6) {
@@ -1666,16 +1884,20 @@ function App() {
       const payload = {
         password: sensitiveInfoForm.password,
       }
-      
-      // 只有当值发生变化时才包含在请求中
-      if (sensitiveInfoForm.newEmail && sensitiveInfoForm.newEmail !== profileData.email) {
+
+      if (sensitiveInfoForm.newEmail.trim() && sensitiveInfoForm.newEmail !== profileData.email) {
         payload.new_email = sensitiveInfoForm.newEmail
       }
-      if (sensitiveInfoForm.newPhone && sensitiveInfoForm.newPhone !== profileData.phone) {
+      if (sensitiveInfoForm.newPhone.trim() && sensitiveInfoForm.newPhone !== profileData.phone) {
         payload.new_phone = sensitiveInfoForm.newPhone
       }
       if (sensitiveInfoForm.newPassword) {
         payload.new_password = sensitiveInfoForm.newPassword
+      }
+
+      if (!payload.new_email && !payload.new_phone && !payload.new_password) {
+        alert('请至少修改一项敏感信息')
+        return
       }
 
       const result = await updateSensitiveInfo(payload)
@@ -1972,8 +2194,10 @@ function App() {
       setShowDeleteConfirm(false)
 
       try {
-        localStorage.removeItem('archivedGroupIds')
-        localStorage.removeItem('blacklist')
+        localStorage.removeItem(getScopedStorageKey('archivedGroupIds'))
+        localStorage.removeItem(getScopedStorageKey('blacklist'))
+        localStorage.removeItem(getScopedStorageKey('wtdd_deleted_msgs'))
+        localStorage.removeItem(getScopedStorageKey('wtdd_cleared_conversations'))
         // userStatus removed
       } catch {
         // ignore
@@ -2347,6 +2571,7 @@ function App() {
           messages={messages}
           handleMessagesClick={handleMessagesClick}
           handleMessageContextMenu={handleMessageContextMenu}
+          handleJumpToOriginalMessage={handleJumpToOriginalMessage}
           composerHeight={composerHeight}
           replyToMessage={replyToMessage}
           cancelReply={cancelReply}
@@ -2457,6 +2682,8 @@ function App() {
         getCurrentGroupMemberIds={getCurrentGroupMemberIds}
         handleTogglePinChat={handleTogglePinChat}
         isChatPinned={isChatPinned}
+        handleToggleSessionMute={handleToggleSessionMute}
+        isSessionMuted={isSessionMuted}
         handleToggleBlacklist={handleToggleBlacklist}
         isUserInBlacklist={isUserInBlacklist}
         handleTransferGroup={handleTransferGroup}
@@ -2478,6 +2705,15 @@ function App() {
         handleStartEditRemark={handleStartEditRemark}
         handleSaveRemark={handleSaveRemark}
         handleCancelEditRemark={handleCancelEditRemark}
+        isEditingFriendGroup={isEditingFriendGroup}
+        tempFriendGroup={tempFriendGroup}
+        setTempFriendGroup={setTempFriendGroup}
+        newFriendGroupName={newFriendGroupName}
+        setNewFriendGroupName={setNewFriendGroupName}
+        customGroups={_customGroups}
+        handleStartEditFriendGroup={handleStartEditFriendGroup}
+        handleSaveFriendGroup={handleSaveFriendGroup}
+        handleCancelEditFriendGroup={handleCancelEditFriendGroup}
         handleDeleteFriend={handleDeleteFriend}
         showAddFriendModal={showAddFriendModal}
         handleCloseAddFriend={handleCloseAddFriend}
@@ -2497,6 +2733,8 @@ function App() {
         handleCloseSearchMessage={handleCloseSearchMessage}
         searchMessageQuery={searchMessageQuery}
         handleSearchMessages={handleSearchMessages}
+        messageHistoryFilters={messageHistoryFilters}
+        handleChangeHistoryFilter={handleChangeHistoryFilter}
         searchResults={searchResults}
         handlePreviousResult={handlePreviousResult}
         currentResultIndex={currentResultIndex}
@@ -2504,6 +2742,7 @@ function App() {
         setCurrentResultIndex={setCurrentResultIndex}
         handleJumpToMessage={handleJumpToMessage}
         highlightText={highlightText}
+        handleClearChatHistory={handleClearChatHistory}
         showMemberListModal={showMemberListModal}
         handleCloseMemberList={handleCloseMemberList}
         showInviteMemberModal={showInviteMemberModal}

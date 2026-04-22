@@ -13,6 +13,10 @@
   flex-direction: column;
   gap: 2px;
   max-width: min(38vw, 260px);
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
 }
 
 .message.incoming .message-reply {
@@ -58,6 +62,25 @@
 .message.outgoing .reply-text {
   color: #777;
   font-weight: 400;
+}
+
+.message-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.reply-count-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(87, 107, 149, 0.12);
+  color: #576b95;
+  font-size: 0.72rem;
+  line-height: 1.4;
 }
 
 /* 鍥炲棰勮鏍?- 鍙傝€冨井淇℃牱寮?*/
@@ -225,6 +248,11 @@
 
 .night-mode .reply-text {
   color: #888;
+}
+
+.night-mode .reply-count-chip {
+  background: rgba(144, 164, 255, 0.16);
+  color: #90a4ff;
 }
 
 .night-mode .reply-preview {

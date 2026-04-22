@@ -144,6 +144,13 @@ export async function updateFriendRemark(friendId, remark) {
   return res.data
 }
 
+export async function updateFriendGroup(friendId, groupName) {
+  const res = await apiClient.put(`/api/chat/friends/${friendId}/group`, {
+    group_name: groupName,
+  })
+  return res.data
+}
+
 export async function getSessions() {
   const res = await apiClient.get('/api/chat/sessions')
   return res.data
@@ -161,6 +168,13 @@ export async function pinChatSession(conversationId) {
 
 export async function unpinChatSession(conversationId) {
   const res = await apiClient.delete(`/api/chat/sessions/${conversationId}/pin`)
+  return res.data
+}
+
+export async function updateSessionMute(conversationId, muted) {
+  const res = await apiClient.put(`/api/chat/sessions/${conversationId}/mute`, {
+    muted,
+  })
   return res.data
 }
 

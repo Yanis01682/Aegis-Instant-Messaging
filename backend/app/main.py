@@ -128,6 +128,14 @@ def initialize_database():
                     connection.execute(text("ALTER TABLE friendships ADD COLUMN remark VARCHAR(64)"))
                     connection.commit()
                 logger.info("Migrated: added friendships.remark column")
+            try:
+                with engine.connect() as connection:
+                    connection.execute(text("SELECT group_name FROM friendships LIMIT 1"))
+            except Exception:
+                with engine.connect() as connection:
+                    connection.execute(text("ALTER TABLE friendships ADD COLUMN group_name VARCHAR(64)"))
+                    connection.commit()
+                logger.info("Migrated: added friendships.group_name column")
 
             # 兼容旧数据库：增加 read_index 字段
             try:
@@ -168,6 +176,16 @@ def initialize_database():
                     connection.execute(text("ALTER TABLE conversation_members ADD COLUMN group_nickname VARCHAR(64)"))
                     connection.commit()
                 logger.info("Migrated: added conversation_members.group_nickname column")
+            try:
+                with engine.connect() as connection:
+                    connection.execute(text("SELECT mute_notifications FROM conversation_members LIMIT 1"))
+            except Exception:
+                with engine.connect() as connection:
+                    connection.execute(
+                        text("ALTER TABLE conversation_members ADD COLUMN mute_notifications BOOLEAN NOT NULL DEFAULT FALSE")
+                    )
+                    connection.commit()
+                logger.info("Migrated: added conversation_members.mute_notifications column")
 
             # 兼容更旧数据库：增加 is_group 字段
             try:

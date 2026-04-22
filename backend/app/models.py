@@ -47,6 +47,7 @@ class ConversationMember(Base):
     read_index = Column(Integer, default=0, nullable=False)
     role = Column(String(16), default="member", nullable=False)  # owner / admin / member
     group_nickname = Column(String(64), nullable=True)  # 在本群的昵称
+    mute_notifications = Column(Boolean, default=False, nullable=False)
 
 
 class Message(Base):
@@ -81,6 +82,7 @@ class Friendship(Base):
     friend_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     status = Column(String(32), default="pending")
     remark = Column(String(64), nullable=True)
+    group_name = Column(String(64), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
