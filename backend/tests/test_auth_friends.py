@@ -166,6 +166,37 @@ def test_remark_appears_in_friends_list():
     assert match["remark"] == "Best Friend"
 
 
+def test_can_set_friend_group():
+    u1, ue1 = unique("group_a")
+    u2, ue2 = unique("group_b")
+    h_a, _ = register_and_login(u1, ue1)
+    h_b, u_b = register_and_login(u2, ue2)
+    make_friends(h_a, h_b, u_b["id"])
+    res = client.put(
+        f"/api/chat/friends/{u_b['id']}/group",
+        json={"group_name": "实验小组"},
+        headers=h_a,
+    )
+    assert res.status_code == 200
+    assert res.json()["group"] == "实验小组"
+
+
+def test_friend_group_appears_in_friends_list():
+    u1, ue1 = unique("group_list_a")
+    u2, ue2 = unique("group_list_b")
+    h_a, _ = register_and_login(u1, ue1)
+    h_b, u_b = register_and_login(u2, ue2)
+    make_friends(h_a, h_b, u_b["id"])
+    client.put(
+        f"/api/chat/friends/{u_b['id']}/group",
+        json={"group_name": "课程项目"},
+        headers=h_a,
+    )
+    friends = client.get("/api/chat/friends", headers=h_a)
+    match = next(f for f in friends.json() if f["id"] == u_b["id"])
+    assert match["group"] == "课程项目"
+
+
 def test_remark_on_non_friend_returns_404():
     u1, ue1 = unique("remark_nf_a")
     u2, ue2 = unique("remark_nf_b")

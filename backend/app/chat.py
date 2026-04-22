@@ -49,6 +49,10 @@ class FriendRemarkPayload(BaseModel):
     remark: str
 
 
+class FriendGroupPayload(BaseModel):
+    group_name: str
+
+
 class GroupCreatePayload(BaseModel):
     name: str
     member_ids: list[int]
@@ -68,6 +72,10 @@ class GroupInviteRequestPayload(BaseModel):
 
 class GroupAnnouncementPayload(BaseModel):
     content: str
+
+
+class ConversationMutePayload(BaseModel):
+    muted: bool
 
 
 class ConnectionManager:
@@ -227,7 +235,7 @@ def _is_session_pinned(db: Session, conversation_id: int, user_id: int):
     )
 
 
-def _serialize_user(user: models.User, remark: Optional[str] = None):
+def _serialize_user(user: models.User, remark: Optional[str] = None, group_name: Optional[str] = None):
     display_name = user.nickname or user.username
     return {
         "id": user.id,
@@ -237,7 +245,7 @@ def _serialize_user(user: models.User, remark: Optional[str] = None):
         "avatar": user.avatar or display_name[:1].upper(),
         "signature": user.bio or "",
         "email": user.email or "",
-        "group": "常用",
+        "group": group_name or "我的好友",
         "remark": remark or "",
     }
 
@@ -382,7 +390,10 @@ def _serialize_session(db: Session, conversation: models.Conversation, current_u
         "isGroup": conversation.is_group,
         "realName": real_name,
         "isPinned": _is_session_pinned(db, conversation.id, current_user.id),
+        "isMuted": bool(current_membership.mute_notifications) if current_membership is not None else False,
     }
+    if payload["isMuted"]:
+        payload["badge"] = 0
     if not conversation.is_group and peer_id is not None:
         payload["peerUserId"] = peer_id
     return payload
@@ -461,9 +472,18 @@ def read_friends(
     if not friendships:
         return []
 
-    friend_map = {f.friend_id: f.remark for f in friendships}
-    users = db.query(models.User).filter(models.User.id.in_(friend_map.keys())).order_by(models.User.username.asc()).all()
-    return [_serialize_user(user, friend_map.get(user.id)) for user in users]
+    friend_meta = {
+        friendship.friend_id: {
+            "remark": friendship.remark,
+            "group_name": friendship.group_name,
+        }
+        for friendship in friendships
+    }
+    users = db.query(models.User).filter(models.User.id.in_(friend_meta.keys())).order_by(models.User.username.asc()).all()
+    return [
+        _serialize_user(user, friend_meta[user.id]["remark"], friend_meta[user.id]["group_name"])
+        for user in users
+    ]
 
 
 @router.get("/friends/requests")
@@ -635,6 +655,23 @@ def unpin_session(
     return {"message": "Session unpinned successfully", "conversation_id": conversation_id, "isPinned": False}
 
 
+@router.put("/sessions/{conversation_id}/mute")
+def update_session_mute(
+    conversation_id: int,
+    payload: ConversationMutePayload,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    membership = _ensure_conversation_membership(db, conversation_id, current_user.id)
+    membership.mute_notifications = payload.muted
+    db.commit()
+    return {
+        "message": "Session mute status updated",
+        "conversation_id": conversation_id,
+        "isMuted": membership.mute_notifications,
+    }
+
+
 @router.get("/sessions/{conversation_id}/messages")
 def read_messages(
     conversation_id: int,
@@ -739,6 +776,27 @@ def update_friend_remark(
     friendship.remark = payload.remark.strip()
     db.commit()
     return {"message": "Remark updated", "remark": friendship.remark}
+
+
+@router.put("/friends/{friend_id}/group")
+def update_friend_group(
+    friend_id: int,
+    payload: FriendGroupPayload,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    friendship = (
+        db.query(models.Friendship)
+        .filter(models.Friendship.user_id == current_user.id, models.Friendship.friend_id == friend_id)
+        .first()
+    )
+    if not friendship:
+        raise HTTPException(status_code=404, detail="Not your friend or friendship not found")
+
+    group_name = payload.group_name.strip()
+    friendship.group_name = group_name or "我的好友"
+    db.commit()
+    return {"message": "Friend group updated", "group": friendship.group_name}
 
 
 @router.delete("/friends/{friend_id}")
