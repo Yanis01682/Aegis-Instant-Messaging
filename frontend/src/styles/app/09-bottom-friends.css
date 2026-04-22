@@ -839,7 +839,24 @@
   transition: all 0.2s ease;
 }
 
+.remark-edit-form select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  background: #ffffff;
+}
+
 .remark-edit-form input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.remark-edit-form select:focus {
   outline: none;
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -885,6 +902,12 @@
 }
 
 .night-mode .remark-edit-form input {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: #2a2a2a;
+  color: #e0e0e0;
+}
+
+.night-mode .remark-edit-form select {
   border-color: rgba(255, 255, 255, 0.2);
   background: #2a2a2a;
   color: #e0e0e0;
@@ -991,6 +1014,12 @@
   margin-bottom: 20px;
 }
 
+.message-search-section + .message-search-section {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .message-search-input {
   width: 100%;
   padding: 12px 16px;
@@ -999,6 +1028,7 @@
   font-size: 0.95rem;
   font-family: inherit;
   transition: all 0.2s ease;
+  background: #ffffff;
 }
 
 .message-search-input:focus {
@@ -1162,6 +1192,12 @@
   border-color: rgba(255, 255, 255, 0.2);
   background: #2a2a2a;
   color: #e0e0e0;
+}
+
+@media (max-width: 640px) {
+  .message-search-section + .message-search-section {
+    grid-template-columns: 1fr;
+  }
 }
 
 .night-mode .message-search-input:focus {
