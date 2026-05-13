@@ -585,7 +585,7 @@ function App() {
       }
     }
 
-    const timerId = window.setInterval(pollMessages, 3000)
+    const timerId = window.setInterval(pollMessages, 200)
     return () => window.clearInterval(timerId)
   }, [currentChat, dynamicSessions, isLoggedIn]) // eslint-disable-line react-hooks/exhaustive-deps
 
