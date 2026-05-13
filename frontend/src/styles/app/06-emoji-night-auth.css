@@ -265,6 +265,7 @@
 }
 
 .night-mode .logout-btn {
+  background: rgba(255, 255, 255, 0.03);
   border-color: rgba(255, 255, 255, 0.2);
   color: #c0c0c0;
 }
@@ -273,6 +274,23 @@
   border-color: rgba(255, 107, 107, 0.5);
   color: #ff6b6b;
   background: rgba(255, 107, 107, 0.1);
+}
+
+.night-mode .user-panel-footer {
+  background: #181818;
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.night-mode .delete-account-btn {
+  background: rgba(255, 107, 107, 0.04);
+  border-color: rgba(255, 107, 107, 0.45);
+  color: #ff8a8a;
+}
+
+.night-mode .delete-account-btn:hover {
+  border-color: rgba(255, 107, 107, 0.75);
+  color: #ffb3b3;
+  background: rgba(255, 107, 107, 0.14);
 }
 
 /* ========================================
