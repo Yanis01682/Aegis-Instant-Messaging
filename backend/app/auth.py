@@ -7,6 +7,7 @@ from jose import jwt
 import bcrypt
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
+import re
 
 from . import models
 from .database import get_db
@@ -18,6 +19,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 10080
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+EMAIL_PATTERN = re.compile(r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$")
 
 
 class UserStatus(str, Enum):
@@ -79,6 +81,10 @@ def get_user_by_email(db: Session, email: str):
     return db.query(models.User).filter(models.User.email == email).first()
 
 
+def is_valid_email_format(email: str) -> bool:
+    return bool(EMAIL_PATTERN.fullmatch((email or "").strip()))
+
+
 def authenticate_user(db: Session, username: str, password: str):
     user = get_user_by_username(db, username)
     if not user or not verify_password(password, user.hashed_password):
@@ -91,6 +97,8 @@ def register(user_data: UserAuth, db: Session = Depends(get_db)):
     db_user = get_user_by_username(db, username=user_data.username)
     if db_user:
         raise HTTPException(status_code=400, detail="Username already taken")
+    if user_data.email and not is_valid_email_format(user_data.email):
+        raise HTTPException(status_code=400, detail="Invalid email format")
     if user_data.email and get_user_by_email(db, user_data.email):
         raise HTTPException(status_code=400, detail="Email already taken")
     new_user = models.User(
@@ -240,6 +248,8 @@ def update_sensitive_info(
     
     # 更新邮箱
     if data.new_email is not None:
+        if not is_valid_email_format(data.new_email):
+            raise HTTPException(status_code=400, detail="邮箱格式不正确")
         # 检查邮箱是否已被其他用户使用
         existing_user = db.query(models.User).filter(
             models.User.email == data.new_email,
@@ -266,6 +276,8 @@ def update_sensitive_info(
     if data.new_password is not None:
         if len(data.new_password) < 6:
             raise HTTPException(status_code=400, detail="新密码长度不能少于6位")
+        if verify_password(data.new_password, current_user.hashed_password):
+            raise HTTPException(status_code=400, detail="新密码不能与旧密码相同")
         current_user.hashed_password = get_password_hash(data.new_password)
         updated_fields.append("密码")
     

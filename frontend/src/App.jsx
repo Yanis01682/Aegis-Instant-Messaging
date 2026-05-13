@@ -91,6 +91,10 @@ const formatDisplayDateTime = (value) => {
   return formatLocalMessageTime(parsed)
 }
 
+const EMAIL_PATTERN = /^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$/
+
+const isValidEmailFormat = (email) => EMAIL_PATTERN.test((email || '').trim())
+
 const parseMessageDate = (value) => {
   if (!value) return null
   const parsed = new Date(value)
@@ -1770,6 +1774,10 @@ function App() {
       alert('两次输入的密码不一致')
       return
     }
+    if (!isValidEmailFormat(data.email)) {
+      alert('请输入格式正确的邮箱地址')
+      return
+    }
     if (data.agreementAccepted !== 'true') {
       alert('请阅读并同意用户协议和隐私政策')
       return
@@ -1966,10 +1974,20 @@ function App() {
         alert('新密码长度不能少于6位')
         return
       }
+      if (sensitiveInfoForm.password === sensitiveInfoForm.newPassword) {
+        alert('新密码不能与旧密码相同')
+        return
+      }
       if (sensitiveInfoForm.newPassword !== sensitiveInfoForm.confirmPassword) {
         alert('两次输入的新密码不一致')
         return
       }
+    }
+
+    const nextEmail = sensitiveInfoForm.newEmail.trim()
+    if (nextEmail && nextEmail !== profileData.email && !isValidEmailFormat(nextEmail)) {
+      alert('请输入格式正确的邮箱地址')
+      return
     }
 
     try {
@@ -1977,8 +1995,8 @@ function App() {
         password: sensitiveInfoForm.password,
       }
 
-      if (sensitiveInfoForm.newEmail.trim() && sensitiveInfoForm.newEmail !== profileData.email) {
-        payload.new_email = sensitiveInfoForm.newEmail
+      if (nextEmail && nextEmail !== profileData.email) {
+        payload.new_email = nextEmail
       }
       if (sensitiveInfoForm.newPhone.trim() && sensitiveInfoForm.newPhone !== profileData.phone) {
         payload.new_phone = sensitiveInfoForm.newPhone
