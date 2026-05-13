@@ -85,6 +85,12 @@ const formatLocalMessageTime = (date = new Date()) => {
   return `${year}年${month}月${day}日 ${hours}:${minutes}`
 }
 
+const formatDisplayDateTime = (value) => {
+  const parsed = parseMessageDate(value)
+  if (!parsed) return ''
+  return formatLocalMessageTime(parsed)
+}
+
 const parseMessageDate = (value) => {
   if (!value) return null
   const parsed = new Date(value)
@@ -2771,6 +2777,7 @@ function App() {
         handleCancelEditAnnouncement={handleCancelEditAnnouncement}
         handleOpenAnnouncementHistory={handleOpenAnnouncementHistory}
         handleCloseAnnouncementHistory={handleCloseAnnouncementHistory}
+        formatDisplayDateTime={formatDisplayDateTime}
         handleOpenMemberList={handleOpenMemberList}
         handleOpenInviteMember={handleOpenInviteMember}
         handleCloseInviteMember={handleCloseInviteMember}

@@ -110,6 +110,7 @@ function Overlays({
   handleCancelEditAnnouncement,
   handleOpenAnnouncementHistory,
   handleCloseAnnouncementHistory,
+  formatDisplayDateTime,
   handleOpenMemberList,
   handleOpenInviteMember,
   handleTogglePinChat,
@@ -673,7 +674,6 @@ function Overlays({
                     <p className="group-member-count">{(groupMembers[currentChat] || []).length} 位成员</p>
                   </div>
 
-                  <div className="detail-section"><div className="section-title">群公告</div><div className="section-content"><p>欢迎加入{getCurrentSession().title}！请遵守群规，文明交流。</p></div></div>
                   <div className="detail-section"><div className="section-title">群主</div><div className="section-content owner-info"><div onClick={() => handleOpenOwnerProfile()} style={{ cursor: 'pointer' }}>{renderAvatar(currentGroupOwner?.avatar || getCurrentSession().avatar, 'owner-avatar')}</div><div className="owner-info"><div className="owner-name">{currentGroupOwner?.displayName || getCurrentOwner()}</div><div className="owner-role">群主</div></div></div></div>
 
                   <div className="detail-section">
@@ -1031,7 +1031,7 @@ function Overlays({
                     <div key={item.id} className="search-result-item">
                       <div className="result-sender">{item.publisherName}</div>
                       <div className="result-text">{item.content}</div>
-                      <div className="result-time">{item.createdAt ? item.createdAt.replace('T', ' ').slice(0, 16) : ''}</div>
+                      <div className="result-time">{formatDisplayDateTime(item.createdAt)}</div>
                     </div>
                   ))}
                 </div>
