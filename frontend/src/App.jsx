@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import {
   INITIAL_CUSTOM_GROUPS,
@@ -84,6 +84,16 @@ const formatLocalMessageTime = (date = new Date()) => {
   const minutes = String(date.getMinutes()).padStart(2, '0')
   return `${year}年${month}月${day}日 ${hours}:${minutes}`
 }
+
+const formatDisplayDateTime = (value) => {
+  const parsed = parseMessageDate(value)
+  if (!parsed) return ''
+  return formatLocalMessageTime(parsed)
+}
+
+const EMAIL_PATTERN = /^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$/
+
+const isValidEmailFormat = (email) => EMAIL_PATTERN.test((email || '').trim())
 
 const parseMessageDate = (value) => {
   if (!value) return null
@@ -211,6 +221,7 @@ function App() {
   const [friendSearchResults, setFriendSearchResults] = useState([])
   const [currentUserId, setCurrentUserId] = useState(null)
   const [jumpToMessageId, setJumpToMessageId] = useState(null)
+  const notificationSocketRef = useRef(null)
 
   const mergeFriendGroups = (groups = []) => {
     const merged = [DEFAULT_FRIEND_GROUP, ...INITIAL_CUSTOM_GROUPS.filter((group) => group !== DEFAULT_FRIEND_GROUP)]
@@ -553,41 +564,74 @@ function App() {
   }, [currentChat, currentUserId, isLoggedIn, sessions]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!isLoggedIn) return
-
-    const pollSessions = async () => {
-      if (document.visibilityState !== 'visible') return
-
-      try {
-        await refreshRealtimeChatData(currentChat)
-        await refreshFriendRequests()
-      } catch (err) {
-        console.error('刷新会话失败', err)
-      }
-    }
-
-    const timerId = window.setInterval(pollSessions, 5000)
-    return () => window.clearInterval(timerId)
-  }, [currentChat, isLoggedIn]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (!isLoggedIn || !currentChat || dynamicSessions.some((session) => session.id === currentChat)) {
+    if (!isLoggedIn || !currentUserId) {
       return
     }
 
-    const pollMessages = async () => {
-      if (document.visibilityState !== 'visible') return
+    let reconnectTimerId = null
+    let isCancelled = false
 
-      try {
-        await refreshConversationMessages(currentChat)
-      } catch (err) {
-        console.error('刷新消息失败', err)
+    const cleanupSocket = () => {
+      if (notificationSocketRef.current) {
+        notificationSocketRef.current.close()
+        notificationSocketRef.current = null
       }
     }
 
-    const timerId = window.setInterval(pollMessages, 3000)
-    return () => window.clearInterval(timerId)
-  }, [currentChat, dynamicSessions, isLoggedIn]) // eslint-disable-line react-hooks/exhaustive-deps
+    const scheduleReconnect = () => {
+      if (isCancelled) return
+      reconnectTimerId = window.setTimeout(connectNotificationSocket, 1500)
+    }
+
+    const handleNotification = async (event) => {
+      try {
+        const payload = JSON.parse(event.data)
+        if (payload.type === 'conversation_updated') {
+          await refreshRealtimeChatData(currentChat)
+          if (payload.conversationId === currentChat && !dynamicSessions.some((session) => session.id === currentChat)) {
+            await refreshConversationMessages(currentChat)
+          }
+          return
+        }
+
+        if (payload.type === 'friend_request_updated' || payload.type === 'group_invite_request_updated') {
+          await refreshFriendRequests()
+          await refreshRealtimeChatData(currentChat)
+        }
+      } catch (err) {
+        console.error('处理通知失败', err)
+      }
+    }
+
+    const connectNotificationSocket = () => {
+      cleanupSocket()
+
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const socket = new window.WebSocket(`${protocol}//${window.location.host}/api/chat/ws/${currentUserId}`)
+      notificationSocketRef.current = socket
+
+      socket.onmessage = handleNotification
+      socket.onclose = () => {
+        if (notificationSocketRef.current === socket) {
+          notificationSocketRef.current = null
+        }
+        scheduleReconnect()
+      }
+      socket.onerror = () => {
+        socket.close()
+      }
+    }
+
+    connectNotificationSocket()
+
+    return () => {
+      isCancelled = true
+      if (reconnectTimerId) {
+        window.clearTimeout(reconnectTimerId)
+      }
+      cleanupSocket()
+    }
+  }, [currentChat, currentUserId, dynamicSessions, isLoggedIn]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!showSearchMessageModal) return
@@ -1730,6 +1774,10 @@ function App() {
       alert('两次输入的密码不一致')
       return
     }
+    if (!isValidEmailFormat(data.email)) {
+      alert('请输入格式正确的邮箱地址')
+      return
+    }
     if (data.agreementAccepted !== 'true') {
       alert('请阅读并同意用户协议和隐私政策')
       return
@@ -1926,10 +1974,20 @@ function App() {
         alert('新密码长度不能少于6位')
         return
       }
+      if (sensitiveInfoForm.password === sensitiveInfoForm.newPassword) {
+        alert('新密码不能与旧密码相同')
+        return
+      }
       if (sensitiveInfoForm.newPassword !== sensitiveInfoForm.confirmPassword) {
         alert('两次输入的新密码不一致')
         return
       }
+    }
+
+    const nextEmail = sensitiveInfoForm.newEmail.trim()
+    if (nextEmail && nextEmail !== profileData.email && !isValidEmailFormat(nextEmail)) {
+      alert('请输入格式正确的邮箱地址')
+      return
     }
 
     try {
@@ -1937,8 +1995,8 @@ function App() {
         password: sensitiveInfoForm.password,
       }
 
-      if (sensitiveInfoForm.newEmail.trim() && sensitiveInfoForm.newEmail !== profileData.email) {
-        payload.new_email = sensitiveInfoForm.newEmail
+      if (nextEmail && nextEmail !== profileData.email) {
+        payload.new_email = nextEmail
       }
       if (sensitiveInfoForm.newPhone.trim() && sensitiveInfoForm.newPhone !== profileData.phone) {
         payload.new_phone = sensitiveInfoForm.newPhone
@@ -2206,7 +2264,12 @@ function App() {
   // 确认退出登录
   const confirmLogout = () => {
     // (status removed from localStorage backup)
-    
+
+    if (notificationSocketRef.current) {
+      notificationSocketRef.current.close()
+      notificationSocketRef.current = null
+    }
+
     logout()
     setIsLoggedIn(false)
     setCurrentChat(null)
@@ -2732,6 +2795,7 @@ function App() {
         handleCancelEditAnnouncement={handleCancelEditAnnouncement}
         handleOpenAnnouncementHistory={handleOpenAnnouncementHistory}
         handleCloseAnnouncementHistory={handleCloseAnnouncementHistory}
+        formatDisplayDateTime={formatDisplayDateTime}
         handleOpenMemberList={handleOpenMemberList}
         handleOpenInviteMember={handleOpenInviteMember}
         handleCloseInviteMember={handleCloseInviteMember}
