@@ -8,6 +8,7 @@
   flex-direction: column;
   flex: 1;
   min-width: 0;
+  min-height: 0;
 }
 
 .empty-wechat-panel {
@@ -66,6 +67,7 @@
    ======================================== */
 .chat-messages {
   flex: 1;
+  min-height: 0;
   padding: 20px;
   overflow-y: auto;
   background: #ededed;
