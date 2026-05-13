@@ -531,7 +531,7 @@ function App() {
   }, [currentUserId])
 
   useEffect(() => {
-    if (!isLoggedIn || !currentChat || dynamicSessions.some((session) => session.id === currentChat)) {
+    if (!isLoggedIn || !currentChat) {
       return
     }
 
@@ -588,7 +588,7 @@ function App() {
         const payload = JSON.parse(event.data)
         if (payload.type === 'conversation_updated') {
           await refreshRealtimeChatData(currentChat)
-          if (payload.conversationId === currentChat && !dynamicSessions.some((session) => session.id === currentChat)) {
+          if (payload.conversationId === currentChat) {
             await refreshConversationMessages(currentChat)
           }
           return

@@ -393,7 +393,7 @@ function Overlays({
               <div className="menu-item" onClick={(e) => { e.stopPropagation(); handleOpenProfile() }}><span className="menu-icon">👤</span><span className="menu-text">个人信息</span><span className="menu-arrow">›</span></div>
               <div className="menu-item" onClick={(e) => { e.stopPropagation(); handleOpenChangePassword() }}><span className="menu-icon">🔑</span><span className="menu-text">修改密码</span><span className="menu-arrow">›</span></div>
               <div className="menu-item" onClick={toggleNightMode}><span className="menu-icon">{isNightMode ? '☀️' : '🌙'}</span><span className="menu-text">{isNightMode ? '日间模式' : '夜间模式'}</span><span className="menu-toggle"><span className={`toggle-switch ${isNightMode ? 'active' : ''}`}></span></span></div>
-              <div className="menu-item"><span className="menu-icon">🔔</span><span className="menu-text">消息通知</span><span className="menu-badge">{unreadNotificationCount}</span></div>
+              <div className="menu-item"><span className="menu-icon">🔔</span><span className="menu-text">消息通知</span>{unreadNotificationCount > 0 && <span className="menu-badge">{unreadNotificationCount}</span>}</div>
               <div className="menu-item" onClick={() => setShowAboutModal(true)}><span className="menu-icon">ℹ️</span><span className="menu-text">关于我们</span><span className="menu-arrow">›</span></div>
             </div>
 
