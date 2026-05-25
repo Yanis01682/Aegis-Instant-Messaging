@@ -653,10 +653,10 @@ function App() {
               return { ...prev, [currentChat]: [...existing, msg] }
             })
           }
-          await refreshRealtimeChatData(currentChat)
-          // 仅在没有内联消息或不是当前会话时才全量刷新
+          // 会话列表刷新不阻塞消息渲染
+          refreshRealtimeChatData(currentChat)
           if (!payload.message && payload.conversationId === currentChat) {
-            await refreshConversationMessages(currentChat)
+            refreshConversationMessages(currentChat)
           }
           return
         }
