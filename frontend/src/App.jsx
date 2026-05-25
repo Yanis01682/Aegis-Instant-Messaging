@@ -603,25 +603,30 @@ function App() {
 
     const stopPolling = () => {
       if (pollingTimerId) {
-        window.clearInterval(pollingTimerId)
         pollingTimerId = null
       }
     }
 
     const startPolling = () => {
       if (pollingTimerId) return
-      console.log('WebSocket 不可用，降级为轮询模式')
-      pollingTimerId = window.setInterval(async () => {
-        if (isCancelled) return
+      console.log('WebSocket 不可用，降级为长轮询模式')
+      pollingTimerId = true
+
+      const poll = async () => {
+        if (isCancelled || !pollingTimerId) return
         try {
-          await refreshRealtimeChatData(currentChat)
-          if (currentChat) {
-            await refreshConversationMessages(currentChat)
+          const res = await fetch(`/api/chat/poll/${currentUserId}?timeout=25`)
+          if (!res.ok) throw new Error(`poll ${res.status}`)
+          const notifications = await res.json()
+          for (const payload of notifications) {
+            await handleNotification({ data: JSON.stringify(payload) })
           }
         } catch (err) {
-          console.error('轮询刷新失败', err)
+          if (!isCancelled) await new Promise(r => setTimeout(r, 2000))
         }
-      }, 3000)
+        if (!isCancelled && pollingTimerId) poll()
+      }
+      poll()
     }
 
     const scheduleReconnect = () => {

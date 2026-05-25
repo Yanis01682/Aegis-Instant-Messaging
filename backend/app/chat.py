@@ -84,6 +84,8 @@ class ConnectionManager:
     def __init__(self):
         # 存储 active 链接: {user_id: [websocket1, websocket2]}
         self.active_connections: dict[int, list[WebSocket]] = {}
+        # 长轮询队列: {user_id: [asyncio.Queue, ...]}
+        self.poll_queues: dict[int, list[asyncio.Queue]] = {}
 
     async def connect(self, websocket: WebSocket, user_id: int):
         await websocket.accept()
@@ -99,12 +101,16 @@ class ConnectionManager:
                 del self.active_connections[user_id]
 
     async def send_notification(self, user_id: int, payload: dict):
+        # 发送到 WebSocket 连接
         sockets = list(self.active_connections.get(user_id, []))
-        if not sockets:
+        # 发送到长轮询队列
+        queues = list(self.poll_queues.get(user_id, []))
+        
+        if not sockets and not queues:
             print(f"⚠️ 用户 {user_id} 没有活动的 WebSocket 连接")
             return
 
-        print(f"📨 向用户 {user_id} 发送 {len(sockets)} 个连接: {payload}")
+        print(f"📨 向用户 {user_id} 发送 {len(sockets)} 个WS + {len(queues)} 个轮询: {payload}")
         message = json.dumps(payload)
         disconnected = []
         for socket in sockets:
@@ -117,6 +123,10 @@ class ConnectionManager:
 
         for socket in disconnected:
             self.disconnect(socket, user_id)
+
+        # 推送到长轮询队列
+        for q in queues:
+            await q.put(payload)
 
     async def notify_users(self, user_ids: list[int] | set[int], payload: dict):
         tasks = [
@@ -1819,6 +1829,36 @@ def update_group_nickname(
     my_member.group_nickname = nickname if nickname else None
     db.commit()
     return {"message": "Group nickname updated", "group_nickname": my_member.group_nickname or ""}
+
+
+from fastapi.responses import JSONResponse
+
+
+@router.get("/poll/{user_id}")
+async def long_poll_endpoint(user_id: int, timeout: int = Query(default=25, le=55)):
+    """HTTP 长轮询端点，作为 WebSocket 的降级方案"""
+    queue = asyncio.Queue()
+    if user_id not in manager.poll_queues:
+        manager.poll_queues[user_id] = []
+    manager.poll_queues[user_id].append(queue)
+    try:
+        notifications = []
+        try:
+            msg = await asyncio.wait_for(queue.get(), timeout=timeout)
+            notifications.append(msg)
+            # 取出队列中所有已有的消息
+            while not queue.empty():
+                notifications.append(queue.get_nowait())
+        except asyncio.TimeoutError:
+            pass
+        return JSONResponse(notifications)
+    finally:
+        if user_id in manager.poll_queues:
+            if queue in manager.poll_queues[user_id]:
+                manager.poll_queues[user_id].remove(queue)
+            if not manager.poll_queues[user_id]:
+                del manager.poll_queues[user_id]
+
 
 @router.websocket("/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: int, db: Session = Depends(get_db)):

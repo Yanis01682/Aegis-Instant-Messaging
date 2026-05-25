@@ -17,6 +17,7 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: backendTarget,
           changeOrigin: true,
+          secure: false,
           // WebSocket 支持
           ws: true,
         },
