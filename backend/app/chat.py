@@ -966,6 +966,16 @@ def send_message(
             "type": "conversation_updated",
             "conversationId": payload.conversation_id,
             "messageId": new_message.id,
+            "message": {
+                "id": new_message.id,
+                "text": new_message.content,
+                "type": new_message.message_type or "text",
+                "senderId": current_user.id,
+                "senderName": current_user.nickname or current_user.username,
+                "time": _format_message_time(new_message.timestamp),
+                "timestamp": new_message.timestamp.isoformat() if new_message.timestamp else None,
+                "replyToId": new_message.reply_to_id,
+            },
         },
     )
     return {

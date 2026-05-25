@@ -643,8 +643,19 @@ function App() {
       try {
         const payload = JSON.parse(event.data)
         if (payload.type === 'conversation_updated') {
+          // 如果通知携带完整消息，直接插入，避免额外请求
+          if (payload.message && payload.conversationId === currentChat) {
+            const msg = payload.message
+            msg.sender = msg.senderId === currentUserId ? 'me' : 'other'
+            setMessages((prev) => {
+              const existing = prev[currentChat] || []
+              if (existing.some(m => m.id === msg.id)) return prev
+              return { ...prev, [currentChat]: [...existing, msg] }
+            })
+          }
           await refreshRealtimeChatData(currentChat)
-          if (payload.conversationId === currentChat) {
+          // 仅在没有内联消息或不是当前会话时才全量刷新
+          if (!payload.message && payload.conversationId === currentChat) {
             await refreshConversationMessages(currentChat)
           }
           return
