@@ -1877,9 +1877,54 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int, db: Session = D
     print(f"✅ WebSocket 连接成功: user_id={user_id}")
     try:
         while True:
-            # 维持长连接，等待接收消息或心跳
-            data = await websocket.receive_text() 
-            print(f"📨 收到消息 from user {user_id}: {data}")
+            data = await websocket.receive_text()
+            # 支持通过 WebSocket 发送消息
+            try:
+                payload = json.loads(data)
+                if payload.get("action") == "send_message":
+                    conv_id = payload["conversation_id"]
+                    content = (payload.get("content") or "").strip()
+                    if not content:
+                        continue
+                    # 验证成员身份
+                    membership = db.query(models.ConversationMember).filter(
+                        models.ConversationMember.conversation_id == conv_id,
+                        models.ConversationMember.user_id == user_id
+                    ).first()
+                    if not membership:
+                        continue
+                    sender = db.query(models.User).filter(models.User.id == user_id).first()
+                    new_message = models.Message(
+                        conversation_id=conv_id,
+                        sender_id=user_id,
+                        reply_to_id=payload.get("reply_to_id"),
+                        content=content,
+                    )
+                    db.add(new_message)
+                    db.commit()
+                    db.refresh(new_message)
+                    member_ids = [
+                        m.user_id for m in db.query(models.ConversationMember.user_id)
+                        .filter(models.ConversationMember.conversation_id == conv_id).all()
+                    ]
+                    sender_name = (sender.nickname or sender.username) if sender else "系统"
+                    await manager.notify_users(member_ids, {
+                        "type": "conversation_updated",
+                        "conversationId": conv_id,
+                        "messageId": new_message.id,
+                        "message": {
+                            "id": new_message.id,
+                            "text": new_message.content,
+                            "type": "text",
+                            "senderId": user_id,
+                            "senderName": sender_name,
+                            "time": _format_message_time(new_message.timestamp),
+                            "timestamp": new_message.timestamp.isoformat() if new_message.timestamp else None,
+                            "replyToId": new_message.reply_to_id,
+                        },
+                    })
+            except (json.JSONDecodeError, KeyError):
+                pass
     except WebSocketDisconnect:
         # --- 核心逻辑：用户关闭网页会触发这里 ---
         print(f"❌ WebSocket 断开: user_id={user_id}")

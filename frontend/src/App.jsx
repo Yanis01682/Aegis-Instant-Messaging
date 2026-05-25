@@ -650,6 +650,15 @@ function App() {
             setMessages((prev) => {
               const existing = prev[currentChat] || []
               if (existing.some(m => m.id === msg.id)) return prev
+              // 如果是自己发的，替换乐观消息
+              if (msg.sender === 'me') {
+                const pendingIdx = existing.findIndex(m => String(m.id).startsWith('pending-'))
+                if (pendingIdx !== -1) {
+                  const updated = [...existing]
+                  updated[pendingIdx] = msg
+                  return { ...prev, [currentChat]: updated }
+                }
+              }
               return { ...prev, [currentChat]: [...existing, msg] }
             })
           }
@@ -2216,26 +2225,33 @@ function App() {
       const uiMs = performance.now() - startedAt
       console.log(`[消息延迟] UI 更新完成 | ${Math.round(uiMs)}ms | ✅`)
 
-      // 后台发送，成功后替换乐观消息为真实消息
-      sendChatMessage(sessionId, text, replyId).then((result) => {
-        const httpMs = performance.now() - startedAt
-        console.log(`[消息延迟] 服务器确认 | HTTP: ${Math.round(httpMs)}ms`)
-        setMessages((prev) => ({
-          ...prev,
-          [sessionId]: (prev[sessionId] || []).map((m) =>
-            m.id === optimisticMsg.id ? result.message : m
-          )
-        }))
-      }).catch((err) => {
-        // 发送失败，标记消息
-        console.error('发送失败', err)
-        setMessages((prev) => ({
-          ...prev,
-          [sessionId]: (prev[sessionId] || []).map((m) =>
-            m.id === optimisticMsg.id ? { ...m, failed: true } : m
-          )
-        }))
-      })
+      // 优先通过 WebSocket 发送（更快），HTTP 作为 fallback
+      const ws = notificationSocketRef.current
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action: 'send_message', conversation_id: sessionId, content: text, reply_to_id: replyId || null }))
+        // WebSocket 发送后通知会回来替换乐观消息，无需额外处理
+        console.log(`[消息延迟] 通过 WebSocket 发送`)
+      } else {
+        // fallback: HTTP 发送
+        sendChatMessage(sessionId, text, replyId).then((result) => {
+          const httpMs = performance.now() - startedAt
+          console.log(`[消息延迟] 服务器确认 | HTTP: ${Math.round(httpMs)}ms`)
+          setMessages((prev) => ({
+            ...prev,
+            [sessionId]: (prev[sessionId] || []).map((m) =>
+              m.id === optimisticMsg.id ? result.message : m
+            )
+          }))
+        }).catch((err) => {
+          console.error('发送失败', err)
+          setMessages((prev) => ({
+            ...prev,
+            [sessionId]: (prev[sessionId] || []).map((m) =>
+              m.id === optimisticMsg.id ? { ...m, failed: true } : m
+            )
+          }))
+        })
+      }
       return
     }
 
