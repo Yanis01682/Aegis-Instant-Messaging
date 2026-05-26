@@ -280,6 +280,7 @@ export async function sendImageMessage(conversationId, file, replyToId = null) {
   
   const res = await apiClient.post('/api/chat/messages/send-image', formData, {
     params,
+    headers: { 'Content-Type': undefined },
   })
   return res.data
 }
@@ -294,6 +295,7 @@ export async function sendVideoMessage(conversationId, file, replyToId = null) {
   const res = await apiClient.post('/api/chat/messages/send-video', formData, {
     params,
     timeout: 120000,
+    headers: { 'Content-Type': undefined },
   })
   return res.data
 }
@@ -306,6 +308,7 @@ export async function sendFileMessage(conversationId, file, replyToId = null) {
   const res = await apiClient.post('/api/chat/messages/send-file', formData, {
     params,
     timeout: 60000,
+    headers: { 'Content-Type': undefined },
   })
   return res.data
 }
@@ -315,7 +318,7 @@ export async function sendVoiceMessage(conversationId, file, replyToId = null) {
   formData.append('file', file)
   const params = { conversation_id: conversationId }
   if (replyToId) params.reply_to_id = replyToId
-  const res = await apiClient.post('/api/chat/messages/send-voice', formData, { params })
+  const res = await apiClient.post('/api/chat/messages/send-voice', formData, { params, headers: { 'Content-Type': undefined } })
   return res.data
 }
 
