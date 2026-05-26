@@ -172,8 +172,8 @@
 }
 
 .message.outgoing .bubble {
-  background: linear-gradient(135deg, #2f8cff 0%, #1f73e8 100%);
-  color: #ffffff;
+  background: #95EC69;
+  color: #000000;
   border-top-right-radius: 4px;
 }
 
@@ -186,7 +186,7 @@
   height: 0;
   border-top: 6px solid transparent;
   border-bottom: 6px solid transparent;
-  border-left: 7px solid #2f8cff;
+  border-left: 7px solid #95EC69;
 }
 
 .message-time {
