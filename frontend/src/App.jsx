@@ -36,6 +36,8 @@ import {
   sendChatMessage,
   sendImageMessage,
   sendVideoMessage,
+  sendFileMessage,
+  sendVoiceMessage,
   unpinChatSession,
   revokeMessage,
   getProfile,
@@ -2375,6 +2377,67 @@ function App() {
     }
   }
 
+  // 发送文件消息
+  const handleSendFile = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 20 * 1024 * 1024) {
+      alert('文件大小不能超过 20MB')
+      e.target.value = ''
+      return
+    }
+    try {
+      const activeSession = getCurrentSession()
+      if (!activeSession?.id) { alert('请先选择一个会话'); e.target.value = ''; return }
+      const replyToId = replyToMessage?.id || null
+      const res = await sendFileMessage(activeSession.id, file, replyToId)
+      setMessages((prev) => ({ ...prev, [currentChat]: [...(prev[currentChat] || []), res.message] }))
+      setReplyToMessage(null)
+    } catch (err) {
+      alert(err.response?.data?.detail || '文件发送失败，请重试')
+    } finally {
+      e.target.value = ''
+    }
+  }
+
+  // 发送语音消息
+  const mediaRecorderRef = useRef(null)
+  const [isRecording, setIsRecording] = useState(false)
+
+  const handleVoiceRecord = async () => {
+    if (isRecording) {
+      mediaRecorderRef.current?.stop()
+      setIsRecording(false)
+      return
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mediaRecorder = new MediaRecorder(stream)
+      mediaRecorderRef.current = mediaRecorder
+      const chunks = []
+      mediaRecorder.ondataavailable = (e) => chunks.push(e.data)
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop())
+        const blob = new Blob(chunks, { type: mediaRecorder.mimeType })
+        const file = new File([blob], 'voice.webm', { type: blob.type })
+        try {
+          const activeSession = getCurrentSession()
+          if (!activeSession?.id) return
+          const replyToId = replyToMessage?.id || null
+          const res = await sendVoiceMessage(activeSession.id, file, replyToId)
+          setMessages((prev) => ({ ...prev, [currentChat]: [...(prev[currentChat] || []), res.message] }))
+          setReplyToMessage(null)
+        } catch (err) {
+          alert(err.response?.data?.detail || '语音发送失败')
+        }
+      }
+      mediaRecorder.start()
+      setIsRecording(true)
+    } catch {
+      alert('无法访问麦克风')
+    }
+  }
+
   // 按 Enter 发送消息
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -2831,6 +2894,9 @@ function App() {
           handleSendMessage={handleSendMessage}
           handleSendImage={handleSendImage}
           handleSendVideo={handleSendVideo}
+          handleSendFile={handleSendFile}
+          handleVoiceRecord={handleVoiceRecord}
+          isRecording={isRecording}
           isComposingResizing={isComposingResizing}
           handleComposerResizeStart={handleComposerResizeStart}
           onOpenLightbox={openLightbox}

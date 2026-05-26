@@ -55,6 +55,12 @@ function ChatMainView({
   handleSendImage,
   // 发送视频消息。
   handleSendVideo,
+  // 发送文件消息。
+  handleSendFile,
+  // 录制/停止语音。
+  handleVoiceRecord,
+  // 是否正在录音。
+  isRecording,
   // 输入区高度拖拽状态。
   isComposingResizing,
   // 开始拖拽输入区高度。
@@ -66,6 +72,7 @@ function ChatMainView({
 }) {
   const imageInputRef = useRef(null)
   const videoInputRef = useRef(null)
+  const fileInputRef = useRef(null)
   const messagesContainerRef = useRef(null)
   const previousChatRef = useRef(null)
   const shouldStickToBottomRef = useRef(true)
@@ -220,8 +227,18 @@ function ChatMainView({
                       controls 
                       preload="metadata"
                       style={{ cursor: 'pointer' }}
-                      onClick={(e) => { e.preventDefault(); onOpenLightbox?.(msg.mediaUrl, msg.mediaName, 'video') }}
+                      onDoubleClick={() => onOpenLightbox?.(msg.mediaUrl, msg.mediaName, 'video')}
                     />
+                  </div>
+                ) : msg.type === 'file' && msg.mediaUrl ? (
+                  <div className="message-file-wrap">
+                    <a href={msg.mediaUrl} download={msg.mediaName} className="message-file-link">
+                      📄 {msg.mediaName || '文件'}
+                    </a>
+                  </div>
+                ) : msg.type === 'voice' && msg.mediaUrl ? (
+                  <div className="message-voice-wrap">
+                    <audio controls preload="metadata" src={msg.mediaUrl} />
                   </div>
                 ) : (
                   msg.text
@@ -275,11 +292,14 @@ function ChatMainView({
         <div className="composer-toolbar">
           <button className="toolbar-btn" type="button" aria-label="发送图片" onClick={() => imageInputRef.current?.click()}>📷</button>
           <button className="toolbar-btn" type="button" aria-label="发送视频" onClick={() => videoInputRef.current?.click()}>🎬</button>
+          <button className="toolbar-btn" type="button" aria-label="发送文件" onClick={() => fileInputRef.current?.click()}>📄</button>
+          <button className={`toolbar-btn ${isRecording ? 'active' : ''}`} type="button" aria-label="语音" onClick={handleVoiceRecord}>{isRecording ? '⏹️' : '🎤'}</button>
           <button className={`toolbar-btn ${showEmojiPicker ? 'active' : ''}`} type="button" aria-label="表情" onClick={toggleEmojiPicker}>😊</button>
         </div>
 
         <input ref={imageInputRef} type="file" accept="image/*" className="hidden-file-input" onChange={handleSendImage} />
         <input ref={videoInputRef} type="file" accept="video/*" className="hidden-file-input" onChange={handleSendVideo} />
+        <input ref={fileInputRef} type="file" className="hidden-file-input" onChange={handleSendFile} />
 
         <textarea
           className="composer-input"

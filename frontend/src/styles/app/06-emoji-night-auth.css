@@ -355,7 +355,7 @@
 }
 
 .night-mode .login-btn {
-  background: linear-gradient(135deg, #07c160, #06ad56);
+  background: linear-gradient(135deg, #0abab5, #099e9a);
 }
 
 .night-mode .login-divider span {
@@ -398,7 +398,7 @@
 }
 
 .night-mode .register-btn {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, #0abab5, #099e9a);
 }
 
 .night-mode .register-divider span {

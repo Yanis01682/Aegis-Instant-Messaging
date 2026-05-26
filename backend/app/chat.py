@@ -351,6 +351,14 @@ def _serialize_message(
     if msg_type == "video" and message.media_url:
         payload["mediaUrl"] = message.media_url
         payload["mediaName"] = message.media_name
+    # 添加文件消息的媒体信息
+    if msg_type == "file" and message.media_url:
+        payload["mediaUrl"] = message.media_url
+        payload["mediaName"] = message.media_name
+    # 添加语音消息的媒体信息
+    if msg_type == "voice" and message.media_url:
+        payload["mediaUrl"] = message.media_url
+        payload["mediaName"] = message.media_name
     if reply_message:
         payload["replyTo"] = _serialize_reply_reference(reply_message, current_user_id, reply_sender)
     return payload
@@ -1154,6 +1162,120 @@ async def send_video_message(
         },
     )
     
+    return {
+        "status": "sent",
+        "message": _serialize_message(new_message, current_user.id, current_user, reply_message, reply_sender),
+    }
+
+
+@router.post("/messages/send-file")
+async def send_file_message(
+    file: UploadFile = File(...),
+    conversation_id: int = Query(...),
+    reply_to_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    """发送文件消息，最大 20MB"""
+    MAX_FILE_SIZE = 20 * 1024 * 1024
+    content = await file.read()
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="文件大小不能超过 20MB")
+
+    _ensure_conversation_membership(db, conversation_id, current_user.id)
+
+    ext = os.path.splitext(file.filename or "file")[1] or ".bin"
+    unique_filename = f"{uuid.uuid4().hex}{ext}"
+    upload_dir = os.path.join(os.path.dirname(__file__), '..', 'uploads')
+    os.makedirs(upload_dir, exist_ok=True)
+    file_path = os.path.join(upload_dir, unique_filename)
+    with open(file_path, 'wb') as f:
+        f.write(content)
+
+    reply_message = _get_reply_message_or_400(db, conversation_id, reply_to_id)
+    reply_sender = None
+    if reply_message and reply_message.sender_id is not None:
+        reply_sender = db.query(models.User).filter(models.User.id == reply_message.sender_id).first()
+
+    new_message = models.Message(
+        conversation_id=conversation_id,
+        sender_id=current_user.id,
+        reply_to_id=reply_to_id,
+        message_type="file",
+        content="[文件]",
+        media_url=f"/uploads/{unique_filename}",
+        media_name=file.filename,
+    )
+    db.add(new_message)
+    db.commit()
+    db.refresh(new_message)
+    member_ids = [
+        item.user_id
+        for item in db.query(models.ConversationMember.user_id)
+        .filter(models.ConversationMember.conversation_id == conversation_id)
+        .all()
+    ]
+    _dispatch_notification(member_ids, {"type": "conversation_updated", "conversationId": conversation_id, "messageId": new_message.id})
+
+    return {
+        "status": "sent",
+        "message": _serialize_message(new_message, current_user.id, current_user, reply_message, reply_sender),
+    }
+
+
+@router.post("/messages/send-voice")
+async def send_voice_message(
+    file: UploadFile = File(...),
+    conversation_id: int = Query(...),
+    reply_to_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    """发送语音消息，最大 2MB"""
+    ALLOWED_AUDIO_TYPES = {'audio/webm', 'audio/ogg', 'audio/mp4', 'audio/mpeg', 'audio/wav'}
+    if file.content_type not in ALLOWED_AUDIO_TYPES:
+        raise HTTPException(status_code=400, detail="不支持的音频格式")
+
+    MAX_FILE_SIZE = 2 * 1024 * 1024
+    content = await file.read()
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="语音大小不能超过 2MB")
+
+    _ensure_conversation_membership(db, conversation_id, current_user.id)
+
+    ext = file.content_type.split('/')[-1].replace('mpeg', 'mp3')
+    unique_filename = f"{uuid.uuid4().hex}.{ext}"
+    upload_dir = os.path.join(os.path.dirname(__file__), '..', 'uploads')
+    os.makedirs(upload_dir, exist_ok=True)
+    file_path = os.path.join(upload_dir, unique_filename)
+    with open(file_path, 'wb') as f:
+        f.write(content)
+
+    reply_message = _get_reply_message_or_400(db, conversation_id, reply_to_id)
+    reply_sender = None
+    if reply_message and reply_message.sender_id is not None:
+        reply_sender = db.query(models.User).filter(models.User.id == reply_message.sender_id).first()
+
+    new_message = models.Message(
+        conversation_id=conversation_id,
+        sender_id=current_user.id,
+        reply_to_id=reply_to_id,
+        message_type="voice",
+        content="[语音]",
+        media_url=f"/uploads/{unique_filename}",
+        media_name=file.filename,
+    )
+    db.add(new_message)
+    db.commit()
+    db.refresh(new_message)
+    member_ids = [
+        item.user_id
+        for item in db.query(models.ConversationMember.user_id)
+        .filter(models.ConversationMember.conversation_id == conversation_id)
+        .all()
+    ]
+    _dispatch_notification(member_ids, {"type": "conversation_updated", "conversationId": conversation_id, "messageId": new_message.id})
+
     return {
         "status": "sent",
         "message": _serialize_message(new_message, current_user.id, current_user, reply_message, reply_sender),

@@ -140,7 +140,7 @@
 
 .icon-btn.active {
   background-color: rgba(0, 191, 165, 0.15);
-  color: #00bfa5;
+  color: #0abab5;
   transform: scale(1.05);
 }
 
@@ -259,7 +259,7 @@
 }
 
 .search-input-wrapper input:focus {
-  border-color: #00bfa5;
+  border-color: #0abab5;
   background: #ffffff;
   box-shadow: 0 0 0 3px rgba(0, 191, 165, 0.1);
 }
@@ -327,20 +327,20 @@
 }
 
 .tab-btn:hover {
-  border-color: #00bfa5;
-  color: #00bfa5;
+  border-color: #0abab5;
+  color: #0abab5;
   background: rgba(0, 191, 165, 0.05);
 }
 
 .tab-btn.active {
-  background: linear-gradient(135deg, #07c160 0%, #06ad56 100%);
+  background: linear-gradient(135deg, #0abab5 0%, #099e9a 100%);
   color: #ffffff;
   border-color: transparent;
   box-shadow: 0 2px 8px rgba(7, 193, 96, 0.3);
 }
 
 .tab-btn.active:hover {
-  background: linear-gradient(135deg, #06ad56 0%, #059a4d 100%);
+  background: linear-gradient(135deg, #099e9a 0%, #088a87 100%);
 }
 
 .session-list {
@@ -481,7 +481,7 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background-color: #07c160;
+  background-color: #0abab5;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -515,7 +515,7 @@
 
 /* 在线状态颜色 */
 .session-status-dot.status-online {
-  background: #07c160;
+  background: #0abab5;
 }
 
 .session-status-dot.status-busy {
@@ -625,7 +625,7 @@
 
 .night-mode .icon-btn.active {
   background-color: rgba(7, 193, 96, 0.2) !important;
-  color: #07c160 !important;
+  color: #0abab5 !important;
 }
 
 .night-mode .search-wrap {
@@ -641,7 +641,7 @@
 
 .night-mode .search-input-wrapper input:focus {
   background: #454545 !important;
-  border-color: #07c160 !important;
+  border-color: #0abab5 !important;
 }
 
 .night-mode .search-clear-btn {
@@ -704,7 +704,7 @@
 }
 
 .night-mode .avatar {
-  background: linear-gradient(135deg, #07c160 0%, #06ad56 100%);
+  background: linear-gradient(135deg, #0abab5 0%, #099e9a 100%);
   color: #ffffff;
 }
 
