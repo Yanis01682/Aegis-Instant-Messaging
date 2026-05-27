@@ -163,7 +163,7 @@ function ChatMainView({
       position: 'fixed',
       bottom: window.innerHeight - rect.top + 8,
       left: rect.left,
-      width: rect.width,
+      width: Math.min(300, rect.width), // 最大宽度 300px
     }
   }
 
@@ -420,10 +420,10 @@ function ChatMainView({
                 <div
                   className="mention-picker-avatar"
                   style={{
-                    backgroundImage: member.avatar && typeof member.avatar === 'string' && member.avatar.startsWith('http') ? `url(${member.avatar})` : 'none',
+                    backgroundImage: (member.avatar && member.avatar.startsWith('http')) ? `url(${member.avatar})` : 'none',
                   }}
                 >
-                  {(!member.avatar || (typeof member.avatar === 'string' && !member.avatar.startsWith('http'))) && (member.displayName || member.groupNickname || member.name || '?')[0]}
+                  {(!member.avatar || !member.avatar.startsWith('http')) && (member.displayName || member.groupNickname || member.name || '?')[0]}
                 </div>
                 <div className="mention-picker-info">
                   <div className="mention-picker-name">
