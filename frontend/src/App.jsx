@@ -671,31 +671,6 @@ function App() {
               if (mentionedIds.includes(currentUserId)) {
                 // 增加 @ 计数
                 setAtMentionCount(prev => prev + 1)
-                
-                // 更新会话列表显示 [有人@我]
-                setSessions(prev => {
-                  return prev.map(session => {
-                    if (session.id === payload.conversationId) {
-                      return {
-                        ...session,
-                        lastMessage: '[有人@我]',
-                      }
-                    }
-                    return session
-                  })
-                })
-                
-                setDynamicSessions(prev => {
-                  return prev.map(session => {
-                    if (session.id === payload.conversationId) {
-                      return {
-                        ...session,
-                        lastMessage: '[有人@我]',
-                      }
-                    }
-                    return session
-                  })
-                })
               }
             }
             
@@ -718,8 +693,43 @@ function App() {
               getUnconfirmedAnnouncements(currentChat).then(setPendingAnnouncements).catch(() => {})
             }
           }
+          
+          // 检查是否需要显示 [有人@我]
+          const shouldShowAtMention = payload.message && 
+                                     payload.message.senderId !== currentUserId &&
+                                     payload.message.mentionedUserIds &&
+                                     String(payload.message.mentionedUserIds).split(',').map(id => parseInt(id.trim())).includes(currentUserId)
+          
           // 会话列表刷新不阻塞消息渲染
-          refreshRealtimeChatData(currentChat)
+          await refreshRealtimeChatData(currentChat)
+          
+          // 刷新后再次设置 [有人@我]（防止被后端数据覆盖）
+          if (shouldShowAtMention) {
+            setSessions(prev => {
+              return prev.map(session => {
+                if (session.id === payload.conversationId) {
+                  return {
+                    ...session,
+                    lastMessage: '[有人@我]',
+                  }
+                }
+                return session
+              })
+            })
+            
+            setDynamicSessions(prev => {
+              return prev.map(session => {
+                if (session.id === payload.conversationId) {
+                  return {
+                    ...session,
+                    lastMessage: '[有人@我]',
+                  }
+                }
+                return session
+              })
+            })
+          }
+          
           if (!payload.message && payload.conversationId === currentChat) {
             refreshConversationMessages(currentChat)
           }
@@ -2136,10 +2146,14 @@ function App() {
   // 获取当前群聊的成员列表（过滤后的）
   const getFilteredMentionMembers = () => {
     const members = groupMembers[currentChat] || []
-    if (!mentionSearchQuery) return members
+    
+    // 过滤掉当前用户（不能@自己）
+    const filteredMembers = members.filter(member => member.id !== currentUserId)
+    
+    if (!mentionSearchQuery) return filteredMembers
     
     const query = mentionSearchQuery.toLowerCase()
-    return members.filter(member => {
+    return filteredMembers.filter(member => {
       const name = (member.displayName || member.groupNickname || member.name || '').toLowerCase()
       return name.includes(query)
     })
