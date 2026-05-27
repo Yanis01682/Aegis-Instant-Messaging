@@ -232,6 +232,49 @@ def _get_group_or_404(db: Session, conversation_id: int):
     return conversation
 
 
+def _parse_mentioned_users(content: str, conversation_id: int, db: Session):
+    """
+    从消息内容中解析被 @ 的用户 ID 列表
+    支持格式：@用户名 或 @userId
+    返回：(清理后的内容, 逗号分隔的用户ID字符串)
+    """
+    import re
+    
+    # 获取群聊所有成员
+    members = (
+        db.query(models.ConversationMember, models.User)
+        .join(models.User, models.ConversationMember.user_id == models.User.id)
+        .filter(models.ConversationMember.conversation_id == conversation_id)
+        .all()
+    )
+    
+    mentioned_ids = set()
+    cleaned_content = content
+    
+    for member, user in members:
+        # 匹配 @昵称 或 @username
+        nickname = user.nickname or user.username
+        username = user.username
+        
+        # 尝试匹配 @昵称
+        pattern_nickname = re.compile(r'@' + re.escape(nickname) + r'(?:\s|$|，|,|。|！|？)', re.UNICODE)
+        matches = pattern_nickname.findall(cleaned_content)
+        if matches:
+            mentioned_ids.add(user.id)
+        
+        # 尝试匹配 @username（如果不同）
+        if username != nickname:
+            pattern_username = re.compile(r'@' + re.escape(username) + r'(?:\s|$|，|,|。|！|？)', re.UNICODE)
+            matches = pattern_username.findall(cleaned_content)
+            if matches:
+                mentioned_ids.add(user.id)
+    
+    # 将用户ID列表转换为逗号分隔的字符串
+    mentioned_ids_str = ','.join(str(uid) for uid in sorted(mentioned_ids)) if mentioned_ids else None
+    
+    return cleaned_content, mentioned_ids_str
+
+
 def _get_conversation_membership_or_403(db: Session, conversation_id: int, user_id: int, detail: str):
     membership = (
         db.query(models.ConversationMember)
@@ -356,6 +399,7 @@ def _serialize_message(
         "time": _format_message_time(message.timestamp),
         "timestamp": message.timestamp.isoformat() if message.timestamp else None,
         "replyToId": message.reply_to_id,
+        "mentionedUserIds": message.mentioned_user_ids,
     }
     # 添加图片消息的媒体信息
     if msg_type == "image" and (message.media_data or message.media_url):
@@ -967,11 +1011,15 @@ def send_message(
     if reply_message and reply_message.sender_id is not None:
         reply_sender = db.query(models.User).filter(models.User.id == reply_message.sender_id).first()
 
+    # 解析 @ 用户
+    cleaned_content, mentioned_user_ids = _parse_mentioned_users(content, payload.conversation_id, db)
+
     new_message = models.Message(
         conversation_id=payload.conversation_id,
         sender_id=current_user.id,
         reply_to_id=payload.reply_to_id,
-        content=content,
+        content=cleaned_content,
+        mentioned_user_ids=mentioned_user_ids,
     )
     db.add(new_message)
     db.commit()
@@ -2169,11 +2217,14 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int, db: Session = D
                     if not membership:
                         continue
                     sender = db.query(models.User).filter(models.User.id == user_id).first()
+                    # 解析 @ 用户
+                    cleaned_content, mentioned_user_ids = _parse_mentioned_users(content, conv_id, db)
                     new_message = models.Message(
                         conversation_id=conv_id,
                         sender_id=user_id,
                         reply_to_id=payload.get("reply_to_id"),
-                        content=content,
+                        content=cleaned_content,
+                        mentioned_user_ids=mentioned_user_ids,
                     )
                     db.add(new_message)
                     db.commit()
@@ -2196,6 +2247,7 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int, db: Session = D
                             "time": _format_message_time(new_message.timestamp),
                             "timestamp": new_message.timestamp.isoformat() if new_message.timestamp else None,
                             "replyToId": new_message.reply_to_id,
+                            "mentionedUserIds": new_message.mentioned_user_ids,
                         },
                     })
             except (json.JSONDecodeError, KeyError):
