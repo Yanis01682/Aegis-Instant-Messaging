@@ -1490,10 +1490,43 @@ def create_group_announcement(
     # 系统消息：发布群公告
     publisher_name = current_user.nickname or current_user.username
     sys_text = f'"{publisher_name}"发布了新公告'
-    db.add(models.Message(conversation_id=conversation_id, sender_id=None, message_type="system", content=sys_text))
+    sys_msg = models.Message(conversation_id=conversation_id, sender_id=None, message_type="system", content=sys_text)
+    db.add(sys_msg)
 
     db.commit()
     db.refresh(announcement)
+    db.refresh(sys_msg)
+
+    # 实时推送：让所有成员看到系统消息+公告弹窗
+    member_ids = [
+        item.user_id
+        for item in db.query(models.ConversationMember.user_id)
+        .filter(models.ConversationMember.conversation_id == conversation_id)
+        .all()
+    ]
+    _dispatch_notification(
+        member_ids,
+        {
+            "type": "conversation_updated",
+            "conversationId": conversation_id,
+            "messageId": sys_msg.id,
+            "message": {
+                "id": sys_msg.id,
+                "text": sys_msg.content,
+                "type": "system",
+                "senderId": None,
+                "senderName": None,
+                "time": _format_message_time(sys_msg.timestamp),
+                "timestamp": sys_msg.timestamp.isoformat() if sys_msg.timestamp else None,
+                "replyToId": None,
+            },
+            "announcement": {
+                "id": announcement.id,
+                "content": announcement.content,
+                "publisherName": publisher_name,
+            },
+        },
+    )
     return {
         "message": "Announcement published successfully",
         "announcement": {
