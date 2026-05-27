@@ -2045,10 +2045,13 @@ function App() {
 
   // 显示 @ 成员选择器
   const showMentionPickerHandler = (searchQuery = '') => {
-    if (!getCurrentSession().isGroup) return // 只在群聊中显示
+    const currentSession = getCurrentSession()
+    console.log('showMentionPickerHandler called:', { currentSession, isGroup: currentSession?.isGroup })
+    if (!currentSession || !currentSession.isGroup) return // 只在群聊中显示
     setMentionSearchQuery(searchQuery)
     setShowMentionPicker(true)
     setSelectedMentionIndex(0)
+    console.log('Mention picker should be visible now')
   }
 
   // 隐藏 @ 成员选择器

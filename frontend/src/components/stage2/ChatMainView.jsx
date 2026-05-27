@@ -95,6 +95,13 @@ function ChatMainView({
   const currentSession = getCurrentSession()
   const hasActiveConversation = Boolean(currentSession?.id)
   const currentMessages = messages[currentChat] || []
+  
+  // 调试信息
+  console.log('ChatMainView render:', { 
+    showMentionPicker, 
+    isGroup: currentSession?.isGroup,
+    groupMembersCount: (groupMembers[currentChat] || []).length 
+  })
 
   useEffect(() => {
     const container = messagesContainerRef.current
