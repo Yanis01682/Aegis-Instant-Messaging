@@ -672,8 +672,30 @@ function App() {
                 // 增加 @ 计数
                 setAtMentionCount(prev => prev + 1)
                 
-                // 显示浏览器通知
-                showAtMentionNotification(msg, payload.conversationId)
+                // 更新会话列表显示 [有人@我]
+                setSessions(prev => {
+                  return prev.map(session => {
+                    if (session.id === payload.conversationId) {
+                      return {
+                        ...session,
+                        lastMessage: '[有人@我]',
+                      }
+                    }
+                    return session
+                  })
+                })
+                
+                setDynamicSessions(prev => {
+                  return prev.map(session => {
+                    if (session.id === payload.conversationId) {
+                      return {
+                        ...session,
+                        lastMessage: '[有人@我]',
+                      }
+                    }
+                    return session
+                  })
+                })
               }
             }
             
@@ -710,45 +732,6 @@ function App() {
         }
       } catch (err) {
         console.error('处理通知失败', err)
-      }
-    }
-
-    // 显示 @ 提醒通知
-    const showAtMentionNotification = async (message, conversationId) => {
-      // 更新会话列表显示 [有人@我]
-      setDynamicSessions(prev => {
-        return prev.map(session => {
-          if (session.id === conversationId) {
-            return {
-              ...session,
-              lastMessage: '[有人@我]',
-            }
-          }
-          return session
-        })
-      })
-      
-      setSessions(prev => {
-        return prev.map(session => {
-          if (session.id === conversationId) {
-            return {
-              ...session,
-              lastMessage: '[有人@我]',
-            }
-          }
-          return session
-        })
-      })
-
-      // 播放提示音（可选）
-      try {
-        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVWo62rhmhgXnWUmIh0a2FzbH2Af3eEgHt5e3l7e3x9fn9/goOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn+AgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/w==')
-        audio.volume = 0.5
-        await audio.play().catch(() => {
-          // 忽略自动播放限制错误
-        })
-      } catch (e) {
-        // 忽略音频播放错误
       }
     }
 
