@@ -145,6 +145,26 @@ function ChatMainView({
     }
   }
 
+  // 高亮显示消息中的 @ 用户名
+  const highlightMentions = (text, mentionedUserIds) => {
+    if (!text || !mentionedUserIds) return text
+    
+    const members = groupMembers[currentChat] || []
+    const mentionedIds = mentionedUserIds.split(',').map(id => parseInt(id))
+    
+    let result = text
+    mentionedIds.forEach(userId => {
+      const member = members.find(m => m.id === userId)
+      if (member) {
+        const name = member.groupNickname || member.nickname || member.username
+        const regex = new RegExp(`@${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g')
+        result = result.replace(regex, `<span class="mention-highlight">@${name}</span>`)
+      }
+    })
+    
+    return <span dangerouslySetInnerHTML={{ __html: result }} />
+  }
+
   const replyCountMap = {}
   currentMessages.forEach((message) => {
     if (message.replyToId) {
@@ -276,7 +296,7 @@ function ChatMainView({
                     <audio controls preload="metadata" src={msg.mediaUrl} />
                   </div>
                 ) : (
-                  msg.text
+                  highlightMentions(msg.text, msg.mentionedUserIds)
                 )}
               </div>
               {(msg.replyTo || msg.replyToId) && (
