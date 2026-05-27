@@ -420,10 +420,10 @@ function ChatMainView({
                 <div
                   className="mention-picker-avatar"
                   style={{
-                    backgroundImage: (member.avatar && member.avatar.startsWith('http')) ? `url(${member.avatar})` : 'none',
+                    backgroundImage: (member.avatar && member.avatar.length > 1 && member.avatar !== '/default-avatar.png') ? `url(${member.avatar})` : 'none',
                   }}
                 >
-                  {(!member.avatar || !member.avatar.startsWith('http')) && (member.displayName || member.groupNickname || member.name || '?')[0].toUpperCase()}
+                  {(!member.avatar || member.avatar.length <= 1 || member.avatar === '/default-avatar.png') && (member.displayName || member.groupNickname || member.name || '?')[0].toUpperCase()}
                 </div>
                 <div className="mention-picker-info">
                   <div className="mention-picker-name">
