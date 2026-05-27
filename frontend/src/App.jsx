@@ -674,9 +674,12 @@ function App() {
               }
               return { ...prev, [currentChat]: [...existing, msg] }
             })
-            // 如果是公告系统消息，刷新未确认公告
-            if (msg.type === 'system' && msg.content && msg.content.includes('发布了新公告')) {
-              getUnconfirmedAnnouncements(currentChat).then(setPendingAnnouncements).catch(() => {})
+            // 如果是公告系统消息，立刻弹出公告确认
+            if (msg.type === 'system' && payload.announcement) {
+              setPendingAnnouncements(prev => {
+                if (prev.some(a => a.id === payload.announcement.id)) return prev
+                return [...prev, payload.announcement]
+              })
             }
           }
           // 会话列表刷新不阻塞消息渲染
