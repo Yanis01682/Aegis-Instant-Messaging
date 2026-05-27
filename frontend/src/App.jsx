@@ -2072,7 +2072,7 @@ function App() {
 
   // 选择 @ 成员
   const handleSelectMention = (member) => {
-    const mentionText = `@${member.groupNickname || member.nickname || member.username} `
+    const mentionText = `@${member.displayName || member.groupNickname || member.name} `
     setMessageInput(prev => prev + mentionText)
     hideMentionPicker()
     
@@ -2092,7 +2092,7 @@ function App() {
     
     const query = mentionSearchQuery.toLowerCase()
     return members.filter(member => {
-      const name = (member.groupNickname || member.nickname || member.username || '').toLowerCase()
+      const name = (member.displayName || member.groupNickname || member.name || '').toLowerCase()
       return name.includes(query)
     })
   }

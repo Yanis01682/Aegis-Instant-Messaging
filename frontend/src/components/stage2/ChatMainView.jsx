@@ -420,17 +420,17 @@ function ChatMainView({
                 <div
                   className="mention-picker-avatar"
                   style={{
-                    backgroundImage: member.avatar ? `url(${member.avatar})` : 'none',
+                    backgroundImage: member.avatar && typeof member.avatar === 'string' && member.avatar.startsWith('http') ? `url(${member.avatar})` : 'none',
                   }}
                 >
-                  {!member.avatar && (member.groupNickname || member.nickname || member.username || '?')[0]}
+                  {(!member.avatar || (typeof member.avatar === 'string' && !member.avatar.startsWith('http'))) && (member.displayName || member.groupNickname || member.name || '?')[0]}
                 </div>
                 <div className="mention-picker-info">
                   <div className="mention-picker-name">
-                    {member.groupNickname || member.nickname || member.username}
+                    {member.displayName || member.groupNickname || member.name}
                   </div>
-                  {member.groupNickname && member.nickname && member.groupNickname !== member.nickname && (
-                    <div className="mention-picker-remark">{member.nickname}</div>
+                  {member.groupNickname && member.displayName && member.groupNickname !== member.displayName && (
+                    <div className="mention-picker-remark">{member.displayName}</div>
                   )}
                 </div>
               </div>
