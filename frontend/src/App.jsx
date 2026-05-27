@@ -293,7 +293,7 @@ function App() {
     }
   }
 
-  const refreshRealtimeChatData = async (preferredChatId = null) => {
+  const refreshRealtimeChatData = async (preferredChatId = null, atMentionSessionId = null) => {
     const [fetchedFriends, fetchedSessions] = await Promise.all([
       getFriends(),
       getSessions()
@@ -327,6 +327,12 @@ function App() {
           nextSession = { ...nextSession, avatar: '/default-avatar.png' }
         }
       }
+      
+      // 如果是被 @ 的会话，显示 [有人@我]
+      if (atMentionSessionId && session.id === atMentionSessionId) {
+        nextSession = { ...nextSession, lastMessage: '[有人@我]' }
+      }
+      
       return applyLocalSessionPreview(nextSession)
     })
     setSessions(mappedSessions)
@@ -695,40 +701,15 @@ function App() {
           }
           
           // 检查是否需要显示 [有人@我]
-          const shouldShowAtMention = payload.message && 
+          const atMentionSessionId = (payload.message && 
                                      payload.message.senderId !== currentUserId &&
                                      payload.message.mentionedUserIds &&
-                                     String(payload.message.mentionedUserIds).split(',').map(id => parseInt(id.trim())).includes(currentUserId)
+                                     String(payload.message.mentionedUserIds).split(',').map(id => parseInt(id.trim())).includes(currentUserId))
+                                     ? payload.conversationId
+                                     : null
           
           // 会话列表刷新不阻塞消息渲染
-          await refreshRealtimeChatData(currentChat)
-          
-          // 刷新后再次设置 [有人@我]（防止被后端数据覆盖）
-          if (shouldShowAtMention) {
-            setSessions(prev => {
-              return prev.map(session => {
-                if (session.id === payload.conversationId) {
-                  return {
-                    ...session,
-                    lastMessage: '[有人@我]',
-                  }
-                }
-                return session
-              })
-            })
-            
-            setDynamicSessions(prev => {
-              return prev.map(session => {
-                if (session.id === payload.conversationId) {
-                  return {
-                    ...session,
-                    lastMessage: '[有人@我]',
-                  }
-                }
-                return session
-              })
-            })
-          }
+          await refreshRealtimeChatData(currentChat, atMentionSessionId)
           
           if (!payload.message && payload.conversationId === currentChat) {
             refreshConversationMessages(currentChat)
