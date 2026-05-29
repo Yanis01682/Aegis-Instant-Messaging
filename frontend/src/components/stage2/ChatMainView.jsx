@@ -62,10 +62,6 @@ function ChatMainView({
   handleVoiceRecord,
   // 是否正在录音。
   isRecording,
-  // 输入区高度拖拽状态。
-  isComposingResizing,
-  // 开始拖拽输入区高度。
-  handleComposerResizeStart,
   // 打开图片/视频灯箱
   onOpenLightbox,
   // 打开个人信息页面。
@@ -457,7 +453,6 @@ function ChatMainView({
           <button className="send-btn" onClick={handleSendMessage} disabled={!hasActiveConversation}>发送</button>
         </div>
 
-        <div className={`composer-resize-handle ${isComposingResizing ? 'resizing' : ''}`} onMouseDown={handleComposerResizeStart}></div>
       </footer>
 
       {pendingAnnouncements.length > 0 && (

@@ -69,6 +69,7 @@ function Overlays({
   handleLogout,
   handleDeleteAccount,
   handleOpenChangePassword,
+  handleReturnToAccountCenter,
   showChangePasswordModal,
   handleCloseChangePassword,
   changePasswordForm,
@@ -212,6 +213,10 @@ function Overlays({
   confirmDeleteAccount
 }) {
   const [showAboutModal, setShowAboutModal] = useState(false)
+  const returnToAccountCenter = () => {
+    handleReturnToAccountCenter?.()
+    setShowAboutModal(false)
+  }
   const [forwardTargetSearch, setForwardTargetSearch] = useState('') // 转发目标搜索
   const [forwardSendingTargetId, setForwardSendingTargetId] = useState(null)
   const peerIsFriend = peerProfile ? isAlreadyFriend(peerProfile.userId, peerProfile.name) : false
@@ -459,7 +464,7 @@ function Overlays({
               <div className="menu-item" onClick={(e) => { e.stopPropagation(); handleOpenChangePassword() }}><span className="menu-icon">🔑</span><span className="menu-text">修改密码</span><span className="menu-arrow">›</span></div>
               <div className="menu-item" onClick={toggleNightMode}><span className="menu-icon">{isNightMode ? '☀️' : '🌙'}</span><span className="menu-text">{isNightMode ? '日间模式' : '夜间模式'}</span><span className="menu-toggle"><span className={`toggle-switch ${isNightMode ? 'active' : ''}`}></span></span></div>
               <div className="menu-item"><span className="menu-icon">🔔</span><span className="menu-text">消息通知</span>{unreadNotificationCount > 0 && <span className="menu-badge">{unreadNotificationCount}</span>}</div>
-              <div className="menu-item" onClick={() => setShowAboutModal(true)}><span className="menu-icon">ℹ️</span><span className="menu-text">关于我们</span><span className="menu-arrow">›</span></div>
+              <div className="menu-item" onClick={(e) => { e.stopPropagation(); closeUserPanel?.(); setShowAboutModal(true) }}><span className="menu-icon">ℹ️</span><span className="menu-text">关于我们</span><span className="menu-arrow">›</span></div>
             </div>
 
             <div className="user-panel-footer">
@@ -471,11 +476,11 @@ function Overlays({
       )}
 
       {showAboutModal && (
-        <div className="profile-modal-overlay" onClick={() => setShowAboutModal(false)}>
+        <div className="profile-modal-overlay" onClick={returnToAccountCenter}>
           <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
             <div className="profile-modal-header">
               <h3>关于我们</h3>
-              <button className="profile-modal-close" onClick={() => setShowAboutModal(false)}>×</button>
+              <button className="profile-modal-close" onClick={returnToAccountCenter}>‹</button>
             </div>
             <div className="profile-modal-body">
               <div className="profile-view">
@@ -485,7 +490,7 @@ function Overlays({
                   <div className="profile-info-item"><span className="info-label">开发成员</span><span className="info-value">zzy、zj、mwq、wjq</span></div>
                   <div className="profile-info-item"><span className="info-label">团队说明</span><span className="info-value">我们以协作开发的方式完成前后端联调、界面交互、消息能力和系统完善，希望把 Aegis 做成一个兼顾功能完整性与使用体验的课程作品。</span></div>
                 </div>
-                <button className="edit-profile-btn" onClick={() => setShowAboutModal(false)}>我知道了</button>
+                <button className="edit-profile-btn" onClick={returnToAccountCenter}>返回账号中心</button>
               </div>
             </div>
           </div>
@@ -493,11 +498,11 @@ function Overlays({
       )}
 
       {showProfileModal && (
-        <div className="profile-modal-overlay" onClick={() => setShowProfileModal(false)}>
+        <div className="profile-modal-overlay" onClick={returnToAccountCenter}>
           <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
             <div className="profile-modal-header">
               <h3>个人信息</h3>
-              <button className="profile-modal-close" onClick={() => setShowProfileModal(false)}>×</button>
+              <button className="profile-modal-close" onClick={returnToAccountCenter}>‹</button>
             </div>
 
             <div className="profile-modal-body">
@@ -714,7 +719,7 @@ function Overlays({
       {showChatDetail && currentSession && (
         <div className="chat-detail-overlay" onClick={handleCloseChatDetail}>
           <div className="chat-detail-panel" onClick={(e) => e.stopPropagation()}>
-            <div className="chat-detail-header"><h3>聊天详情</h3><button className="chat-detail-close" onClick={handleCloseChatDetail}>×</button></div>
+            <div className="chat-detail-header"><h3>{currentSession.isGroup ? '群聊详情' : '聊天详情'}</h3><button className="chat-detail-close" onClick={handleCloseChatDetail}>×</button></div>
             <div className="chat-detail-content">
               {currentSession.isGroup ? (
                 <div className="group-chat-detail">
@@ -785,6 +790,11 @@ function Overlays({
                       {!isEditingAnnouncement ? (
                         <div className="announcement-display">
                           <p className="announcement-text">{groupAnnouncement || '暂无公告'}</p>
+                          {groupAnnouncementHistory[0]?.publisherName && (
+                            <p className="announcement-meta">
+                              {groupAnnouncementHistory[0].publisherName} 发布于 {formatDisplayDateTime(groupAnnouncementHistory[0].createdAt) || groupAnnouncementHistory[0].createdAt}
+                            </p>
+                          )}
                           <div className="remark-actions">
                             <button type="button" className="edit-remark-btn" onClick={handleOpenAnnouncementHistory}>历史公告</button>
                             {(userRole === 'owner' || userRole === 'admin') && <button type="button" className="edit-announcement-btn" onClick={handleStartEditAnnouncement}>编辑</button>}
@@ -1324,7 +1334,7 @@ function Overlays({
       {showChangePasswordModal && (
         <ChangePasswordModal
           username={profileData?.username || ''}
-          handleCloseChangePassword={handleCloseChangePassword}
+          handleCloseChangePassword={returnToAccountCenter}
           changePasswordForm={changePasswordForm}
           handleChangePasswordInput={handleChangePasswordInput}
           handleSubmitChangePassword={handleSubmitChangePassword}

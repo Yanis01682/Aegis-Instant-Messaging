@@ -162,8 +162,7 @@ function App() {
   const [sessionFilter, setSessionFilter] = useState('all') // 会话筛选：all-全部 | personal-个人 | group-群聊
   const [searchQuery, setSearchQuery] = useState('') // 搜索关键词
   const [chatlistWidth] = useState(320) // 会话列表宽度（固定，不再支持拖拽）
-  const [composerHeight, setComposerHeight] = useState(120) // 输入框高度
-  const [isComposingResizing, setIsComposingResizing] = useState(false) // 是否正在调整输入框高度
+  const composerHeight = 136 // 输入框高度固定，避免拖拽跳动
   const [lightboxImage, setLightboxImage] = useState(null) // 图片查看灯箱：{ url, name }
   const [showEmojiPicker, setShowEmojiPicker] = useState(false) // 表情选择器显示状态
   const [showRegisterForm, setShowRegisterForm] = useState(false) // 注册表单显示状态
@@ -732,6 +731,11 @@ function App() {
           if (payload.message && payload.conversationId === currentChat) {
             const msg = payload.message
             msg.sender = msg.type === 'system' ? 'system' : (msg.senderId === currentUserId ? 'me' : 'other')
+            if (msg.type === 'system' && payload.announcement) {
+              msg.announcementId = payload.announcement.id
+              msg.announcement = payload.announcement
+              msg.text = `${payload.announcement.publisherName || msg.senderName || '群成员'}发布了群公告：${payload.announcement.content || msg.text || ''}`
+            }
             if (msg.type === 'forward') {
               msg.forwardData = normalizeForwardData(msg.forwardData)
             }
@@ -747,7 +751,7 @@ function App() {
             
             setMessages((prev) => {
               const existing = prev[currentChat] || []
-              if (existing.some(m => m.id === msg.id)) return prev
+              if (existing.some(m => m.id === msg.id || (msg.announcementId && m.announcementId === msg.announcementId))) return prev
               // 如果是自己发的，替换乐观消息
               if (msg.sender === 'me') {
                 const pendingIdx = existing.findIndex(m => String(m.id).startsWith('pending-'))
@@ -1816,11 +1820,54 @@ function App() {
   const handleSaveAnnouncement = () => {
     const currentSession = getCurrentSession()
     if (!currentSession?.isGroup) return
+    const content = tempAnnouncement.trim()
+    if (!content) {
+      alert('群公告内容不能为空')
+      return
+    }
     publishGroupAnnouncement(currentSession.id, tempAnnouncement)
       .then(async () => {
         const items = await getGroupAnnouncements(currentSession.id)
         setGroupAnnouncementHistory(items)
-        setGroupAnnouncement(items[0]?.content || '')
+        const latest = items[0]
+        setGroupAnnouncement(latest?.content || '')
+        if (latest) {
+          const localAnnouncementMessage = {
+            id: `announcement-${latest.id || Date.now()}`,
+            type: 'system',
+            sender: 'system',
+            text: `${latest.publisherName || profileData.nickname || profileData.username || '我'}发布了群公告：${content}`,
+            announcementId: latest.id,
+            announcement: latest,
+            time: formatLocalMessageTime(),
+            timestamp: latest.createdAt || new Date().toISOString(),
+          }
+          setMessages((prev) => {
+            const existing = prev[currentSession.id] || []
+            if (existing.some((message) => message.announcementId === latest.id)) return prev
+            return { ...prev, [currentSession.id]: [...existing, localAnnouncementMessage] }
+          })
+        }
+        setSessions((prev) => prev.map((session) => (
+          session.id === currentSession.id
+            ? {
+                ...session,
+                lastMessage: `[群公告] ${content}`,
+                badge: (session.badge || 0) + 1,
+                time: formatLocalMessageTime(),
+              }
+            : session
+        )))
+        setDynamicSessions((prev) => prev.map((session) => (
+          session.id === currentSession.id
+            ? {
+                ...session,
+                lastMessage: `[群公告] ${content}`,
+                badge: (session.badge || 0) + 1,
+                time: formatLocalMessageTime(),
+              }
+            : session
+        )))
         setIsEditingAnnouncement(false)
         alert('群公告已保存')
       })
@@ -2379,6 +2426,7 @@ function App() {
 
   // 打开个人信息页面
   const handleOpenProfile = () => {
+    setShowUserPanel(false)
     setShowProfileModal(true)
     setIsEditingProfile(false)
   }
@@ -2928,6 +2976,13 @@ function App() {
     setChangePasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' })
   }
 
+  const handleReturnToAccountCenter = () => {
+    setShowProfileModal(false)
+    setShowChangePasswordModal(false)
+    setChangePasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' })
+    setShowUserPanel(true)
+  }
+
   // 关闭修改密码弹窗
   const handleCloseChangePassword = () => {
     setShowChangePasswordModal(false)
@@ -2966,7 +3021,7 @@ function App() {
     try {
       await changePassword(oldPassword, newPassword)
       alert('密码修改成功')
-      handleCloseChangePassword()
+      handleReturnToAccountCenter()
     } catch (err) {
       const msg = err.response?.data?.detail || err.message || '密码修改失败'
       alert(msg)
@@ -3011,56 +3066,6 @@ function App() {
   // 打开图片灯箱
   const openLightbox = (url, name, type = 'image') => setLightboxImage({ url, name, type })
   const closeLightbox = () => setLightboxImage(null)
-
-  // 开始拖拽输入框高度
-  const handleComposerResizeStart = (e) => {
-    setIsComposingResizing(true)
-    e.preventDefault()
-  }
-
-  // 处理拖拽输入框高度
-  const handleComposerResizeMove = (e) => {
-    if (!isComposingResizing) return
-    
-    const container = document.querySelector('.composer')
-    if (!container) return
-    
-    const _rect = container.getBoundingClientRect()
-    const newHeight = window.innerHeight - e.clientY
-    // 限制最小和最大高度
-    if (newHeight >= 80 && newHeight <= 400) {
-      setComposerHeight(newHeight)
-    }
-  }
-
-  // 结束拖拽输入框
-  const handleComposerResizeEnd = () => {
-    setIsComposingResizing(false)
-  }
-
-  // 添加全局鼠标事件监听
-  useEffect(() => {
-    // 左侧会话列表拖拽 - 已移除
-    
-    // 输入框高度拖拽
-    if (isComposingResizing) {
-      document.addEventListener('mousemove', handleComposerResizeMove)
-      document.addEventListener('mouseup', handleComposerResizeEnd)
-      document.body.style.cursor = 'row-resize'
-      document.body.style.userSelect = 'none'
-    } else {
-      document.removeEventListener('mousemove', handleComposerResizeMove)
-      document.removeEventListener('mouseup', handleComposerResizeEnd)
-      document.body.style.cursor = ''
-    }
-    
-    // (status menu removed)
-    
-    return () => {
-      document.removeEventListener('mousemove', handleComposerResizeMove)
-      document.removeEventListener('mouseup', handleComposerResizeEnd)
-    }
-  }, [isComposingResizing]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 点击在线人数
   // eslint-disable-next-line no-unused-vars
@@ -3277,17 +3282,26 @@ function App() {
   const handleSaveNoteDraft = async () => {
     if (!noteDraft.title.trim() && !noteDraft.content.trim()) return
     if (editingNoteId === 'new') {
-      const created = await handleCreateNote(noteDraft)
-      setEditingNoteId(created.id)
-      setNoteDraft({ title: created.title || '', content: created.content || '' })
+      await handleCreateNote(noteDraft)
+      setEditingNoteId(null)
+      setNoteDraft({ title: '', content: '' })
       return
     }
-    const updated = await handleUpdateNote(editingNoteId, noteDraft)
-    setEditingNoteId(updated.id)
-    setNoteDraft({ title: updated.title || '', content: updated.content || '' })
+    await handleUpdateNote(editingNoteId, noteDraft)
+    setEditingNoteId(null)
+    setNoteDraft({ title: '', content: '' })
   }
 
   const selectedNote = noteItems.find((note) => note.id === editingNoteId) || null
+
+  const handleSetActiveTab = (tab) => {
+    setActiveTab(tab)
+    if (tab === 'requests' || tab === 'blacklist') {
+      setCurrentChat(null)
+      setEditingNoteId(null)
+      setNoteDraft({ title: '', content: '' })
+    }
+  }
 
   // 未登录时显示登录界面
   if (!isLoggedIn) {
@@ -3309,7 +3323,7 @@ function App() {
           userAvatar={userAvatar}
           toggleUserPanel={toggleUserPanel}
           activeTab={activeTab}
-          setActiveTab={setActiveTab}
+          setActiveTab={handleSetActiveTab}
           pendingRequestCount={friendRequestList.length + groupInviteRequests.length}
           atMentionCount={atMentionCount}
         />
@@ -3317,7 +3331,7 @@ function App() {
       <main className="im-layout">
         <SidebarPanel
           activeTab={activeTab}
-          setActiveTab={setActiveTab}
+          setActiveTab={handleSetActiveTab}
           blacklist={blacklist}
           showFriendSearch={showFriendSearch}
           setShowFriendSearch={setShowFriendSearch}
@@ -3407,8 +3421,6 @@ function App() {
             handleSendFile={handleSendFile}
             handleVoiceRecord={handleVoiceRecord}
             isRecording={isRecording}
-            isComposingResizing={isComposingResizing}
-            handleComposerResizeStart={handleComposerResizeStart}
             onOpenLightbox={openLightbox}
             pendingAnnouncements={pendingAnnouncements}
             onConfirmAnnouncement={async (id) => {
@@ -3477,6 +3489,7 @@ function App() {
         showProfileModal={showProfileModal}
         setShowProfileModal={setShowProfileModal}
         handleOpenChangePassword={handleOpenChangePassword}
+        handleReturnToAccountCenter={handleReturnToAccountCenter}
         showChangePasswordModal={showChangePasswordModal}
         handleCloseChangePassword={handleCloseChangePassword}
         changePasswordForm={changePasswordForm}

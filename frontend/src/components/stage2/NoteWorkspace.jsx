@@ -20,14 +20,16 @@ function NoteWorkspace({
 
   return (
     <section className="chat-panel note-workspace">
-      <header className="note-workspace-topbar">
-        <div>
-          <p className="note-workspace-kicker">Aegis Archive</p>
-          <h2>{title}</h2>
-          <span>{formattedTime || `${noteCount} 条骑士团记录`}</span>
-        </div>
-        <button type="button" className="note-new-btn" onClick={onStartNewNote}>新建</button>
-      </header>
+      {isEditing && (
+        <header className="note-workspace-topbar">
+          <div>
+            <p className="note-workspace-kicker">Aegis Archive</p>
+            <h2>{title}</h2>
+            <span>{formattedTime || `${noteCount} 条骑士团记录`}</span>
+          </div>
+          <button type="button" className="note-new-btn" onClick={onStartNewNote}>新建</button>
+        </header>
+      )}
 
       <div className="note-workspace-body">
         {isEditing ? (
@@ -50,11 +52,7 @@ function NoteWorkspace({
             </div>
           </div>
         ) : (
-          <div className="note-workspace-empty">
-            <p>选择一份笔记，或开启新的 Aegis 卷宗。</p>
-            <span>这里会成为右侧的大书页，用来整理世界观线索与行动备忘。</span>
-            <button type="button" className="note-new-btn" onClick={onStartNewNote}>写入新记录</button>
-          </div>
+          null
         )}
       </div>
     </section>
