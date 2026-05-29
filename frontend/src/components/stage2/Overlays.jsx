@@ -4,6 +4,7 @@
  * 说明：该组件仅做展示与事件转发，不持有业务状态，所有数据来自 App。
  */
 import { useState } from 'react'
+import { CloseOutlined, DownOutlined, SearchOutlined, UpOutlined } from '@ant-design/icons'
 import { getForwardMessageLabel, normalizeForwardData } from '../../utils/forwardData'
 import { AEGIS_AVATAR_PRESETS, resolveAegisAvatar } from '../../utils/aegisAvatars'
 
@@ -1037,10 +1038,16 @@ function Overlays({
       {showSearchMessageModal && (
         <div className="search-message-overlay" onClick={handleCloseSearchMessage}>
           <div className="search-message-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="search-message-header"><h3>聊天记录</h3><button className="close-btn" onClick={handleCloseSearchMessage}>✕</button></div>
+            <div className="search-message-header">
+              <h3>聊天记录</h3>
+              <button className="close-btn search-modal-close" type="button" aria-label="关闭" onClick={handleCloseSearchMessage}><CloseOutlined /></button>
+            </div>
             <div className="search-message-body">
               <div className="message-search-section">
-                <input type="text" className="message-search-input" placeholder="搜索聊天内容" value={searchMessageQuery} onChange={handleSearchMessages} autoFocus />
+                <div className="message-search-control">
+                  <SearchOutlined className="message-search-icon" />
+                  <input type="text" className="message-search-input message-search-primary" placeholder="搜索聊天内容" value={searchMessageQuery} onChange={handleSearchMessages} autoFocus />
+                </div>
               </div>
               <div className="message-search-section">
                 <select className="message-search-input" value={messageHistoryFilters.sender} onChange={(e) => handleChangeHistoryFilter('sender', e.target.value)}>
@@ -1086,11 +1093,11 @@ function Overlays({
 
               {searchResults.length > 0 && (
                 <div className="search-results-info">
-                  <span>共展示 {searchResults.length} 条聊天记录</span>
+                  <span className="search-results-count">共展示 {searchResults.length} 条聊天记录</span>
                   <div className="result-navigation">
-                    <button className="nav-btn" onClick={handlePreviousResult} disabled={currentResultIndex === 0}>↑ 上一条</button>
+                    <button className="nav-btn" type="button" onClick={handlePreviousResult} disabled={currentResultIndex === 0}><UpOutlined /> 上一条</button>
                     <span className="result-index">{searchResults.length > 0 ? currentResultIndex + 1 : 0} / {searchResults.length}</span>
-                    <button className="nav-btn" onClick={handleNextResult} disabled={currentResultIndex === searchResults.length - 1}>下一条 ↓</button>
+                    <button className="nav-btn" type="button" onClick={handleNextResult} disabled={currentResultIndex === searchResults.length - 1}>下一条 <DownOutlined /></button>
                   </div>
                 </div>
               )}

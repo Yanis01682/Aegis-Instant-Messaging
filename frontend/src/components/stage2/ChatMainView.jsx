@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { MoreOutlined, SearchOutlined } from '@ant-design/icons'
 import { getForwardMessageLabel, normalizeForwardData } from '../../utils/forwardData'
 import { resolveAegisAvatar } from '../../utils/aegisAvatars'
 
@@ -314,8 +315,8 @@ function ChatMainView({
           </div>
         </div>
         <div className="chat-actions">
-          <button className="icon-btn" type="button" aria-label="搜索消息" onClick={handleOpenSearchMessage} disabled={!hasActiveConversation}>🔍</button>
-          <button className="icon-btn" type="button" aria-label="更多操作" onClick={handleOpenChatDetail} disabled={!hasActiveConversation}>⋯</button>
+          <button className="icon-btn chat-tool-btn" type="button" aria-label="搜索消息" onClick={handleOpenSearchMessage} disabled={!hasActiveConversation}><SearchOutlined /></button>
+          <button className="icon-btn chat-tool-btn" type="button" aria-label="更多操作" onClick={handleOpenChatDetail} disabled={!hasActiveConversation}><MoreOutlined /></button>
         </div>
       </header>
 
