@@ -57,6 +57,11 @@ import {
   createNote,
   updateNote,
   deleteNote,
+  getActiveTicTacToeGame,
+  inviteTicTacToeGame,
+  acceptTicTacToeGame,
+  playTicTacToeMove,
+  resignTicTacToeGame,
 } from './services/api'
 import AuthView from './components/stage2/AuthView'
 import LeftNav from './components/stage2/LeftNav'
@@ -64,6 +69,7 @@ import SidebarPanel from './components/stage2/SidebarPanel'
 import ChatMainView from './components/stage2/ChatMainView'
 import NoteWorkspace from './components/stage2/NoteWorkspace'
 import Overlays from './components/stage2/Overlays'
+import TicTacToeModal from './components/stage2/TicTacToeModal'
 import { getForwardMessageLabel, normalizeForwardData } from './utils/forwardData'
 import { AEGIS_DEFAULT_GROUP_AVATAR, AEGIS_DEFAULT_USER_AVATAR, resolveAegisAvatar } from './utils/aegisAvatars'
 
@@ -158,6 +164,8 @@ function App() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false) // 注销账户二次确认
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false) // 退出登录二次确认
   const [pendingAnnouncements, setPendingAnnouncements] = useState([]) // 未确认的群公告
+  const [ticTacToeGame, setTicTacToeGame] = useState(null)
+  const [showTicTacToeModal, setShowTicTacToeModal] = useState(false)
   const [atMentionSessionId, setAtMentionSessionId] = useState(null) // 被 @ 的会话 ID，用于显示 [有人@我] 标记
   const [sessionFilter, setSessionFilter] = useState('all') // 会话筛选：all-全部 | personal-个人 | group-群聊
   const [searchQuery, setSearchQuery] = useState('') // 搜索关键词
@@ -277,6 +285,14 @@ function App() {
       localStorage.setItem(getScopedStorageKey(baseKey), JSON.stringify(value))
     } catch {
       // ignore
+    }
+  }
+
+  const normalizeTicTacToeGame = (game) => {
+    if (!game) return null
+    return {
+      ...game,
+      currentUserMark: currentUserId === game.xUserId ? 'X' : (currentUserId === game.oUserId ? 'O' : null),
     }
   }
 
@@ -626,6 +642,8 @@ function App() {
 
   useEffect(() => {
     if (!isLoggedIn || !currentChat) {
+      setTicTacToeGame(null)
+      setShowTicTacToeModal(false)
       return
     }
 
@@ -639,6 +657,20 @@ function App() {
 
     loadMessages()
   }, [currentChat, dynamicSessions, isLoggedIn]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!isLoggedIn || !currentChat || !currentUserId) return
+    const session = sessions.find((item) => item.id === currentChat)
+    if (!session || session.isGroup) {
+      setTicTacToeGame(null)
+      setShowTicTacToeModal(false)
+      return
+    }
+
+    getActiveTicTacToeGame(currentChat)
+      .then((game) => setTicTacToeGame(normalizeTicTacToeGame(game)))
+      .catch(() => setTicTacToeGame(null))
+  }, [currentChat, currentUserId, isLoggedIn, sessions]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!isLoggedIn || !currentChat) return
@@ -810,6 +842,14 @@ function App() {
           if (!payload.message && payload.conversationId === currentChat) {
             refreshConversationMessages(currentChat)
           }
+          return
+        }
+
+        if (payload.type === 'game_updated') {
+          if (payload.conversationId === currentChat) {
+            setTicTacToeGame(normalizeTicTacToeGame(payload.game))
+          }
+          await refreshRealtimeChatData(currentChat)
           return
         }
 
@@ -2727,6 +2767,58 @@ function App() {
     setEditingMessageId(null)
   }
 
+  const handleStartTicTacToe = async () => {
+    const activeSession = getCurrentSession()
+    if (!activeSession?.id || activeSession.isGroup) return
+    try {
+      const game = await inviteTicTacToeGame(activeSession.id)
+      setTicTacToeGame(normalizeTicTacToeGame(game))
+      setShowTicTacToeModal(true)
+      await refreshRealtimeChatData(activeSession.id)
+    } catch (err) {
+      alert(err.response?.data?.detail || err.message || '发起井字棋失败')
+    }
+  }
+
+  const handleOpenTicTacToeGame = async () => {
+    if (!currentChat) return
+    try {
+      const game = ticTacToeGame || await getActiveTicTacToeGame(currentChat)
+      if (!game) {
+        alert('当前没有可返回的棋局')
+        return
+      }
+      setTicTacToeGame(normalizeTicTacToeGame(game))
+      setShowTicTacToeModal(true)
+    } catch (err) {
+      alert(err.response?.data?.detail || err.message || '打开棋局失败')
+    }
+  }
+
+  const handleAcceptTicTacToe = async (gameId) => {
+    try {
+      setTicTacToeGame(normalizeTicTacToeGame(await acceptTicTacToeGame(gameId)))
+    } catch (err) {
+      alert(err.response?.data?.detail || err.message || '接受对局失败')
+    }
+  }
+
+  const handleTicTacToeMove = async (gameId, index) => {
+    try {
+      setTicTacToeGame(normalizeTicTacToeGame(await playTicTacToeMove(gameId, index)))
+    } catch (err) {
+      alert(err.response?.data?.detail || err.message || '落子失败')
+    }
+  }
+
+  const handleResignTicTacToe = async (gameId) => {
+    try {
+      setTicTacToeGame(normalizeTicTacToeGame(await resignTicTacToeGame(gameId)))
+    } catch (err) {
+      alert(err.response?.data?.detail || err.message || '退出棋局失败')
+    }
+  }
+
   // 发送图片消息（调用后端上传API）
   const handleSendImage = async (e) => {
     const file = e.target.files?.[0]
@@ -3420,6 +3512,9 @@ function App() {
             handleSendVideo={handleSendVideo}
             handleSendFile={handleSendFile}
             handleVoiceRecord={handleVoiceRecord}
+            handleStartTicTacToe={handleStartTicTacToe}
+            handleOpenTicTacToeGame={handleOpenTicTacToeGame}
+            hasActiveTicTacToeGame={Boolean(ticTacToeGame && ['pending', 'active'].includes(ticTacToeGame.status))}
             isRecording={isRecording}
             onOpenLightbox={openLightbox}
             pendingAnnouncements={pendingAnnouncements}
@@ -3654,6 +3749,16 @@ function App() {
           )}
         </div>
       )}
+
+      <TicTacToeModal
+        game={ticTacToeGame}
+        currentUserId={currentUserId}
+        visible={showTicTacToeModal}
+        onClose={() => setShowTicTacToeModal(false)}
+        onAccept={handleAcceptTicTacToe}
+        onMove={handleTicTacToeMove}
+        onResign={handleResignTicTacToe}
+      />
     </div>
   )
 }

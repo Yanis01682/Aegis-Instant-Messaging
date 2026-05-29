@@ -60,6 +60,12 @@ function ChatMainView({
   handleSendFile,
   // 录制/停止语音。
   handleVoiceRecord,
+  // 发起井字棋。
+  handleStartTicTacToe,
+  // 打开棋局。
+  handleOpenTicTacToeGame,
+  // 当前是否有可返回棋局。
+  hasActiveTicTacToeGame,
   // 是否正在录音。
   isRecording,
   // 打开图片/视频灯箱
@@ -100,6 +106,22 @@ function ChatMainView({
   const currentSession = getCurrentSession()
   const hasActiveConversation = Boolean(currentSession?.id)
   const currentMessages = messages[currentChat] || []
+  const renderGameCard = (msg) => (
+    <button
+      type="button"
+      className="game-card"
+      onClick={(event) => {
+        event.stopPropagation()
+        handleOpenTicTacToeGame?.(msg.gameData?.gameId)
+      }}
+    >
+      <span className="game-card-icon">#</span>
+      <span>
+        <strong>井字棋邀请</strong>
+        <small>{msg.sender === 'me' ? '等待好友应战' : '点击查看棋局'}</small>
+      </span>
+    </button>
+  )
   const renderForwardCard = (forwardData) => {
     const normalizedForwardData = normalizeForwardData(forwardData)
 
@@ -360,6 +382,8 @@ function ChatMainView({
                   </div>
                 ) : msg.type === 'forward' ? (
                   renderForwardCard(msg.forwardData)
+                ) : msg.type === 'game' ? (
+                  renderGameCard(msg)
                 ) : (
                   highlightMentions(msg.text, msg.mentionedUserIds)
                 )}
@@ -432,6 +456,12 @@ function ChatMainView({
           <button className="toolbar-btn" type="button" aria-label="发送文件" onClick={() => fileInputRef.current?.click()}>📄</button>
           <button className={`toolbar-btn ${isRecording ? 'active' : ''}`} type="button" aria-label="语音" onClick={handleVoiceRecord}>{isRecording ? '⏹️' : '🎤'}</button>
           <button className={`toolbar-btn ${showEmojiPicker ? 'active' : ''}`} type="button" aria-label="表情" onClick={toggleEmojiPicker}>😊</button>
+          <button className="toolbar-btn" type="button" aria-label="发起井字棋" onClick={handleStartTicTacToe} disabled={!hasActiveConversation || currentSession?.isGroup}>#</button>
+          {hasActiveTicTacToeGame && (
+            <button className="toolbar-text-btn" type="button" onClick={() => handleOpenTicTacToeGame?.()}>
+              返回棋局
+            </button>
+          )}
         </div>
 
         <input ref={imageInputRef} type="file" accept="image/*" className="hidden-file-input" onChange={handleSendImage} />

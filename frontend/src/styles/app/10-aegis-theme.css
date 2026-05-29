@@ -528,6 +528,184 @@
   display: none !important;
 }
 
+.toolbar-text-btn {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid rgba(145, 118, 72, 0.18);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.58);
+  color: var(--aegis-text);
+  cursor: pointer;
+}
+
+.game-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(260px, 100%);
+  padding: 12px;
+  border: 1px solid rgba(145, 118, 72, 0.16);
+  border-radius: 14px;
+  background: rgba(255, 253, 248, 0.8);
+  color: var(--aegis-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.game-card-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #b28745, #d7b56a);
+  color: #fffaf0;
+  font-weight: 800;
+}
+
+.game-card strong,
+.game-card small {
+  display: block;
+}
+
+.game-card small {
+  margin-top: 4px;
+  color: var(--aegis-muted);
+}
+
+.ttt-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(34, 30, 24, 0.46);
+}
+
+.ttt-modal {
+  width: min(460px, calc(100vw - 48px));
+  border: 1px solid rgba(145, 118, 72, 0.2);
+  border-radius: 28px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.96), rgba(239, 232, 218, 0.94));
+  box-shadow: 0 28px 76px rgba(46, 35, 18, 0.28);
+  animation: slideUp 0.24s ease;
+}
+
+.ttt-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px 24px;
+  background: rgba(255, 253, 248, 0.74);
+}
+
+.ttt-kicker {
+  margin: 0 0 6px;
+  color: var(--aegis-muted);
+  font-size: 0.8rem;
+}
+
+.ttt-header h3 {
+  margin: 0;
+  color: var(--aegis-text);
+}
+
+.ttt-close {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #7b6447;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.ttt-players {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 18px 24px 0;
+}
+
+.ttt-player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--aegis-muted);
+}
+
+.ttt-player.self {
+  color: var(--aegis-text);
+  background: rgba(214, 181, 106, 0.2);
+}
+
+.ttt-mark {
+  font-weight: 800;
+}
+
+.ttt-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 24px;
+}
+
+.ttt-cell {
+  aspect-ratio: 1;
+  border: 1px solid rgba(145, 118, 72, 0.18);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.68);
+  color: #8c6631;
+  font-size: 2.4rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ttt-cell:disabled {
+  cursor: default;
+}
+
+.ttt-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 0 24px 24px;
+  color: var(--aegis-muted);
+}
+
+.ttt-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.ttt-primary,
+.ttt-danger {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.ttt-primary {
+  background: linear-gradient(135deg, #b28745, #d7b56a);
+  color: #fffaf0;
+}
+
+.ttt-danger {
+  background: rgba(174, 70, 48, 0.1);
+  color: #9f3e2e;
+}
+
 .announcement-meta {
   margin: 6px 0 0;
   color: var(--aegis-muted);

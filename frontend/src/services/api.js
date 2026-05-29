@@ -419,6 +419,31 @@ export async function sendVoiceMessage(conversationId, file, replyToId = null) {
   return res.data
 }
 
+export async function getActiveTicTacToeGame(conversationId) {
+  const res = await apiClient.get('/api/chat/games/tictactoe/active', { params: { conversation_id: conversationId } })
+  return res.data
+}
+
+export async function inviteTicTacToeGame(conversationId) {
+  const res = await apiClient.post('/api/chat/games/tictactoe/invite', { conversation_id: conversationId })
+  return res.data
+}
+
+export async function acceptTicTacToeGame(gameId) {
+  const res = await apiClient.post(`/api/chat/games/tictactoe/${gameId}/accept`)
+  return res.data
+}
+
+export async function playTicTacToeMove(gameId, index) {
+  const res = await apiClient.post(`/api/chat/games/tictactoe/${gameId}/move`, { index })
+  return res.data
+}
+
+export async function resignTicTacToeGame(gameId) {
+  const res = await apiClient.post(`/api/chat/games/tictactoe/${gameId}/resign`)
+  return res.data
+}
+
 export async function revokeMessage(messageId) {
   const res = await apiClient.delete(`/api/chat/messages/${messageId}`)
   return res.data
