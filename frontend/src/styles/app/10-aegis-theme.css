@@ -1,0 +1,442 @@
+/* Aegis unified theme override: light knight-order / glass hall */
+
+:root {
+  --aegis-ivory: rgba(255, 252, 246, 0.82);
+  --aegis-ivory-strong: rgba(255, 253, 248, 0.94);
+  --aegis-stone: rgba(244, 239, 230, 0.86);
+  --aegis-edge: rgba(145, 118, 72, 0.18);
+  --aegis-brass: #8f6a35;
+  --aegis-brass-soft: #caa86a;
+  --aegis-text: #2b241a;
+  --aegis-muted: #6d6150;
+}
+
+.im-shell {
+  padding: 28px;
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at 8% 12%, rgba(213, 186, 134, 0.22), transparent 28%),
+    linear-gradient(135deg, #f7f2e8 0%, #e5dccd 52%, #d2c7b6 100%) !important;
+}
+
+.im-shell > .left-nav {
+  border-radius: 24px 0 0 24px;
+  overflow: hidden;
+  background: rgba(255, 252, 247, 0.62);
+  border-right: 1px solid rgba(145, 118, 72, 0.18);
+}
+
+.im-shell > .im-layout {
+  border-radius: 0 24px 24px 0;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 252, 247, 0.68), rgba(242, 236, 226, 0.72)),
+    url('/aegis-bg-v2.png') center / cover no-repeat;
+  box-shadow: 0 20px 64px rgba(72, 56, 26, 0.14);
+}
+
+.left-nav,
+.chatlist-panel,
+.chat-panel,
+.composer,
+.user-panel,
+.chat-detail-panel,
+.emoji-picker,
+.modal-content,
+.legal-modal,
+.auth-card,
+.login-box,
+.panel-header,
+.wechat-panel-header {
+  backdrop-filter: blur(18px);
+}
+
+.chatlist-panel,
+.chat-panel,
+.composer,
+.user-panel,
+.chat-detail-panel,
+.modal-content,
+.legal-modal,
+.auth-card,
+.login-box {
+  background: rgba(255, 252, 246, 0.72);
+  border-color: var(--aegis-edge);
+}
+
+.login-container {
+  margin: 0 auto;
+  width: 100%;
+  height: 100%;
+  border-radius: 24px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(247, 242, 232, 0.74)),
+    url('/aegis-bg-v2.png') center / cover no-repeat !important;
+}
+
+.panel-header,
+.wechat-panel-header,
+.chat-topbar,
+.composer,
+.modal-header,
+.legal-modal-header,
+.user-panel-header,
+.chat-detail-header,
+.emoji-picker-header {
+  background: rgba(255, 252, 247, 0.72);
+  border-color: var(--aegis-edge);
+}
+
+.chat-messages {
+  background:
+    linear-gradient(180deg, rgba(255, 252, 247, 0.72), rgba(241, 236, 226, 0.76)),
+    url('/aegis-bg-v2.png') center / cover no-repeat;
+}
+
+.message.incoming .bubble,
+.message.system-message .bubble,
+.emoji-picker,
+.note-item,
+.friend-item,
+.group-folder,
+.member-item,
+.announcement-display,
+.detail-section,
+.request-item,
+.favorite-item {
+  background: rgba(255, 255, 255, 0.68);
+  border-color: rgba(145, 118, 72, 0.14);
+}
+
+.message.outgoing .bubble,
+.send-btn,
+.note-editor-actions .primary,
+.legal-modal-confirm,
+.save-group-name-btn,
+.save-announcement-btn,
+.save-remark-btn {
+  background: linear-gradient(135deg, var(--aegis-brass), var(--aegis-brass-soft));
+  color: #fffaf0;
+}
+
+.chat-user h2,
+.brand-title,
+.notes-title,
+.section-title,
+.legal-modal-header h2,
+.legal-content h3,
+.auth-title,
+.login-box h1,
+.user-panel-info h3 {
+  color: var(--aegis-text);
+}
+
+.chat-user .online-status,
+.note-time,
+.friend-signature,
+.legal-content p,
+.legal-content li,
+.login-subtitle,
+.auth-subtitle,
+.notes-toolbar,
+.info-label,
+.peer-profile-id {
+  color: var(--aegis-muted);
+}
+
+.nav-tab-btn.active,
+.status-menu-check,
+.legal-link,
+.note-delete:hover,
+.favorite-remove:hover,
+.edit-remark-btn,
+.edit-announcement-btn,
+.edit-nickname-btn {
+  color: var(--aegis-brass);
+}
+
+.left-nav .nav-tab-btn {
+  color: #8d826f;
+  background: transparent;
+}
+
+.left-nav .nav-tab-btn:hover,
+.left-nav .nav-tab-btn.active {
+  color: #8f6a35;
+  background: rgba(201, 168, 106, 0.16);
+}
+
+.session-tabs {
+  background: rgba(255, 252, 247, 0.72) !important;
+  border-bottom: 1px solid rgba(145, 118, 72, 0.14) !important;
+}
+
+.tab-btn {
+  background: rgba(255, 255, 255, 0.62) !important;
+  border-color: rgba(145, 118, 72, 0.18) !important;
+  color: #7b6f5e !important;
+}
+
+.tab-btn:hover,
+.tab-btn.active,
+.tab-btn.active:hover {
+  background: rgba(201, 168, 106, 0.18) !important;
+  border-color: rgba(143, 106, 53, 0.36) !important;
+  color: #8f6a35 !important;
+  box-shadow: none !important;
+}
+
+.session-list,
+.favorites-container,
+.notes-container,
+.friends-container,
+.blacklist-container {
+  background: rgba(255, 252, 247, 0.58) !important;
+}
+
+.blacklist-list,
+.blacklist-item {
+  background: transparent !important;
+}
+
+.blacklist-item {
+  background: rgba(255, 255, 255, 0.62) !important;
+  border: 1px solid rgba(145, 118, 72, 0.12) !important;
+}
+
+.empty-friends-hint {
+  color: #8a7a64 !important;
+}
+
+.empty-friends-hint p {
+  color: #9a9286 !important;
+  font-weight: 600;
+}
+
+.empty-friends-hint button {
+  min-width: 142px;
+  min-height: 48px;
+  border: 1px solid rgba(145, 118, 72, 0.24) !important;
+  border-radius: 14px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.96), rgba(235, 219, 188, 0.9)) !important;
+  color: #7b5b2d !important;
+  font-weight: 800;
+  box-shadow: 0 14px 30px rgba(72, 56, 26, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+.empty-friends-hint button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(143, 106, 53, 0.42) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 1), rgba(226, 203, 160, 0.95)) !important;
+  box-shadow: 0 18px 34px rgba(72, 56, 26, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+.wechat-panel-header {
+  padding: 14px 14px !important;
+}
+
+.wechat-search-wrapper {
+  min-height: 34px;
+  border-radius: 9px !important;
+  padding: 6px 10px !important;
+  background: rgba(255, 255, 255, 0.78) !important;
+}
+
+.wechat-search-input {
+  font-size: 0.92rem !important;
+}
+
+.wechat-add-btn {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 9px !important;
+  background: rgba(255, 255, 255, 0.78) !important;
+  color: #7b6f5e !important;
+}
+
+.header-context-menu {
+  position: absolute !important;
+  top: 54px !important;
+  right: 14px !important;
+  left: auto !important;
+  z-index: 2000 !important;
+  min-width: 184px !important;
+  padding: 8px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(243, 235, 220, 0.96)) !important;
+  border: 1px solid rgba(145, 118, 72, 0.22) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 18px 38px rgba(72, 56, 26, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(18px);
+}
+
+.header-context-title {
+  padding: 4px 8px 8px;
+  color: #9a7b4c;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.header-context-menu .session-context-item {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 9px !important;
+  border-radius: 10px !important;
+  color: #3b3124 !important;
+}
+
+.header-context-menu .session-context-item:hover {
+  background: rgba(201, 168, 106, 0.16) !important;
+}
+
+.header-context-menu .session-context-item strong {
+  display: block;
+  font-size: 0.9rem;
+  line-height: 1.2;
+}
+
+.header-context-menu .session-context-item small {
+  display: block;
+  margin-top: 2px;
+  color: #8a7a64;
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.context-item-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #8f6a35;
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(145, 118, 72, 0.18);
+}
+
+.left-nav .nav-avatar,
+.left-nav .nav-menu-wrapper {
+  color: #8f6a35;
+}
+
+.left-nav .nav-avatar {
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(145, 118, 72, 0.16);
+}
+
+.chatlist-panel,
+.chat-panel,
+.user-panel,
+.chat-detail-panel,
+.login-container {
+  position: relative;
+}
+
+.chat-panel::before,
+.user-panel::before,
+.chat-detail-panel::before,
+.login-container::before {
+  content: '';
+  position: absolute;
+  inset: 18px;
+  border: 1px solid rgba(176, 145, 90, 0.18);
+  border-radius: 24px;
+  pointer-events: none;
+}
+
+.login-container {
+  backdrop-filter: blur(18px);
+}
+
+.login-box {
+  background: rgba(255, 253, 248, 0.86);
+  border: 1px solid rgba(145, 118, 72, 0.22);
+}
+
+.profile-modal {
+  position: fixed;
+  top: 28px;
+  right: 28px;
+  bottom: 28px;
+  width: min(440px, calc(100vw - 56px));
+  max-height: none;
+  border-radius: 28px;
+  overflow: hidden;
+}
+
+.peer-profile-modal {
+  position: fixed;
+  top: 28px;
+  right: 28px;
+  bottom: 28px;
+  width: min(380px, calc(100vw - 56px));
+  max-height: none;
+  border-radius: 28px;
+  overflow: hidden;
+}
+
+.night-mode .im-shell {
+  background:
+    linear-gradient(180deg, rgba(18, 18, 20, 0.78), rgba(10, 10, 12, 0.88)),
+    url('/aegis-bg-v2.png') center / cover no-repeat fixed !important;
+}
+
+.night-mode .chatlist-panel,
+.night-mode .chat-panel,
+.night-mode .composer,
+.night-mode .user-panel,
+.night-mode .chat-detail-panel,
+.night-mode .modal-content,
+.night-mode .legal-modal,
+.night-mode .auth-card,
+.night-mode .login-box {
+  background: rgba(19, 19, 22, 0.78);
+  border-color: rgba(211, 183, 125, 0.14);
+}
+
+.night-mode .chat-user h2,
+.night-mode .brand-title,
+.night-mode .notes-title,
+.night-mode .section-title,
+.night-mode .legal-modal-header h2,
+.night-mode .legal-content h3,
+.night-mode .auth-title,
+.night-mode .login-box h1,
+.night-mode .user-panel-info h3 {
+  color: #f6ead0;
+}
+
+.night-mode .chat-user .online-status,
+.night-mode .note-time,
+.night-mode .friend-signature,
+.night-mode .legal-content p,
+.night-mode .legal-content li,
+.night-mode .login-subtitle,
+.night-mode .auth-subtitle,
+.night-mode .notes-toolbar,
+.night-mode .info-label,
+.night-mode .peer-profile-id {
+  color: rgba(241, 227, 198, 0.74);
+}
+
+.night-mode .message.incoming .bubble,
+.night-mode .message.system-message .bubble,
+.night-mode .note-item,
+.night-mode .friend-item,
+.night-mode .group-folder,
+.night-mode .member-item,
+.night-mode .announcement-display,
+.night-mode .detail-section,
+.night-mode .request-item,
+.night-mode .favorite-item {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(211, 183, 125, 0.1);
+}
