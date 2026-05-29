@@ -122,6 +122,29 @@ export async function getFriends() {
   return res.data
 }
 
+export async function getMoments() {
+  const res = await apiClient.get('/api/chat/moments')
+  return res.data
+}
+
+export async function createMoment(content, imageUrl = '') {
+  const res = await apiClient.post('/api/chat/moments', {
+    content,
+    image_url: imageUrl,
+  })
+  return res.data
+}
+
+export async function toggleMomentLike(postId) {
+  const res = await apiClient.post(`/api/chat/moments/${postId}/like`)
+  return res.data
+}
+
+export async function createMomentComment(postId, content) {
+  const res = await apiClient.post(`/api/chat/moments/${postId}/comments`, { content })
+  return res.data
+}
+
 export async function getFriendRequests() {
   const res = await apiClient.get('/api/chat/friends/requests')
   return res.data

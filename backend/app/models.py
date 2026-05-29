@@ -98,6 +98,35 @@ class Friendship(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
+class MomentPost(Base):
+    __tablename__ = "moment_posts"
+    __table_args__ = {'extend_existing': True}
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    content = Column(String(1000), nullable=False)
+    image_url = Column(Text().with_variant(_MySQLMEDIUMTEXT(), 'mysql'), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class MomentLike(Base):
+    __tablename__ = "moment_likes"
+    __table_args__ = {'extend_existing': True}
+    id = Column(Integer, primary_key=True, index=True)
+    post_id = Column(Integer, ForeignKey("moment_posts.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class MomentComment(Base):
+    __tablename__ = "moment_comments"
+    __table_args__ = {'extend_existing': True}
+    id = Column(Integer, primary_key=True, index=True)
+    post_id = Column(Integer, ForeignKey("moment_posts.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    content = Column(String(500), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
 class GroupAnnouncement(Base):
     __tablename__ = "group_announcements"
     __table_args__ = {'extend_existing': True}

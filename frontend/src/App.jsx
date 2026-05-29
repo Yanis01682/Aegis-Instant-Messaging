@@ -57,6 +57,10 @@ import {
   createNote,
   updateNote,
   deleteNote,
+  getMoments,
+  createMoment,
+  toggleMomentLike,
+  createMomentComment,
   getActiveTicTacToeGame,
   inviteTicTacToeGame,
   acceptTicTacToeGame,
@@ -68,6 +72,7 @@ import LeftNav from './components/stage2/LeftNav'
 import SidebarPanel from './components/stage2/SidebarPanel'
 import ChatMainView from './components/stage2/ChatMainView'
 import NoteWorkspace from './components/stage2/NoteWorkspace'
+import MomentsView from './components/stage2/MomentsView'
 import Overlays from './components/stage2/Overlays'
 import TicTacToeModal from './components/stage2/TicTacToeModal'
 import { getForwardMessageLabel, normalizeForwardData } from './utils/forwardData'
@@ -207,6 +212,10 @@ function App() {
   const [noteItems, setNoteItems] = useState([]) // 笔记列表
   const [editingNoteId, setEditingNoteId] = useState(null)
   const [noteDraft, setNoteDraft] = useState({ title: '', content: '' })
+  const [momentItems, setMomentItems] = useState([])
+  const [momentDraft, setMomentDraft] = useState('')
+  const [momentCommentDrafts, setMomentCommentDrafts] = useState({})
+  const [isLoadingMoments, setIsLoadingMoments] = useState(false)
   const [showAddFriendModal, setShowAddFriendModal] = useState(false) // 添加好友模态框
   const [isEditingRemark, setIsEditingRemark] = useState(false) // 是否正在编辑备注
   const [tempRemark, setTempRemark] = useState('') // 临时备注
@@ -294,6 +303,10 @@ function App() {
       ...game,
       currentUserMark: currentUserId === game.xUserId ? 'X' : (currentUserId === game.oUserId ? 'O' : null),
     }
+  }
+
+  const isTerminalTicTacToeGame = (game) => {
+    return ['x_win', 'o_win', 'draw', 'cancelled'].includes(game?.status)
   }
 
   const syncProfileFromUser = async (user) => {
@@ -669,7 +682,11 @@ function App() {
 
     getActiveTicTacToeGame(currentChat)
       .then((game) => setTicTacToeGame(normalizeTicTacToeGame(game)))
-      .catch(() => setTicTacToeGame(null))
+      .catch(() => {
+        setTicTacToeGame((prev) => (
+          prev?.conversationId === currentChat && isTerminalTicTacToeGame(prev) ? prev : null
+        ))
+      })
   }, [currentChat, currentUserId, isLoggedIn, sessions]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -3386,9 +3403,40 @@ function App() {
 
   const selectedNote = noteItems.find((note) => note.id === editingNoteId) || null
 
+  const refreshMoments = async () => {
+    setIsLoadingMoments(true)
+    try {
+      setMomentItems(await getMoments())
+    } catch (err) {
+      alert(err.response?.data?.detail || err.message || '加载回响失败')
+    } finally {
+      setIsLoadingMoments(false)
+    }
+  }
+
+  const replaceMoment = (updated) => {
+    setMomentItems((prev) => prev.map((item) => (item.id === updated.id ? updated : item)))
+  }
+
+  const handleCreateMoment = async (content, imageUrl) => {
+    const created = await createMoment(content.trim(), imageUrl.trim())
+    setMomentItems((prev) => [created, ...prev])
+    setMomentDraft('')
+  }
+
+  const handleToggleMomentLike = async (postId) => {
+    replaceMoment(await toggleMomentLike(postId))
+  }
+
+  const handleCreateMomentComment = async (postId, content) => {
+    const updated = await createMomentComment(postId, content.trim())
+    replaceMoment(updated)
+    setMomentCommentDrafts((prev) => ({ ...prev, [postId]: '' }))
+  }
+
   const handleSetActiveTab = (tab) => {
     setActiveTab(tab)
-    if (tab === 'requests' || tab === 'blacklist') {
+    if (tab === 'requests' || tab === 'blacklist' || tab === 'moments') {
       setCurrentChat(null)
       setEditingNoteId(null)
       setNoteDraft({ title: '', content: '' })
@@ -3481,6 +3529,20 @@ function App() {
             onStartNewNote={handleStartNewNote}
             onSaveNote={handleSaveNoteDraft}
             onCancelNote={handleCancelNote}
+          />
+        ) : activeTab === 'moments' ? (
+          <MomentsView
+            currentUser={{ ...profileData, avatar: userAvatar }}
+            moments={momentItems}
+            loading={isLoadingMoments}
+            draft={momentDraft}
+            setDraft={setMomentDraft}
+            commentDrafts={momentCommentDrafts}
+            setCommentDrafts={setMomentCommentDrafts}
+            onRefresh={refreshMoments}
+            onCreate={handleCreateMoment}
+            onToggleLike={handleToggleMomentLike}
+            onComment={handleCreateMomentComment}
           />
         ) : (
           <ChatMainView
@@ -3758,6 +3820,7 @@ function App() {
         onAccept={handleAcceptTicTacToe}
         onMove={handleTicTacToeMove}
         onResign={handleResignTicTacToe}
+        onInviteAgain={handleStartTicTacToe}
       />
     </div>
   )

@@ -72,6 +72,19 @@ function LeftNav({
           </svg>
         </button>
 
+        <button
+          className={`nav-tab-btn ${activeTab === 'moments' ? 'active' : ''}`}
+          onClick={() => setActiveTab('moments')}
+          aria-label="回响庭院"
+        >
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 19c4-1 7-4 8-8 1 4 4 7 8 8" />
+            <path d="M12 4v7" />
+            <path d="M8 8h8" />
+            <path d="M6 19h12" />
+          </svg>
+        </button>
+
         <div style={{ position: 'relative', width: '100%' }}>
           <button 
             className={`nav-tab-btn ${activeTab === 'requests' ? 'active' : ''}`}

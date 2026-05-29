@@ -84,6 +84,51 @@ def test_friend_request_flow_creates_private_chat_after_accept():
     assert bob_friends.json()[0]["name"] == "iris"
 
 
+def test_moments_feed_like_comment_and_friend_visibility():
+    headers_alice, _ = register_and_login("moment_alice", "moment_alice@example.com")
+    headers_bob, bob_user = register_and_login("moment_bob", "moment_bob@example.com")
+    headers_cara, _ = register_and_login("moment_cara", "moment_cara@example.com")
+
+    request_res = client.post(
+        "/api/chat/friends/requests",
+        json={"friend_id": bob_user["id"]},
+        headers=headers_alice,
+    )
+    assert request_res.status_code == 200
+    client.post(f"/api/chat/friends/requests/{request_res.json()['id']}/accept", headers=headers_bob)
+
+    create_res = client.post(
+        "/api/chat/moments",
+        json={"content": "今天在城墙上巡夜。"},
+        headers=headers_alice,
+    )
+    assert create_res.status_code == 200
+    post_id = create_res.json()["id"]
+
+    bob_feed = client.get("/api/chat/moments", headers=headers_bob)
+    assert bob_feed.status_code == 200
+    assert bob_feed.json()[0]["content"] == "今天在城墙上巡夜。"
+
+    like_res = client.post(f"/api/chat/moments/{post_id}/like", headers=headers_bob)
+    assert like_res.status_code == 200
+    assert like_res.json()["likedByMe"] is True
+    assert like_res.json()["likes"][0]["name"] == "moment_bob"
+
+    comment_res = client.post(
+        f"/api/chat/moments/{post_id}/comments",
+        json={"content": "收到，晨钟前换岗。"},
+        headers=headers_bob,
+    )
+    assert comment_res.status_code == 200
+    assert comment_res.json()["comments"][0]["content"] == "收到，晨钟前换岗。"
+
+    cara_feed = client.get("/api/chat/moments", headers=headers_cara)
+    assert cara_feed.status_code == 200
+    assert all(item["id"] != post_id for item in cara_feed.json())
+    denied = client.post(f"/api/chat/moments/{post_id}/like", headers=headers_cara)
+    assert denied.status_code == 404
+
+
 def test_reject_friend_request_removes_pending_item():
     headers_alice, _ = register_and_login("kate", "kate@example.com")
     headers_bob, bob_user = register_and_login("liam", "liam@example.com")

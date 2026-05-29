@@ -147,8 +147,8 @@ function SidebarPanel({
 
   const archivedGroupSessions = filteredSessions.filter(shouldArchiveGroup)
   const normalSessions = filteredSessions.filter((session) => !shouldArchiveGroup(session))
-  const sidebarSearchValue = activeTab === 'friends' ? friendSearchQuery : activeTab === 'requests' ? '' : searchQuery
-  const sidebarPlaceholder = activeTab === 'requests' ? '申请列表无需搜索' : activeTab === 'favorites' ? '搜索收藏' : activeTab === 'notes' ? '搜索笔记' : '搜索'
+  const sidebarSearchValue = activeTab === 'friends' ? friendSearchQuery : (activeTab === 'requests' || activeTab === 'moments') ? '' : searchQuery
+  const sidebarPlaceholder = activeTab === 'requests' ? '申请列表无需搜索' : activeTab === 'moments' ? '回响庭院' : activeTab === 'favorites' ? '搜索收藏' : activeTab === 'notes' ? '搜索笔记' : '搜索'
   const showHeaderAddButton = activeTab === 'chats' || activeTab === 'friends'
   const favoriteSearchText = searchQuery.trim().toLowerCase()
   const filteredFavoriteItems = favoriteItems.filter((item) => {
@@ -273,7 +273,7 @@ function SidebarPanel({
                 handleSearchChange(e)
               }
             }}
-            disabled={activeTab === 'requests'}
+            disabled={activeTab === 'requests' || activeTab === 'moments'}
           />
           {sidebarSearchValue && (
             <button
@@ -556,6 +556,13 @@ function SidebarPanel({
               <p>暂无待处理申请</p>
             </div>
           )}
+        </div>
+      )}
+
+      {activeTab === 'moments' && (
+        <div className="moments-sidebar">
+          <h4>回响庭院</h4>
+          <p>好友的见闻会在右侧汇成一条安静的庭院长廊。</p>
         </div>
       )}
 
