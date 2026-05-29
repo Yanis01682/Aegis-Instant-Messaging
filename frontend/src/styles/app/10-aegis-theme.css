@@ -1919,3 +1919,225 @@
   background: rgba(255, 246, 224, 0.08) !important;
   color: #f6ead0 !important;
 }
+
+/* Final night-mode pass for the left feature rail and courtyard surfaces. */
+.night-mode .left-nav {
+  border-right-color: rgba(211, 183, 125, 0.18) !important;
+  background: linear-gradient(180deg, rgba(26, 23, 19, 0.98), rgba(13, 12, 10, 0.98)) !important;
+}
+
+.night-mode .left-nav .nav-tab-btn,
+.night-mode .left-nav .nav-menu-wrapper {
+  border: 1px solid transparent !important;
+  color: rgba(241, 227, 198, 0.62) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.night-mode .left-nav .nav-tab-btn:hover,
+.night-mode .left-nav .nav-tab-btn:focus-visible,
+.night-mode .left-nav .nav-menu-wrapper:hover {
+  border-color: rgba(216, 183, 109, 0.24) !important;
+  background: rgba(181, 138, 63, 0.14) !important;
+  color: #f6ead0 !important;
+}
+
+.night-mode .left-nav .nav-tab-btn.active {
+  border-color: rgba(216, 183, 109, 0.36) !important;
+  background: linear-gradient(135deg, rgba(181, 138, 63, 0.32), rgba(76, 56, 30, 0.48)) !important;
+  color: #ffe9b8 !important;
+}
+
+.night-mode .nav-tab-badge {
+  border: 1px solid rgba(255, 244, 216, 0.35) !important;
+  background: linear-gradient(135deg, #8d4a35, #cf8263) !important;
+  color: #fff4d8 !important;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28) !important;
+}
+
+.night-mode .chatlist-panel > .friends-container,
+.night-mode .chatlist-panel > .favorites-container,
+.night-mode .chatlist-panel > .notes-container,
+.night-mode .chatlist-panel > .blacklist-container,
+.night-mode .chatlist-panel > .moments-sidebar,
+.night-mode .chatlist-panel > .session-list {
+  border-top: 1px solid rgba(211, 183, 125, 0.1) !important;
+  background:
+    linear-gradient(180deg, rgba(25, 22, 18, 0.95), rgba(14, 13, 11, 0.98)) !important;
+}
+
+.night-mode .friends-group,
+.night-mode .friend-requests-section,
+.night-mode .favorite-list,
+.night-mode .note-list,
+.night-mode .blacklist-list,
+.night-mode .moments-feed {
+  background: transparent !important;
+}
+
+.night-mode .friends-group-header,
+.night-mode .notes-toolbar {
+  border-color: rgba(211, 183, 125, 0.12) !important;
+  background: rgba(255, 246, 224, 0.045) !important;
+  color: rgba(241, 227, 198, 0.72) !important;
+}
+
+.night-mode .group-arrow,
+.night-mode .group-count,
+.night-mode .note-time,
+.night-mode .favorite-remove,
+.night-mode .note-delete,
+.night-mode .remove-btn {
+  color: rgba(241, 227, 198, 0.56) !important;
+}
+
+.night-mode .favorite-main,
+.night-mode .note-main {
+  color: inherit !important;
+  background: transparent !important;
+}
+
+.night-mode .session-item,
+.night-mode .session-item.pinned {
+  border-bottom-color: rgba(211, 183, 125, 0.1) !important;
+  background: rgba(255, 246, 224, 0.035) !important;
+}
+
+.night-mode .session-item:hover,
+.night-mode .session-item.pinned:hover {
+  background: rgba(181, 138, 63, 0.14) !important;
+}
+
+.night-mode .session-item.active,
+.night-mode .session-item.pinned.active {
+  background: rgba(181, 138, 63, 0.22) !important;
+  box-shadow: inset 3px 0 0 rgba(216, 183, 109, 0.72) !important;
+}
+
+.night-mode .session-title,
+.night-mode .session-meta {
+  color: #f6ead0 !important;
+}
+
+.night-mode .session-time,
+.night-mode .group-folder-title,
+.night-mode .group-folder-count {
+  color: rgba(241, 227, 198, 0.58) !important;
+}
+
+.night-mode .group-folder,
+.night-mode .session-context-menu {
+  border-color: rgba(211, 183, 125, 0.14) !important;
+  background: rgba(18, 16, 13, 0.94) !important;
+}
+
+.night-mode .group-folder-header,
+.night-mode .session-context-item {
+  color: rgba(241, 227, 198, 0.76) !important;
+}
+
+.night-mode .group-folder-header:hover,
+.night-mode .session-context-item:hover {
+  background: rgba(181, 138, 63, 0.16) !important;
+  color: #fff4d8 !important;
+}
+
+.night-mode .accept-btn,
+.night-mode .send-request-btn,
+.night-mode .note-editor-actions .primary,
+.night-mode .moment-comment-box button:not(:disabled),
+.night-mode .moment-composer-tools button:not(:disabled):last-child {
+  border-color: rgba(216, 183, 109, 0.36) !important;
+  background: linear-gradient(135deg, #9a6f34, #d8b76d) !important;
+  color: #fffaf0 !important;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.22) !important;
+}
+
+.night-mode .reject-btn,
+.night-mode .note-editor-actions button,
+.night-mode .moment-image-pick,
+.night-mode .moment-image-preview button {
+  border-color: rgba(211, 183, 125, 0.18) !important;
+  background: rgba(255, 246, 224, 0.07) !important;
+  color: rgba(241, 227, 198, 0.74) !important;
+  box-shadow: none !important;
+}
+
+.night-mode button:disabled,
+.night-mode .wechat-search-input:disabled {
+  opacity: 0.58 !important;
+  color: rgba(241, 227, 198, 0.44) !important;
+  box-shadow: none !important;
+}
+
+.night-mode .note-workspace,
+.night-mode .moments-view {
+  background:
+    linear-gradient(180deg, rgba(24, 22, 18, 0.8), rgba(12, 11, 10, 0.94)),
+    url('/aegis-bg-v2.png') center / cover no-repeat !important;
+}
+
+.night-mode .note-workspace-topbar,
+.night-mode .moments-hero {
+  border-color: rgba(211, 183, 125, 0.14) !important;
+  background: rgba(17, 16, 14, 0.72) !important;
+}
+
+.night-mode .note-workspace-kicker,
+.night-mode .moments-hero p,
+.night-mode .moment-post-head time,
+.night-mode .moment-composer-tools span {
+  color: #d9b46c !important;
+}
+
+.night-mode .note-workspace-topbar h2,
+.night-mode .moments-hero h2 {
+  color: #f6ead0 !important;
+}
+
+.night-mode .note-workspace-topbar span,
+.night-mode .note-workspace-empty,
+.night-mode .moments-empty,
+.night-mode .moment-comment span,
+.night-mode .moment-likes {
+  color: rgba(241, 227, 198, 0.62) !important;
+}
+
+.night-mode .note-workspace-editor,
+.night-mode .moment-composer-card,
+.night-mode .moment-post,
+.night-mode .moments-empty,
+.night-mode .moment-social {
+  border-color: rgba(211, 183, 125, 0.14) !important;
+  background: rgba(20, 18, 15, 0.76) !important;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.26) !important;
+}
+
+.night-mode .note-workspace-editor input,
+.night-mode .note-workspace-editor textarea,
+.night-mode .moment-composer-top textarea,
+.night-mode .moment-composer-tools input,
+.night-mode .moment-comment-box input {
+  color: #f6ead0 !important;
+  caret-color: #d9b46c !important;
+}
+
+.night-mode .note-workspace-editor input::placeholder,
+.night-mode .note-workspace-editor textarea::placeholder,
+.night-mode .moment-composer-top textarea::placeholder,
+.night-mode .moment-composer-tools input::placeholder,
+.night-mode .moment-comment-box input::placeholder {
+  color: rgba(241, 227, 198, 0.46) !important;
+}
+
+.night-mode .moment-avatar {
+  border-color: rgba(211, 183, 125, 0.2) !important;
+  background-color: rgba(181, 138, 63, 0.22) !important;
+  color: #ffe9b8 !important;
+}
+
+.night-mode .moment-actions button.active {
+  border-color: rgba(216, 183, 109, 0.36) !important;
+  background: rgba(181, 138, 63, 0.22) !important;
+  color: #fff4d8 !important;
+}
