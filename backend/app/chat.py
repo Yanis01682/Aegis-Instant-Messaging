@@ -91,6 +91,15 @@ class UserNotePayload(BaseModel):
     content: str
 
 
+class MomentPostPayload(BaseModel):
+    content: str
+    image_url: Optional[str] = None
+
+
+class MomentCommentPayload(BaseModel):
+    content: str
+
+
 class TicTacToeInvitePayload(BaseModel):
     conversation_id: int
 
@@ -319,6 +328,65 @@ def _serialize_user_note(note: models.UserNote):
         "content": note.content,
         "createdAt": note.created_at.isoformat() if note.created_at else None,
         "updatedAt": note.updated_at.isoformat() if note.updated_at else None,
+    }
+
+
+def _get_friend_ids(db: Session, user_id: int):
+    rows = (
+        db.query(models.Friendship.friend_id)
+        .filter(models.Friendship.user_id == user_id, models.Friendship.status == "accepted")
+        .all()
+    )
+    return {row[0] for row in rows}
+
+
+def _can_view_moment(db: Session, post: models.MomentPost, user_id: int):
+    return post.user_id == user_id or post.user_id in _get_friend_ids(db, user_id)
+
+
+def _get_visible_moment_or_404(db: Session, post_id: int, user_id: int):
+    post = db.query(models.MomentPost).filter(models.MomentPost.id == post_id).first()
+    if not post or not _can_view_moment(db, post, user_id):
+        raise HTTPException(status_code=404, detail="Moment not found")
+    return post
+
+
+def _serialize_moment(db: Session, post: models.MomentPost, current_user_id: int):
+    user_ids = {post.user_id}
+    likes = db.query(models.MomentLike).filter(models.MomentLike.post_id == post.id).all()
+    comments = (
+        db.query(models.MomentComment)
+        .filter(models.MomentComment.post_id == post.id)
+        .order_by(models.MomentComment.created_at.asc(), models.MomentComment.id.asc())
+        .all()
+    )
+    user_ids.update(like.user_id for like in likes)
+    user_ids.update(comment.user_id for comment in comments)
+    users = db.query(models.User).filter(models.User.id.in_(user_ids)).all()
+    user_map = {user.id: user for user in users}
+
+    def public_user(user_id):
+        user = user_map.get(user_id)
+        name = (user.nickname or user.username) if user else "未知成员"
+        return {"id": user_id, "name": name, "avatar": user.avatar if user and user.avatar else "/aegis-avatar-shield.svg"}
+
+    return {
+        "id": post.id,
+        "author": public_user(post.user_id),
+        "content": post.content,
+        "imageUrl": post.image_url,
+        "createdAt": post.created_at.isoformat() if post.created_at else None,
+        "likedByMe": any(like.user_id == current_user_id for like in likes),
+        "likes": [public_user(like.user_id) for like in likes],
+        "comments": [
+            {
+                "id": comment.id,
+                "author": public_user(comment.user_id),
+                "content": comment.content,
+                "createdAt": comment.created_at.isoformat() if comment.created_at else None,
+            }
+            for comment in comments
+        ],
     }
 
 
@@ -709,6 +777,79 @@ def read_friends(
         _serialize_user(user, friend_meta[user.id]["remark"], friend_meta[user.id]["group_name"])
         for user in users
     ]
+
+
+@router.get("/moments")
+def read_moments(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    visible_user_ids = _get_friend_ids(db, current_user.id) | {current_user.id}
+    posts = (
+        db.query(models.MomentPost)
+        .filter(models.MomentPost.user_id.in_(visible_user_ids))
+        .order_by(models.MomentPost.created_at.desc(), models.MomentPost.id.desc())
+        .limit(50)
+        .all()
+    )
+    return [_serialize_moment(db, post, current_user.id) for post in posts]
+
+
+@router.post("/moments")
+def create_moment(
+    payload: MomentPostPayload,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    content = payload.content.strip()
+    if not content:
+        raise HTTPException(status_code=400, detail="Moment content cannot be empty")
+    post = models.MomentPost(
+        user_id=current_user.id,
+        content=content[:1000],
+        image_url=(payload.image_url or "").strip() or None,
+    )
+    db.add(post)
+    db.commit()
+    db.refresh(post)
+    return _serialize_moment(db, post, current_user.id)
+
+
+@router.post("/moments/{post_id}/like")
+def toggle_moment_like(
+    post_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    post = _get_visible_moment_or_404(db, post_id, current_user.id)
+    existing = (
+        db.query(models.MomentLike)
+        .filter(models.MomentLike.post_id == post_id, models.MomentLike.user_id == current_user.id)
+        .first()
+    )
+    if existing:
+        db.delete(existing)
+    else:
+        db.add(models.MomentLike(post_id=post_id, user_id=current_user.id))
+    db.commit()
+    return _serialize_moment(db, post, current_user.id)
+
+
+@router.post("/moments/{post_id}/comments")
+def create_moment_comment(
+    post_id: int,
+    payload: MomentCommentPayload,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    post = _get_visible_moment_or_404(db, post_id, current_user.id)
+    content = payload.content.strip()
+    if not content:
+        raise HTTPException(status_code=400, detail="Comment cannot be empty")
+    db.add(models.MomentComment(post_id=post_id, user_id=current_user.id, content=content[:500]))
+    db.commit()
+    db.refresh(post)
+    return _serialize_moment(db, post, current_user.id)
 
 
 @router.get("/friends/requests")

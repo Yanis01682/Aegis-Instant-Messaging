@@ -284,6 +284,17 @@ def delete_account(db: Session = Depends(get_db), current_user: models.User = De
         )
     ).delete()
 
+    post_ids = [
+        row[0]
+        for row in db.query(models.MomentPost.id).filter(models.MomentPost.user_id == current_user.id).all()
+    ]
+    if post_ids:
+        db.query(models.MomentComment).filter(models.MomentComment.post_id.in_(post_ids)).delete()
+        db.query(models.MomentLike).filter(models.MomentLike.post_id.in_(post_ids)).delete()
+        db.query(models.MomentPost).filter(models.MomentPost.id.in_(post_ids)).delete()
+    db.query(models.MomentComment).filter(models.MomentComment.user_id == current_user.id).delete()
+    db.query(models.MomentLike).filter(models.MomentLike.user_id == current_user.id).delete()
+
     db.query(models.ConversationPin).filter(models.ConversationPin.user_id == current_user.id).delete()
     db.query(models.Message).filter(models.Message.sender_id == current_user.id).delete()
     db.query(models.ConversationMember).filter(models.ConversationMember.user_id == current_user.id).delete()
