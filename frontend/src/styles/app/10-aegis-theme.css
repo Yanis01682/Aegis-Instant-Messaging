@@ -250,6 +250,21 @@
   background: rgba(255, 255, 255, 0.78) !important;
 }
 
+.wechat-search-icon {
+  width: 22px;
+  height: 22px;
+  margin-right: 8px !important;
+  border-radius: 8px;
+  color: #8f6a35 !important;
+  background: rgba(178, 135, 69, 0.12);
+}
+
+.wechat-search-icon svg {
+  width: 13px;
+  height: 13px;
+  stroke-width: 2.2;
+}
+
 .wechat-search-input {
   font-size: 0.92rem !important;
 }
@@ -515,7 +530,7 @@
 .composer-actions {
   position: absolute;
   right: 22px;
-  bottom: 18px;
+  bottom: 26px;
 }
 
 .send-btn {
@@ -541,9 +556,9 @@
 .game-launch-btn {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 0;
   min-height: 32px;
-  padding: 0 12px 0 8px;
+  padding: 0 13px;
   border: 1px solid rgba(145, 118, 72, 0.22);
   border-radius: 12px;
   background: linear-gradient(135deg, rgba(178, 135, 69, 0.14), rgba(215, 181, 106, 0.22));
@@ -555,18 +570,6 @@
 .game-launch-btn:disabled {
   opacity: 0.42;
   cursor: not-allowed;
-}
-
-.game-launch-icon {
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #b28745, #d7b56a);
-  color: #fffaf0;
-  font-size: 0.82rem;
-  font-weight: 800;
 }
 
 .game-card {
@@ -1011,6 +1014,43 @@
   border-color: rgba(145, 118, 72, 0.28) !important;
   color: var(--aegis-brass) !important;
   background: rgba(255, 253, 248, 0.74) !important;
+}
+
+.logout-confirm-modal {
+  border: 1px solid rgba(145, 118, 72, 0.18) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(241, 234, 221, 0.96)) !important;
+  box-shadow: 0 28px 76px rgba(46, 35, 18, 0.24) !important;
+}
+
+.logout-confirm-header,
+.logout-confirm-footer {
+  border-color: rgba(145, 118, 72, 0.14) !important;
+}
+
+.logout-confirm-header h3,
+.logout-confirm-body p {
+  color: var(--aegis-text) !important;
+}
+
+.logout-confirm-footer .cancel-btn {
+  border: 1px solid rgba(145, 118, 72, 0.18) !important;
+  background: rgba(255, 253, 248, 0.78) !important;
+  color: var(--aegis-muted) !important;
+}
+
+.logout-confirm-footer .cancel-btn:hover {
+  background: rgba(232, 217, 190, 0.52) !important;
+}
+
+.logout-confirm-footer .confirm-btn {
+  background: linear-gradient(135deg, var(--aegis-brass), var(--aegis-brass-soft)) !important;
+  color: #fffaf0 !important;
+  box-shadow: 0 12px 26px rgba(143, 106, 53, 0.22) !important;
+}
+
+.logout-confirm-footer .confirm-btn:hover {
+  background: linear-gradient(135deg, #7c5b2c, #bc9856) !important;
 }
 
 .profile-avatar,
