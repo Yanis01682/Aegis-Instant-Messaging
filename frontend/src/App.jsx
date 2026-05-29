@@ -94,10 +94,10 @@ const EMPTY_SESSION = {
 
 const DEFAULT_FRIEND_GROUP = '我的好友'
 const AEGIS_BOT = {
-  id: '__aegis_scribe__',
-  name: '誓约书记',
-  displayName: '誓约书记',
-  groupNickname: '默认群机器人',
+  id: '__aegis_lune__',
+  name: '露恩',
+  displayName: '露恩',
+  groupNickname: '群聊助手',
   avatar: '/aegis-avatar-order.svg',
   isBot: true,
 }
@@ -2288,7 +2288,7 @@ function App() {
         [messageId]: result.translation,
       }))
     } catch (err) {
-      alert(err.response?.data?.detail || err.message || '誓约转译暂时失败')
+      alert(err.response?.data?.detail || err.message || '转译暂时失败')
     } finally {
       setTranslatingMessageId(null)
     }

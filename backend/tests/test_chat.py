@@ -734,7 +734,7 @@ def test_translate_message_uses_ai_gateway(monkeypatch):
         headers=headers_alice,
     )
     message_id = send_response.json()["message"]["id"]
-    monkeypatch.setattr(chat.ai_gateway, "translate_text", lambda text, target: "誓约已收到")
+    monkeypatch.setattr(chat.ai_gateway, "translate_text", lambda text, target: "已收到")
 
     response = client.post(
         f"/api/chat/messages/{message_id}/translate",
@@ -743,7 +743,7 @@ def test_translate_message_uses_ai_gateway(monkeypatch):
     )
 
     assert response.status_code == 200
-    assert response.json()["translation"] == "誓约已收到"
+    assert response.json()["translation"] == "已收到"
     assert response.json()["source"] == "oath received"
 
 
@@ -753,7 +753,7 @@ def test_group_bot_replies_when_mentioned(monkeypatch):
     client.post("/api/chat/friends/add", json={"friend_id": bob_user["id"]}, headers=headers_alice)
     group_res = client.post(
         "/api/chat/groups",
-        json={"name": "誓约厅", "member_ids": [bob_user["id"]]},
+        json={"name": "训练厅", "member_ids": [bob_user["id"]]},
         headers=headers_alice,
     )
     conversation_id = group_res.json()["conversation_id"]
@@ -761,7 +761,7 @@ def test_group_bot_replies_when_mentioned(monkeypatch):
 
     send_response = client.post(
         "/api/chat/messages/send",
-        json={"conversation_id": conversation_id, "content": "@誓约书记 今天怎么安排？"},
+        json={"conversation_id": conversation_id, "content": "@露恩 今天怎么安排？"},
         headers=headers_alice,
     )
     assert send_response.status_code == 200
@@ -769,7 +769,7 @@ def test_group_bot_replies_when_mentioned(monkeypatch):
 
     messages = messages_response.json()
     assert messages[-1]["type"] == "bot"
-    assert messages[-1]["senderName"] == "誓约书记"
+    assert messages[-1]["senderName"] == "露恩"
     assert messages[-1]["text"] == "记录如下：今天怎么安排？"
 
 

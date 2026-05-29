@@ -561,12 +561,29 @@
    @ 成员选择弹窗样式
    ======================================== */
 .mention-picker-overlay {
-  background: #ffffff;
+  background: rgba(255, 252, 247, 0.96);
+  border: 1px solid rgba(145, 118, 72, 0.18);
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 14px 34px rgba(80, 60, 32, 0.18);
   max-height: 240px;
   overflow-y: auto;
   z-index: 1000; /* 提高 z-index 确保在最上层 */
+  scrollbar-color: rgba(155, 106, 40, 0.48) rgba(255, 250, 240, 0.56);
+  scrollbar-width: thin;
+}
+
+.mention-picker-overlay::-webkit-scrollbar {
+  width: 10px;
+}
+
+.mention-picker-overlay::-webkit-scrollbar-track {
+  background: rgba(255, 250, 240, 0.56);
+}
+
+.mention-picker-overlay::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(255, 250, 240, 0.56);
+  border-radius: 999px;
+  background: rgba(155, 106, 40, 0.48);
 }
 
 .mention-picker-list {
@@ -584,7 +601,7 @@
 
 .mention-picker-item:hover,
 .mention-picker-item.selected {
-  background: #f0f0f0;
+  background: rgba(183, 131, 53, 0.14);
 }
 
 .mention-picker-avatar {
@@ -611,7 +628,7 @@
 
 .mention-picker-name {
   font-size: 0.9rem;
-  color: #333;
+  color: #332618;
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -620,22 +637,37 @@
 
 .mention-picker-remark {
   font-size: 0.75rem;
-  color: #999;
+  color: #8a7a64;
   margin-top: 2px;
 }
 
 .night-mode .mention-picker-overlay {
-  background: #2a2a2a;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  background: rgba(31, 27, 22, 0.98);
+  border-color: rgba(211, 183, 125, 0.18);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
+  scrollbar-color: rgba(214, 170, 96, 0.6) rgba(20, 18, 15, 0.82);
+}
+
+.night-mode .mention-picker-overlay::-webkit-scrollbar-track {
+  background: rgba(20, 18, 15, 0.82);
+}
+
+.night-mode .mention-picker-overlay::-webkit-scrollbar-thumb {
+  border-color: rgba(20, 18, 15, 0.82);
+  background: rgba(214, 170, 96, 0.6);
 }
 
 .night-mode .mention-picker-item:hover,
 .night-mode .mention-picker-item.selected {
-  background: #3a3a3a;
+  background: rgba(183, 131, 53, 0.18);
 }
 
 .night-mode .mention-picker-name {
-  color: #e0e0e0;
+  color: #f6ead0;
+}
+
+.night-mode .mention-picker-remark {
+  color: rgba(241, 227, 198, 0.58);
 }
 
 /* @ 用户名高亮样式 */

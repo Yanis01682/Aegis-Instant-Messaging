@@ -6,8 +6,8 @@ from fastapi import HTTPException
 
 SILICONFLOW_CHAT_URL = "https://api.siliconflow.cn/v1/chat/completions"
 DEFAULT_MODEL = "Qwen/Qwen2.5-7B-Instruct"
-BOT_NAME = "誓约书记"
-BOT_ALIASES = ("@誓约书记", "@圣盾书记", "@Aegis书记")
+BOT_NAME = "露恩"
+BOT_ALIASES = ("@露恩", "@Lune")
 
 
 def _get_api_key() -> str:
@@ -65,7 +65,7 @@ def translate_text(text: str, target_language: str = "简体中文") -> str:
             {
                 "role": "system",
                 "content": (
-                    "你是 Aegis 通讯系统里的誓约转译官。只输出译文，不要解释、不要加引号。"
+                    "你是 Aegis 通讯系统里的转译助手。只输出译文，不要解释、不要加引号。"
                     "保留人名、群名、代码、URL、表情和原有换行。"
                 ),
             },
@@ -105,8 +105,8 @@ def answer_group_prompt(prompt: str, context: list[dict[str, str]] | None = None
             {
                 "role": "system",
                 "content": (
-                    f"你是 Aegis 群聊中的默认群机器人「{BOT_NAME}」。"
-                    "你的语气温和、可靠、像圣盾城的记录官，回答要有帮助但不要中二过头。"
+                    f"你是 Aegis 群聊中的默认助手「{BOT_NAME}」。"
+                    "你的语气温和、可靠，带一点剑与骑士世界的清爽感，但不要中二或堆设定。"
                     "默认用中文，除非用户要求其他语言。控制在 3 到 6 句话。"
                 ),
             },

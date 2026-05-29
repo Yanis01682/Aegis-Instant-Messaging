@@ -577,7 +577,7 @@ def _create_group_bot_reply_if_needed(db: Session, conversation_id: int, content
     try:
         answer = ai_gateway.answer_group_prompt(prompt, context)
     except HTTPException as exc:
-        answer = f"{ai_gateway.BOT_NAME}暂时无法连上星流书库：{exc.detail}"
+        answer = f"{ai_gateway.BOT_NAME}暂时无法连接模型服务：{exc.detail}"
 
     bot_message = models.Message(
         conversation_id=conversation_id,

@@ -220,11 +220,16 @@ function ChatMainView({
     if (!textarea) return {}
     
     const rect = textarea.getBoundingClientRect()
+    const panel = textarea.closest('.chat-panel')
+    const panelRect = panel?.getBoundingClientRect()
+    const left = panelRect ? Math.max(16, rect.left - panelRect.left) : 20
+    const width = Math.min(360, Math.max(260, rect.width - 40))
     return {
-      position: 'fixed',
-      bottom: window.innerHeight - rect.top + 8,
-      left: rect.left,
-      width: Math.min(300, rect.width), // 最大宽度 300px
+      position: 'absolute',
+      bottom: `${composerHeight + 8}px`,
+      left,
+      width,
+      maxWidth: 'calc(100% - 40px)',
     }
   }
 
@@ -332,7 +337,7 @@ function ChatMainView({
             const member = members.find((m) => m.id === msg.senderId) || members.find((m) => m.name === msg.senderName)
             if (member) {
               peerAvatar = member.avatar || currentSession.avatar
-            } else if (msg.type === 'bot' || msg.senderName === '誓约书记') {
+            } else if (msg.type === 'bot' || msg.senderName === '露恩') {
               peerAvatar = '/aegis-avatar-order.svg'
             }
           }
@@ -424,7 +429,7 @@ function ChatMainView({
               </div>
               {(translationText || isTranslating) && (
                 <div className="message-translation">
-                  <span className="translation-label">誓约转译</span>
+                  <span className="translation-label">转译</span>
                   <span className="translation-text">{isTranslating ? '转译中...' : translationText}</span>
                 </div>
               )}

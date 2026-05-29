@@ -367,7 +367,7 @@ function Overlays({
           </button>
           {contextMenu.canTranslate && (
             <button type="button" className="session-context-item" onClick={handleTranslateMessage}>
-              誓约转译
+              转译
             </button>
           )}
           <button type="button" className="session-context-item" onClick={startMultiSelectFromMenu}>
