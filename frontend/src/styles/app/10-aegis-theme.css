@@ -2141,3 +2141,265 @@
   background: rgba(181, 138, 63, 0.22) !important;
   color: #fff4d8 !important;
 }
+
+/* Aegis search surface */
+.chat-tool-btn {
+  border: 1px solid rgba(145, 118, 72, 0.18) !important;
+  background: rgba(255, 252, 246, 0.52) !important;
+  color: #87632f !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 253, 248, 0.38);
+}
+
+.chat-tool-btn:hover:not(:disabled) {
+  border-color: rgba(145, 118, 72, 0.32) !important;
+  background: rgba(255, 246, 224, 0.8) !important;
+  color: #5f431d !important;
+  transform: translateY(-1px) !important;
+}
+
+.chat-tool-btn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.chat-tool-btn:disabled:hover {
+  background: rgba(255, 252, 246, 0.52) !important;
+  transform: none !important;
+}
+
+.search-message-overlay {
+  background:
+    radial-gradient(circle at 48% 24%, rgba(216, 183, 109, 0.12), transparent 30%),
+    rgba(20, 17, 12, 0.62) !important;
+  backdrop-filter: blur(5px);
+}
+
+.search-message-modal {
+  max-width: 600px !important;
+  border: 1px solid rgba(211, 183, 125, 0.24) !important;
+  border-radius: 18px !important;
+  background:
+    linear-gradient(180deg, rgba(37, 32, 24, 0.98), rgba(19, 17, 14, 0.98)) !important;
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.42),
+    0 0 0 1px rgba(255, 246, 224, 0.08),
+    inset 0 1px 0 rgba(255, 246, 224, 0.12) !important;
+}
+
+.search-message-header {
+  min-height: 64px;
+  padding: 18px 26px !important;
+  border-bottom: 1px solid rgba(211, 183, 125, 0.14) !important;
+  background:
+    linear-gradient(90deg, rgba(181, 138, 63, 0.18), rgba(255, 246, 224, 0.04)) !important;
+}
+
+.search-message-header h3 {
+  color: #f6ead0 !important;
+  font-size: 1.08rem !important;
+  letter-spacing: 0 !important;
+}
+
+.search-modal-close {
+  border: 1px solid rgba(211, 183, 125, 0.14) !important;
+  background: rgba(255, 246, 224, 0.06) !important;
+  color: rgba(241, 227, 198, 0.7) !important;
+}
+
+.search-modal-close:hover {
+  border-color: rgba(216, 183, 109, 0.34) !important;
+  background: rgba(181, 138, 63, 0.18) !important;
+  color: #fff3d4 !important;
+}
+
+.search-message-body {
+  padding: 22px 26px 26px !important;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(216, 183, 109, 0.08), transparent 34%),
+    transparent;
+}
+
+.message-search-section {
+  margin-bottom: 16px !important;
+}
+
+.message-search-section + .message-search-section,
+.history-time-range {
+  gap: 14px !important;
+}
+
+.message-search-control {
+  position: relative;
+}
+
+.message-search-icon {
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  z-index: 1;
+  transform: translateY(-50%);
+  color: #d9b46c;
+  font-size: 1.05rem;
+  pointer-events: none;
+}
+
+.message-search-primary {
+  padding-left: 46px !important;
+}
+
+.message-search-input {
+  min-height: 46px;
+  border: 1px solid rgba(211, 183, 125, 0.18) !important;
+  border-radius: 12px !important;
+  background: rgba(255, 246, 224, 0.08) !important;
+  color: #f2e3c4 !important;
+  font-size: 0.95rem !important;
+  box-shadow: inset 0 1px 0 rgba(255, 246, 224, 0.08);
+}
+
+.message-search-input::placeholder {
+  color: rgba(241, 227, 198, 0.48) !important;
+}
+
+.message-search-input:focus {
+  border-color: rgba(216, 183, 109, 0.58) !important;
+  box-shadow:
+    0 0 0 3px rgba(181, 138, 63, 0.2),
+    inset 0 1px 0 rgba(255, 246, 224, 0.12) !important;
+}
+
+.message-search-input option {
+  color: #2b241a;
+  background: #f6ead0;
+}
+
+.history-time-field {
+  color: rgba(241, 227, 198, 0.66) !important;
+  font-size: 0.82rem !important;
+}
+
+.search-message-modal .search-results-info {
+  gap: 14px;
+  padding: 13px 0 16px !important;
+  border-bottom: 1px solid rgba(211, 183, 125, 0.12) !important;
+  color: rgba(241, 227, 198, 0.74);
+}
+
+.search-message-modal .search-results-count {
+  color: #f2e3c4;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.search-message-modal .result-navigation {
+  gap: 10px !important;
+}
+
+.search-message-modal .nav-btn {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(211, 183, 125, 0.18) !important;
+  border-radius: 10px !important;
+  background: rgba(255, 246, 224, 0.07) !important;
+  color: rgba(241, 227, 198, 0.72) !important;
+  font-weight: 650;
+}
+
+.search-message-modal .nav-btn:hover:not(:disabled) {
+  border-color: rgba(216, 183, 109, 0.42) !important;
+  background: rgba(181, 138, 63, 0.2) !important;
+  color: #fff3d4 !important;
+}
+
+.search-message-modal .nav-btn:disabled {
+  opacity: 0.36 !important;
+}
+
+.search-message-modal .result-index {
+  min-width: 58px !important;
+  color: #d9b46c !important;
+}
+
+.search-message-modal .search-results-list {
+  gap: 10px !important;
+}
+
+.search-message-modal .search-result-item {
+  display: block !important;
+  border: 1px solid rgba(211, 183, 125, 0.12) !important;
+  border-radius: 12px !important;
+  background: rgba(255, 246, 224, 0.055) !important;
+  box-shadow: none !important;
+}
+
+.search-message-modal .search-result-item:hover {
+  border-color: rgba(216, 183, 109, 0.26) !important;
+  background: rgba(181, 138, 63, 0.14) !important;
+}
+
+.search-message-modal .search-result-item.active {
+  border-color: rgba(218, 185, 115, 0.76) !important;
+  background:
+    linear-gradient(90deg, rgba(181, 138, 63, 0.22), rgba(255, 246, 224, 0.07)) !important;
+}
+
+.search-message-modal .result-sender {
+  color: #d9b46c !important;
+  font-size: 0.84rem !important;
+}
+
+.search-message-modal .result-text {
+  color: #f6ead0 !important;
+  font-size: 0.92rem !important;
+}
+
+.search-message-modal .result-text mark {
+  border-radius: 5px !important;
+  background: rgba(218, 185, 115, 0.32) !important;
+  color: #fff7e2 !important;
+}
+
+.search-message-modal .result-time {
+  color: rgba(241, 227, 198, 0.52) !important;
+}
+
+.search-message-modal .search-placeholder {
+  min-height: 220px;
+  border: 1px dashed rgba(211, 183, 125, 0.18);
+  border-radius: 14px;
+  background: rgba(255, 246, 224, 0.035);
+}
+
+.search-message-modal .search-placeholder p {
+  color: rgba(241, 227, 198, 0.56) !important;
+}
+
+@media (max-width: 640px) {
+  .search-message-modal {
+    width: min(94vw, 600px) !important;
+    max-height: 86vh !important;
+  }
+
+  .search-message-header,
+  .search-message-body {
+    padding-left: 18px !important;
+    padding-right: 18px !important;
+  }
+
+  .search-message-modal .search-results-info {
+    align-items: flex-start !important;
+    flex-direction: column;
+  }
+
+  .search-message-modal .result-navigation {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .search-message-modal .nav-btn {
+    flex: 0 0 auto;
+    padding: 8px 10px !important;
+  }
+}
