@@ -644,6 +644,40 @@
   box-shadow: 0 12px 26px rgba(143, 106, 53, 0.24) !important;
 }
 
+.multiselect-toolbar {
+  border-color: rgba(145, 118, 72, 0.14) !important;
+  background: rgba(255, 252, 246, 0.72) !important;
+  backdrop-filter: blur(14px);
+}
+
+.message.selected {
+  background: rgba(143, 106, 53, 0.12) !important;
+}
+
+.multiselect-btn,
+.forward-summary-count {
+  background: linear-gradient(135deg, var(--aegis-brass), var(--aegis-brass-soft)) !important;
+  color: #fffaf0 !important;
+  box-shadow: 0 8px 18px rgba(143, 106, 53, 0.16) !important;
+}
+
+.multiselect-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #7b5727, #bd9655) !important;
+  box-shadow: 0 10px 22px rgba(143, 106, 53, 0.22) !important;
+}
+
+.multiselect-btn.cancel {
+  border: 1px solid rgba(145, 118, 72, 0.18) !important;
+  background: rgba(255, 252, 246, 0.7) !important;
+  color: var(--aegis-text) !important;
+  box-shadow: none !important;
+}
+
+.forward-search input:focus {
+  border-color: rgba(143, 106, 53, 0.42) !important;
+  box-shadow: 0 0 0 3px rgba(143, 106, 53, 0.1) !important;
+}
+
 .composer-resize-handle {
   display: none !important;
 }
@@ -911,6 +945,49 @@
 .night-mode .login-box {
   background: rgba(19, 19, 22, 0.78);
   border-color: rgba(211, 183, 125, 0.14);
+}
+
+.night-mode .composer {
+  background:
+    linear-gradient(180deg, rgba(26, 24, 20, 0.92), rgba(15, 14, 12, 0.96)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 246, 224, 0.06),
+    0 -12px 36px rgba(0, 0, 0, 0.18) !important;
+}
+
+.night-mode .composer-input {
+  border-color: rgba(211, 183, 125, 0.16) !important;
+  background: rgba(255, 246, 224, 0.075) !important;
+  color: #f6ead0 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 246, 224, 0.05) !important;
+}
+
+.night-mode .composer-input::placeholder {
+  color: rgba(241, 227, 198, 0.42) !important;
+}
+
+.night-mode .composer-input:focus {
+  border-color: rgba(216, 183, 109, 0.44) !important;
+  background: rgba(255, 246, 224, 0.1) !important;
+  box-shadow:
+    0 0 0 3px rgba(181, 138, 63, 0.14),
+    inset 0 1px 0 rgba(255, 246, 224, 0.08) !important;
+}
+
+.night-mode .toolbar-btn:hover {
+  background: rgba(181, 138, 63, 0.18) !important;
+  color: #fff4d8 !important;
+}
+
+.night-mode .multiselect-toolbar {
+  border-color: rgba(211, 183, 125, 0.14) !important;
+  background: rgba(18, 16, 13, 0.9) !important;
+}
+
+.night-mode .multiselect-btn.cancel {
+  border-color: rgba(211, 183, 125, 0.16) !important;
+  background: rgba(255, 246, 224, 0.08) !important;
+  color: #f6ead0 !important;
 }
 
 .night-mode .chat-user h2,

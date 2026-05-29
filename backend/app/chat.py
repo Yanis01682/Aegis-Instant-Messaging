@@ -727,6 +727,24 @@ def _serialize_session(db: Session, conversation: models.Conversation, current_u
             )
             .count()
         )
+        if current_membership.mute_notifications:
+            mention_token = str(current_user.id)
+            unread_count = (
+                db.query(models.Message)
+                .filter(
+                    models.Message.conversation_id == conversation.id,
+                    models.Message.id > (current_membership.read_index or 0),
+                    or_(models.Message.sender_id.is_(None), models.Message.sender_id != current_user.id),
+                    models.Message.mentioned_user_ids.isnot(None),
+                    or_(
+                        models.Message.mentioned_user_ids == mention_token,
+                        models.Message.mentioned_user_ids.like(f"{mention_token},%"),
+                        models.Message.mentioned_user_ids.like(f"%,{mention_token}"),
+                        models.Message.mentioned_user_ids.like(f"%,{mention_token},%"),
+                    ),
+                )
+                .count()
+            )
 
     title = conversation.name or "未命名会话"
     avatar = '/aegis-avatar-group.png'
@@ -753,8 +771,6 @@ def _serialize_session(db: Session, conversation: models.Conversation, current_u
         "isPinned": _is_session_pinned(db, conversation.id, current_user.id),
         "isMuted": bool(current_membership.mute_notifications) if current_membership is not None else False,
     }
-    if payload["isMuted"]:
-        payload["badge"] = 0
     if not conversation.is_group and peer_id is not None:
         payload["peerUserId"] = peer_id
     return payload
