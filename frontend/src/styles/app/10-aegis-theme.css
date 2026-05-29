@@ -852,6 +852,21 @@
   color: #9f3e2e;
 }
 
+.ttt-result {
+  display: grid;
+  gap: 6px;
+  margin: 0 24px 18px;
+  padding: 14px 16px;
+  border: 1px solid rgba(145, 118, 72, 0.16);
+  border-radius: 16px;
+  background: rgba(214, 181, 106, 0.14);
+  color: var(--aegis-muted);
+}
+
+.ttt-result strong {
+  color: var(--aegis-text);
+}
+
 .announcement-meta {
   margin: 6px 0 0;
   color: var(--aegis-muted);
@@ -935,6 +950,96 @@
 .night-mode .favorite-item {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(211, 183, 125, 0.1);
+}
+
+.night-mode .profile-modal,
+.night-mode .peer-profile-modal,
+.night-mode .ttt-modal {
+  border: 1px solid rgba(211, 183, 125, 0.18) !important;
+  background:
+    linear-gradient(180deg, rgba(39, 34, 26, 0.96), rgba(22, 20, 17, 0.98)) !important;
+  box-shadow: 0 28px 76px rgba(0, 0, 0, 0.42) !important;
+}
+
+.night-mode .profile-modal-header,
+.night-mode .ttt-header,
+.night-mode .user-panel-header {
+  border-bottom-color: rgba(211, 183, 125, 0.14) !important;
+  background: linear-gradient(135deg, rgba(61, 49, 33, 0.82), rgba(30, 27, 22, 0.92)) !important;
+  color: #f6ead0 !important;
+}
+
+.night-mode .profile-modal-header h3,
+.night-mode .ttt-header h3,
+.night-mode .profile-info-item .info-value,
+.night-mode .peer-profile-name,
+.night-mode .peer-profile-info-value,
+.night-mode .profile-edit-form input,
+.night-mode .profile-edit-form select,
+.night-mode .profile-edit-form textarea {
+  color: #f6ead0 !important;
+}
+
+.night-mode .profile-modal-body,
+.night-mode .profile-view,
+.night-mode .peer-profile-body {
+  background: transparent !important;
+}
+
+.night-mode .profile-info-item,
+.night-mode .peer-profile-info-list,
+.night-mode .profile-avatar-section {
+  border-color: rgba(211, 183, 125, 0.14) !important;
+}
+
+.night-mode .info-label,
+.night-mode .peer-profile-id,
+.night-mode .peer-profile-signature,
+.night-mode .peer-profile-info-label,
+.night-mode .profile-edit-form label,
+.night-mode .ttt-kicker,
+.night-mode .ttt-footer,
+.night-mode .ttt-player {
+  color: rgba(241, 227, 198, 0.72) !important;
+}
+
+.night-mode .ttt-cell,
+.night-mode .ttt-player,
+.night-mode .profile-edit-form input,
+.night-mode .profile-edit-form select,
+.night-mode .profile-edit-form textarea {
+  border-color: rgba(211, 183, 125, 0.18) !important;
+  background: rgba(255, 246, 224, 0.07) !important;
+}
+
+.night-mode .profile-avatar,
+.night-mode .peer-profile-avatar,
+.night-mode .user-panel-avatar {
+  border-color: rgba(211, 183, 125, 0.22) !important;
+}
+
+.night-mode .ttt-player.self,
+.night-mode .ttt-result {
+  border-color: rgba(211, 183, 125, 0.24) !important;
+  background: rgba(181, 138, 63, 0.18) !important;
+}
+
+.night-mode .ttt-cell {
+  color: #d9b46c !important;
+}
+
+.night-mode .ttt-close,
+.night-mode .profile-modal-close,
+.night-mode .peer-profile-close {
+  color: #d9b46c !important;
+}
+
+.night-mode .ttt-secondary,
+.night-mode .change-avatar-btn,
+.night-mode .profile-form-buttons .cancel-btn {
+  border-color: rgba(211, 183, 125, 0.2) !important;
+  background: rgba(255, 246, 224, 0.08) !important;
+  color: rgba(241, 227, 198, 0.78) !important;
 }
 
 .chat-detail-panel {
@@ -1462,4 +1567,355 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
   margin-top: 12px;
+}
+
+.night-mode .user-panel {
+  border-color: rgba(211, 183, 125, 0.2) !important;
+  background:
+    linear-gradient(180deg, rgba(39, 34, 26, 0.96), rgba(18, 17, 15, 0.98)) !important;
+  box-shadow: 0 28px 76px rgba(0, 0, 0, 0.44) !important;
+}
+
+.night-mode .user-panel-footer {
+  border-top-color: rgba(211, 183, 125, 0.14) !important;
+  background: rgba(17, 16, 14, 0.86) !important;
+}
+
+.night-mode .menu-item {
+  color: #eee0c2 !important;
+}
+
+.night-mode .menu-item:hover,
+.night-mode .menu-item:focus-visible {
+  background: rgba(181, 138, 63, 0.16) !important;
+  color: #fff4d8 !important;
+}
+
+.night-mode .menu-arrow,
+.night-mode .menu-text,
+.night-mode .menu-icon {
+  color: inherit !important;
+}
+
+.night-mode .toggle-switch {
+  background: rgba(211, 183, 125, 0.2) !important;
+}
+
+.night-mode .toggle-switch.active {
+  background: linear-gradient(135deg, #a87a38, #d8b76d) !important;
+}
+
+.night-mode .toggle-switch::after {
+  background: #fff8e8 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.34) !important;
+}
+
+.night-mode .logout-btn,
+.night-mode .delete-account-btn {
+  border-color: rgba(211, 183, 125, 0.18) !important;
+  background: rgba(255, 246, 224, 0.06) !important;
+  color: rgba(241, 227, 198, 0.76) !important;
+}
+
+.night-mode .logout-btn:hover,
+.night-mode .delete-account-btn:hover {
+  border-color: rgba(216, 183, 109, 0.38) !important;
+  background: rgba(181, 138, 63, 0.16) !important;
+  color: #fff4d8 !important;
+}
+
+.night-mode .delete-account-btn {
+  border-color: rgba(235, 145, 126, 0.32) !important;
+  color: #ffb2a5 !important;
+}
+
+.night-mode .profile-modal-overlay,
+.night-mode .change-password-overlay,
+.night-mode .logout-confirm-overlay,
+.night-mode .delete-confirm-overlay {
+  background: rgba(14, 12, 9, 0.62) !important;
+  animation: none !important;
+}
+
+.night-mode .change-password-modal,
+.night-mode .logout-confirm-modal,
+.night-mode .delete-confirm-modal {
+  border: 1px solid rgba(211, 183, 125, 0.18) !important;
+  background:
+    linear-gradient(180deg, rgba(39, 34, 26, 0.97), rgba(20, 19, 16, 0.98)) !important;
+  box-shadow: 0 28px 76px rgba(0, 0, 0, 0.46) !important;
+}
+
+.night-mode .change-password-header,
+.night-mode .change-password-footer,
+.night-mode .logout-confirm-header,
+.night-mode .logout-confirm-footer,
+.night-mode .delete-confirm-header,
+.night-mode .delete-confirm-footer {
+  border-color: rgba(211, 183, 125, 0.14) !important;
+  background: rgba(18, 17, 15, 0.46) !important;
+}
+
+.night-mode .change-password-header h3,
+.night-mode .logout-confirm-header h3,
+.night-mode .delete-confirm-header h3 {
+  color: #f6ead0 !important;
+}
+
+.night-mode .change-password-body label,
+.night-mode .logout-confirm-body p,
+.night-mode .delete-confirm-body p {
+  color: rgba(241, 227, 198, 0.78) !important;
+}
+
+.night-mode .delete-confirm-body p[style] {
+  color: #ffb2a5 !important;
+}
+
+.night-mode .change-password-body input {
+  border-color: rgba(211, 183, 125, 0.18) !important;
+  background: rgba(255, 246, 224, 0.07) !important;
+  color: #f6ead0 !important;
+}
+
+.night-mode .change-password-body input:focus,
+.night-mode .profile-edit-form input:focus,
+.night-mode .profile-edit-form select:focus,
+.night-mode .profile-edit-form textarea:focus {
+  border-color: rgba(216, 183, 109, 0.58) !important;
+  box-shadow: 0 0 0 3px rgba(181, 138, 63, 0.16) !important;
+}
+
+.night-mode .password-toggle-btn,
+.night-mode .change-password-close {
+  color: #d9b46c !important;
+}
+
+.night-mode .change-password-close:hover,
+.night-mode .profile-modal-close:hover,
+.night-mode .peer-profile-close:hover {
+  background: rgba(181, 138, 63, 0.16) !important;
+  color: #fff4d8 !important;
+}
+
+.night-mode .change-password-footer .cancel-btn,
+.night-mode .logout-confirm-footer .cancel-btn,
+.night-mode .delete-confirm-footer .cancel-btn {
+  border: 1px solid rgba(211, 183, 125, 0.2) !important;
+  background: rgba(255, 246, 224, 0.08) !important;
+  color: rgba(241, 227, 198, 0.8) !important;
+}
+
+.night-mode .change-password-footer .cancel-btn:hover,
+.night-mode .logout-confirm-footer .cancel-btn:hover,
+.night-mode .delete-confirm-footer .cancel-btn:hover {
+  background: rgba(181, 138, 63, 0.16) !important;
+  color: #fff4d8 !important;
+}
+
+.night-mode .change-password-footer .confirm-btn,
+.night-mode .logout-confirm-footer .confirm-btn {
+  background: linear-gradient(135deg, #9a6f34, #d8b76d) !important;
+  color: #fffaf0 !important;
+  box-shadow: 0 12px 26px rgba(143, 106, 53, 0.24) !important;
+}
+
+.night-mode .delete-confirm-footer .confirm-btn {
+  background: linear-gradient(135deg, #9d4a3b, #cf7b62) !important;
+  color: #fff4ee !important;
+  box-shadow: 0 12px 26px rgba(157, 74, 59, 0.22) !important;
+}
+
+.night-mode .chatlist-panel {
+  border-right-color: rgba(211, 183, 125, 0.2) !important;
+  background:
+    linear-gradient(180deg, rgba(32, 29, 24, 0.96), rgba(18, 17, 15, 0.98)) !important;
+}
+
+.night-mode .wechat-panel-header,
+.night-mode .session-tabs,
+.night-mode .search-wrap,
+.night-mode .friend-search-wrap {
+  border-color: rgba(211, 183, 125, 0.14) !important;
+  background: rgba(17, 16, 14, 0.84) !important;
+}
+
+.night-mode .wechat-search-wrapper,
+.night-mode .wechat-add-btn,
+.night-mode .search-input-wrapper input,
+.night-mode .friend-search-input-wrapper input,
+.night-mode .friend-search-input,
+.night-mode .message-search-input {
+  border: 1px solid rgba(211, 183, 125, 0.16) !important;
+  background: rgba(255, 246, 224, 0.08) !important;
+  color: #eee0c2 !important;
+}
+
+.night-mode .wechat-search-input,
+.night-mode .wechat-search-input::placeholder,
+.night-mode .search-input-wrapper input::placeholder,
+.night-mode .friend-search-input-wrapper input::placeholder,
+.night-mode .friend-search-input::placeholder {
+  color: rgba(241, 227, 198, 0.56) !important;
+}
+
+.night-mode .wechat-search-icon,
+.night-mode .wechat-search-clear,
+.night-mode .search-clear-btn,
+.night-mode .friend-search-clear-btn,
+.night-mode .wechat-add-btn {
+  color: #d9b46c !important;
+}
+
+.night-mode .wechat-add-btn:hover,
+.night-mode .search-clear-btn:hover,
+.night-mode .friend-search-clear-btn:hover {
+  background: rgba(181, 138, 63, 0.18) !important;
+}
+
+.night-mode .session-list,
+.night-mode .favorites-container,
+.night-mode .notes-container,
+.night-mode .friends-container,
+.night-mode .blacklist-container,
+.night-mode .moments-sidebar,
+.night-mode .qq-friends-list,
+.night-mode .blacklist-list {
+  background:
+    linear-gradient(180deg, rgba(26, 23, 19, 0.88), rgba(15, 14, 12, 0.94)) !important;
+}
+
+.night-mode .empty-friends-hint,
+.night-mode .empty-favorites,
+.night-mode .empty-list,
+.night-mode .moments-sidebar {
+  color: rgba(241, 227, 198, 0.64) !important;
+}
+
+.night-mode .empty-friends-hint p,
+.night-mode .empty-favorites p,
+.night-mode .empty-favorites span,
+.night-mode .empty-list p,
+.night-mode .moments-sidebar p {
+  color: rgba(241, 227, 198, 0.56) !important;
+}
+
+.night-mode .moments-sidebar h4,
+.night-mode .notes-title,
+.night-mode .note-title,
+.night-mode .favorite-title,
+.night-mode .group-name,
+.night-mode .qq-friend-name,
+.night-mode .blacklist-item .name,
+.night-mode .request-name,
+.night-mode .friend-list-name,
+.night-mode .result-name {
+  color: #f6ead0 !important;
+}
+
+.night-mode .notes-toolbar,
+.night-mode .note-main p,
+.night-mode .favorite-preview,
+.night-mode .favorite-time,
+.night-mode .favorite-meta,
+.night-mode .qq-friend-signature,
+.night-mode .friend-real-name,
+.night-mode .request-message,
+.night-mode .friend-list-status,
+.night-mode .result-subtitle {
+  color: rgba(241, 227, 198, 0.62) !important;
+}
+
+.night-mode .note-item,
+.night-mode .favorite-item,
+.night-mode .blacklist-item,
+.night-mode .request-item,
+.night-mode .friend-list-item,
+.night-mode .search-result-item,
+.night-mode .qq-friend-item {
+  border-color: rgba(211, 183, 125, 0.12) !important;
+  background: rgba(255, 246, 224, 0.055) !important;
+}
+
+.night-mode .note-item.active,
+.night-mode .note-item:hover,
+.night-mode .favorite-item:hover,
+.night-mode .blacklist-item:hover,
+.night-mode .request-item:hover,
+.night-mode .friend-list-item:hover,
+.night-mode .search-result-item:hover,
+.night-mode .qq-friend-item:hover,
+.night-mode .friends-group-header:hover {
+  border-color: rgba(216, 183, 109, 0.26) !important;
+  background: rgba(181, 138, 63, 0.16) !important;
+}
+
+.night-mode .tab-btn {
+  border-color: rgba(211, 183, 125, 0.18) !important;
+  background: rgba(255, 246, 224, 0.07) !important;
+  color: rgba(241, 227, 198, 0.72) !important;
+}
+
+.night-mode .tab-btn:hover,
+.night-mode .tab-btn.active,
+.night-mode .tab-btn.active:hover {
+  border-color: rgba(216, 183, 109, 0.36) !important;
+  background: rgba(181, 138, 63, 0.2) !important;
+  color: #fff4d8 !important;
+}
+
+.night-mode .note-new-btn,
+.night-mode .empty-friends-hint button,
+.night-mode .moments-hero button,
+.night-mode .moment-composer-tools button,
+.night-mode .moment-comment-box button,
+.night-mode .moment-actions button {
+  border-color: rgba(211, 183, 125, 0.22) !important;
+  background: rgba(255, 246, 224, 0.08) !important;
+  color: #d9b46c !important;
+  box-shadow: none !important;
+}
+
+.night-mode .note-new-btn:hover,
+.night-mode .empty-friends-hint button:hover,
+.night-mode .moments-hero button:hover,
+.night-mode .moment-actions button:hover {
+  background: rgba(181, 138, 63, 0.18) !important;
+  color: #fff4d8 !important;
+}
+
+.night-mode .moments-view {
+  background:
+    linear-gradient(180deg, rgba(24, 22, 18, 0.76), rgba(14, 13, 11, 0.88)),
+    url('/aegis-bg-v2.png') center / cover no-repeat !important;
+}
+
+.night-mode .moments-hero p,
+.night-mode .moment-likes span,
+.night-mode .moment-comment strong {
+  color: #d9b46c !important;
+}
+
+.night-mode .moments-hero h2,
+.night-mode .moment-post-head strong,
+.night-mode .moment-content {
+  color: #f6ead0 !important;
+}
+
+.night-mode .moment-composer-card,
+.night-mode .moment-post,
+.night-mode .moments-empty,
+.night-mode .moment-social {
+  border-color: rgba(211, 183, 125, 0.14) !important;
+  background: rgba(20, 18, 15, 0.72) !important;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28) !important;
+  color: rgba(241, 227, 198, 0.68) !important;
+}
+
+.night-mode .moment-composer-top textarea,
+.night-mode .moment-composer-tools input,
+.night-mode .moment-comment-box input {
+  border-color: rgba(211, 183, 125, 0.16) !important;
+  background: rgba(255, 246, 224, 0.08) !important;
+  color: #f6ead0 !important;
 }

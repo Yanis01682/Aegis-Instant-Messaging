@@ -680,7 +680,13 @@ function App() {
     }
 
     getActiveTicTacToeGame(currentChat)
-      .then((game) => setTicTacToeGame(normalizeTicTacToeGame(game)))
+      .then((game) => {
+        setTicTacToeGame((prev) => {
+          if (game) return normalizeTicTacToeGame(game)
+          if (prev?.conversationId === currentChat && isTerminalTicTacToeGame(prev)) return prev
+          return null
+        })
+      })
       .catch(() => {
         setTicTacToeGame((prev) => (
           prev?.conversationId === currentChat && isTerminalTicTacToeGame(prev) ? prev : null
