@@ -415,6 +415,49 @@ def test_muted_session_hides_unread_badge():
     assert muted_sessions.json()[0]["isMuted"] is True
 
 
+def test_muted_group_still_badges_when_user_is_mentioned():
+    headers_alice, _ = register_and_login("mute_mention_alice", "mute_mention_alice@example.com")
+    headers_bob, bob_user = register_and_login("mute_mention_bob", "mute_mention_bob@example.com")
+
+    client.post("/api/chat/friends/add", json={"friend_id": bob_user["id"]}, headers=headers_alice)
+    group_res = client.post(
+        "/api/chat/groups",
+        json={"name": "提醒组", "member_ids": [bob_user["id"]]},
+        headers=headers_alice,
+    )
+    conversation_id = group_res.json()["conversation_id"]
+
+    mute_res = client.put(
+        f"/api/chat/sessions/{conversation_id}/mute",
+        json={"muted": True},
+        headers=headers_bob,
+    )
+    assert mute_res.status_code == 200
+
+    normal_res = client.post(
+        "/api/chat/messages/send",
+        json={"conversation_id": conversation_id, "content": "普通消息"},
+        headers=headers_alice,
+    )
+    assert normal_res.status_code == 200
+    normal_sessions = client.get("/api/chat/sessions", headers=headers_bob)
+    assert normal_sessions.status_code == 200
+    assert normal_sessions.json()[0]["badge"] == 0
+
+    mention_res = client.post(
+        "/api/chat/messages/send",
+        json={"conversation_id": conversation_id, "content": f"@{bob_user['username']} 看这里"},
+        headers=headers_alice,
+    )
+    assert mention_res.status_code == 200
+
+    mentioned_sessions = client.get("/api/chat/sessions", headers=headers_bob)
+    assert mentioned_sessions.status_code == 200
+    assert mentioned_sessions.json()[0]["isMuted"] is True
+    assert mentioned_sessions.json()[0]["badge"] == 1
+    assert mentioned_sessions.json()[0]["lastMessage"] == f"@{bob_user['username']} 看这里"
+
+
 def test_sender_can_revoke_own_message():
     headers_alice, _ = register_and_login("revoke_alice", "revoke_alice@example.com")
     headers_bob, bob_user = register_and_login("revoke_bob", "revoke_bob@example.com")

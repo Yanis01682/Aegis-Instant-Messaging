@@ -163,6 +163,17 @@ const parseMessageDate = (value) => {
   return Number.isNaN(parsed.getTime()) ? null : parsed
 }
 
+const getSafeTimestamp = (value) => {
+  if (!value) return 0
+  if (value instanceof Date) return value.getTime()
+  const normalized = String(value)
+    .replace('年', '-')
+    .replace('月', '-')
+    .replace('日', '')
+  const parsed = new Date(normalized)
+  return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime()
+}
+
 const matchesDateRange = (message, startAt, endAt) => {
   const date = parseMessageDate(message.timestamp)
   if (!date) return false
@@ -384,10 +395,14 @@ function App() {
     // 使用传入的参数或 state 中的值
     const effectiveAtMentionSessionId = forceAtMentionSessionId !== undefined ? forceAtMentionSessionId : atMentionSessionId
     console.log('refreshRealtimeChatData 调用:', { preferredChatId, effectiveAtMentionSessionId, currentUserId })
-    const [fetchedFriends, fetchedSessions] = await Promise.all([
-      getFriends(),
+    const [friendsResult, fetchedSessions] = await Promise.all([
+      getFriends().catch((err) => {
+        console.error('刷新好友列表失败', err)
+        return null
+      }),
       getSessions()
     ])
+    const fetchedFriends = Array.isArray(friendsResult) ? friendsResult : myFriends
 
     console.log(' 获取到的好友列表:', fetchedFriends)
     console.log(' 好友数量:', fetchedFriends.length)
@@ -401,7 +416,9 @@ function App() {
       remark: friend.remark || ''
     }))
     console.log('👥 映射后的好友列表:', mappedFriends)
-    setMyFriends(mappedFriends)
+    if (Array.isArray(friendsResult)) {
+      setMyFriends(mappedFriends)
+    }
     
     const mappedSessions = fetchedSessions.map(session => {
       let nextSession = session
@@ -560,6 +577,13 @@ function App() {
     if (message.type === 'forward') return '[聊天记录]'
     return message.text || '暂无消息'
   }
+  const getSessionUpdateTime = (item) => {
+    const timestamp = getSafeTimestamp(item?.timestamp)
+    if (timestamp) return timestamp
+    const time = getSafeTimestamp(item?.time)
+    if (time) return time
+    return 0
+  }
   const applyLocalSessionPreview = (session) => {
     const cachedMessages = messages[session.id]
     if (!cachedMessages) {
@@ -576,6 +600,12 @@ function App() {
 
     const latestVisibleMessage = cachedMessages[cachedMessages.length - 1]
     if (!latestVisibleMessage) {
+      return session
+    }
+
+    const sessionTime = getSessionUpdateTime(session)
+    const cachedTime = getSessionUpdateTime(latestVisibleMessage)
+    if (sessionTime && cachedTime && cachedTime < sessionTime) {
       return session
     }
 
@@ -3386,7 +3416,6 @@ function App() {
 
   const myRole = { [currentChat]: userRole }
   const unreadNotificationCount = sessions.reduce((total, session) => {
-    if (session.isMuted) return total
     return total + (session.badge || 0)
   }, 0)
 
