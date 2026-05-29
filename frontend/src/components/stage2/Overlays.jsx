@@ -5,6 +5,7 @@
  */
 import { useState } from 'react'
 import { getForwardMessageLabel, normalizeForwardData } from '../../utils/forwardData'
+import { AEGIS_AVATAR_PRESETS } from '../../utils/aegisAvatars'
 
 /**
  * Render an avatar: if the value is a base64 data URL, display it as an
@@ -68,6 +69,7 @@ function Overlays({
   handleLogout,
   handleDeleteAccount,
   handleOpenChangePassword,
+  handleReturnToAccountCenter,
   showChangePasswordModal,
   handleCloseChangePassword,
   changePasswordForm,
@@ -86,6 +88,7 @@ function Overlays({
   isEditingProfile,
   handleEditProfile,
   handleProfileChange,
+  handleSelectPresetAvatar,
   handleCancelProfile,
   handleSaveProfile,
   handleChangeAvatar,
@@ -210,6 +213,10 @@ function Overlays({
   confirmDeleteAccount
 }) {
   const [showAboutModal, setShowAboutModal] = useState(false)
+  const returnToAccountCenter = () => {
+    handleReturnToAccountCenter?.()
+    setShowAboutModal(false)
+  }
   const [forwardTargetSearch, setForwardTargetSearch] = useState('') // 转发目标搜索
   const [forwardSendingTargetId, setForwardSendingTargetId] = useState(null)
   const peerIsFriend = peerProfile ? isAlreadyFriend(peerProfile.userId, peerProfile.name) : false
@@ -457,7 +464,7 @@ function Overlays({
               <div className="menu-item" onClick={(e) => { e.stopPropagation(); handleOpenChangePassword() }}><span className="menu-icon">🔑</span><span className="menu-text">修改密码</span><span className="menu-arrow">›</span></div>
               <div className="menu-item" onClick={toggleNightMode}><span className="menu-icon">{isNightMode ? '☀️' : '🌙'}</span><span className="menu-text">{isNightMode ? '日间模式' : '夜间模式'}</span><span className="menu-toggle"><span className={`toggle-switch ${isNightMode ? 'active' : ''}`}></span></span></div>
               <div className="menu-item"><span className="menu-icon">🔔</span><span className="menu-text">消息通知</span>{unreadNotificationCount > 0 && <span className="menu-badge">{unreadNotificationCount}</span>}</div>
-              <div className="menu-item" onClick={() => setShowAboutModal(true)}><span className="menu-icon">ℹ️</span><span className="menu-text">关于我们</span><span className="menu-arrow">›</span></div>
+              <div className="menu-item" onClick={(e) => { e.stopPropagation(); closeUserPanel?.(); setShowAboutModal(true) }}><span className="menu-icon">ℹ️</span><span className="menu-text">关于我们</span><span className="menu-arrow">›</span></div>
             </div>
 
             <div className="user-panel-footer">
@@ -469,21 +476,21 @@ function Overlays({
       )}
 
       {showAboutModal && (
-        <div className="profile-modal-overlay" onClick={() => setShowAboutModal(false)}>
+        <div className="profile-modal-overlay" onClick={returnToAccountCenter}>
           <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
             <div className="profile-modal-header">
               <h3>关于我们</h3>
-              <button className="profile-modal-close" onClick={() => setShowAboutModal(false)}>×</button>
+              <button className="profile-modal-close" onClick={returnToAccountCenter}>‹</button>
             </div>
             <div className="profile-modal-body">
               <div className="profile-view">
                 <div className="profile-info-list">
-                  <div className="profile-info-item"><span className="info-label">项目名称</span><span className="info-value">我的刀盾 / WhatTheDogDoing</span></div>
-                  <div className="profile-info-item"><span className="info-label">项目介绍</span><span className="info-value">这是由课程小组共同设计与开发的即时通讯系统，我们围绕真实聊天、好友管理、群聊协作和消息体验，持续打磨一个更完整、更稳定的聊天产品原型。</span></div>
+                  <div className="profile-info-item"><span className="info-label">项目名称</span><span className="info-value">Aegis</span></div>
+                  <div className="profile-info-item"><span className="info-label">项目介绍</span><span className="info-value">Aegis 是一套带有骑士团世界观的即时通讯课程作品，围绕真实聊天、好友管理、群聊协作和消息体验，持续打磨一个更完整、更稳定的聊天产品原型。</span></div>
                   <div className="profile-info-item"><span className="info-label">开发成员</span><span className="info-value">zzy、zj、mwq、wjq</span></div>
-                  <div className="profile-info-item"><span className="info-label">团队说明</span><span className="info-value">我们以协作开发的方式完成前后端联调、界面交互、消息能力和系统完善，希望把“我的刀盾”做成一个兼顾功能完整性与使用体验的课程作品。</span></div>
+                  <div className="profile-info-item"><span className="info-label">团队说明</span><span className="info-value">我们以协作开发的方式完成前后端联调、界面交互、消息能力和系统完善，希望把 Aegis 做成一个兼顾功能完整性与使用体验的课程作品。</span></div>
                 </div>
-                <button className="edit-profile-btn" onClick={() => setShowAboutModal(false)}>我知道了</button>
+                <button className="edit-profile-btn" onClick={returnToAccountCenter}>返回账号中心</button>
               </div>
             </div>
           </div>
@@ -491,11 +498,11 @@ function Overlays({
       )}
 
       {showProfileModal && (
-        <div className="profile-modal-overlay" onClick={() => setShowProfileModal(false)}>
+        <div className="profile-modal-overlay" onClick={returnToAccountCenter}>
           <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
             <div className="profile-modal-header">
               <h3>个人信息</h3>
-              <button className="profile-modal-close" onClick={() => setShowProfileModal(false)}>×</button>
+              <button className="profile-modal-close" onClick={returnToAccountCenter}>‹</button>
             </div>
 
             <div className="profile-modal-body">
@@ -523,6 +530,20 @@ function Overlays({
                       onChange={handleChangeAvatar} 
                       style={{ display: 'none' }} 
                     />
+                  </div>
+
+                  <div className="avatar-preset-row">
+                    {AEGIS_AVATAR_PRESETS.map((preset) => (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        className={`avatar-preset ${profileData.avatar === preset.value ? 'active' : ''}`}
+                        title={preset.label}
+                        onClick={() => handleSelectPresetAvatar?.(preset.value)}
+                      >
+                        <img src={preset.value} alt={preset.label} />
+                      </button>
+                    ))}
                   </div>
 
                   <div className="profile-info-list">
@@ -663,7 +684,7 @@ function Overlays({
                 {renderAvatar(peerProfile.avatar, 'peer-profile-avatar')}
               </div>
               <h3 className="peer-profile-name">{peerProfile.name}</h3>
-              <p className="peer-profile-id">刀盾号：{peerProfile.wechatId || peerProfile.name}</p>
+              <p className="peer-profile-id">Aegis ID：{peerProfile.wechatId || peerProfile.name}</p>
 
               <div className="peer-profile-info-list">
 
@@ -698,7 +719,7 @@ function Overlays({
       {showChatDetail && currentSession && (
         <div className="chat-detail-overlay" onClick={handleCloseChatDetail}>
           <div className="chat-detail-panel" onClick={(e) => e.stopPropagation()}>
-            <div className="chat-detail-header"><h3>聊天详情</h3><button className="chat-detail-close" onClick={handleCloseChatDetail}>×</button></div>
+            <div className="chat-detail-header"><h3>{currentSession.isGroup ? '群聊详情' : '聊天详情'}</h3><button className="chat-detail-close" onClick={handleCloseChatDetail}>×</button></div>
             <div className="chat-detail-content">
               {currentSession.isGroup ? (
                 <div className="group-chat-detail">
@@ -769,6 +790,11 @@ function Overlays({
                       {!isEditingAnnouncement ? (
                         <div className="announcement-display">
                           <p className="announcement-text">{groupAnnouncement || '暂无公告'}</p>
+                          {groupAnnouncementHistory[0]?.publisherName && (
+                            <p className="announcement-meta">
+                              {groupAnnouncementHistory[0].publisherName} 发布于 {formatDisplayDateTime(groupAnnouncementHistory[0].createdAt) || groupAnnouncementHistory[0].createdAt}
+                            </p>
+                          )}
                           <div className="remark-actions">
                             <button type="button" className="edit-remark-btn" onClick={handleOpenAnnouncementHistory}>历史公告</button>
                             {(userRole === 'owner' || userRole === 'admin') && <button type="button" className="edit-announcement-btn" onClick={handleStartEditAnnouncement}>编辑</button>}
@@ -794,7 +820,7 @@ function Overlays({
                   </div>
                   <div className="detail-section"><div className="section-title">消息免打扰</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" checked={isSessionMuted(currentChat)} onChange={() => handleToggleSessionMute(currentChat)} /><span className="toggle-slider"></span></label></div></div>
                   <div className="detail-section"><div className="section-title">置顶聊天</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" checked={isChatPinned(currentChat)} onChange={() => handleTogglePinChat(currentChat)} /><span className="toggle-slider"></span></label></div></div>
-                  <div className="detail-section"><div className="section-title">本机记录</div><div className="section-content"><button className="danger-btn" onClick={handleClearChatHistory}>清空聊天记录</button></div></div>
+                  <div className="detail-section"><div className="section-title">账号记录</div><div className="section-content"><button className="danger-btn" onClick={handleClearChatHistory}>清空聊天记录</button></div></div>
 
                   {userRole === 'owner' && (
                     <div className="detail-section"><div className="section-title">退出群聊</div><div className="section-content"><button className="danger-btn" onClick={handleDismissGroup}>解散群聊</button></div></div>
@@ -869,7 +895,7 @@ function Overlays({
                   <div className="detail-section"><div className="section-title">置顶聊天</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" checked={isChatPinned(currentChat)} onChange={() => handleTogglePinChat(currentChat)} /><span className="toggle-slider"></span></label></div></div>
                   <div className="detail-section"><div className="section-title">消息免打扰</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" checked={isSessionMuted(currentChat)} onChange={() => handleToggleSessionMute(currentChat)} /><span className="toggle-slider"></span></label></div></div>
                   <div className="detail-section"><div className="section-title">添加到黑名单</div><div className="section-content"><label className="toggle-switch-label"><input type="checkbox" className="toggle-checkbox" checked={currentSession.isGroup ? false : isUserInBlacklist(blacklistTarget.id)} onChange={() => !currentSession.isGroup && handleToggleBlacklist(blacklistTarget)} /><span className="toggle-slider"></span></label></div></div>
-                  <div className="detail-section"><div className="section-title">本机记录</div><div className="section-content"><button className="danger-btn" onClick={handleClearChatHistory}>清空聊天记录</button></div></div>
+                  <div className="detail-section"><div className="section-title">账号记录</div><div className="section-content"><button className="danger-btn" onClick={handleClearChatHistory}>清空聊天记录</button></div></div>
                   <div className="detail-section"><div className="section-content"><button className="danger-btn" onClick={() => currentPrivateFriend && handleDeleteFriend(currentPrivateFriend.id)} disabled={!currentPrivateFriend}>删除好友</button></div></div>
                 </div>
               )}
@@ -887,7 +913,7 @@ function Overlays({
             </div>
             <div className="add-friend-modal-body">
               <div className="friend-search-section">
-                <input type="text" className="friend-search-input" placeholder="搜索用户名、昵称或刀盾号" value={friendSearchQuery} onChange={handleSearchFriend} autoFocus />
+                <input type="text" className="friend-search-input" placeholder="搜索用户名、昵称或 Aegis ID" value={friendSearchQuery} onChange={handleSearchFriend} autoFocus />
               </div>
               {friendSearchQuery && (
                 <div className="friend-search-results">
@@ -899,7 +925,7 @@ function Overlays({
                           <div className="result-avatar">{renderAvatar(user.avatar, 'result-avatar-img')}</div>
                           <div className="result-info">
                             <p className="result-name">{user.name}</p>
-                            <p className="result-subtitle">刀盾号：{user.userId}</p>
+                            <p className="result-subtitle">Aegis ID：{user.userId}</p>
                           </div>
                           <button
                             className="send-request-btn"
@@ -994,7 +1020,7 @@ function Overlays({
               )}
 
               {!friendSearchQuery && friendRequestList.length === 0 && (
-                <div className="add-friend-hint"><p>在上方搜索框中输入用户的刀盾号、昵称或手机号</p></div>
+                <div className="add-friend-hint"><p>在上方搜索框中输入用户的 Aegis ID、昵称或手机号</p></div>
               )}
             </div>
           </div>
@@ -1308,7 +1334,7 @@ function Overlays({
       {showChangePasswordModal && (
         <ChangePasswordModal
           username={profileData?.username || ''}
-          handleCloseChangePassword={handleCloseChangePassword}
+          handleCloseChangePassword={returnToAccountCenter}
           changePasswordForm={changePasswordForm}
           handleChangePasswordInput={handleChangePasswordInput}
           handleSubmitChangePassword={handleSubmitChangePassword}

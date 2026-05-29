@@ -86,6 +86,19 @@ class ConversationMutePayload(BaseModel):
     muted: bool
 
 
+class UserNotePayload(BaseModel):
+    title: str
+    content: str
+
+
+class TicTacToeInvitePayload(BaseModel):
+    conversation_id: int
+
+
+class TicTacToeMovePayload(BaseModel):
+    index: int
+
+
 class ConnectionManager:
     _loop: asyncio.AbstractEventLoop | None = None
 
@@ -299,6 +312,16 @@ def _ensure_group_membership(db: Session, conversation_id: int, user_id: int):
     return _get_conversation_membership_or_403(db, conversation_id, user_id, ERR_NOT_MEMBER_GROUP)
 
 
+def _serialize_user_note(note: models.UserNote):
+    return {
+        "id": note.id,
+        "title": note.title,
+        "content": note.content,
+        "createdAt": note.created_at.isoformat() if note.created_at else None,
+        "updatedAt": note.updated_at.isoformat() if note.updated_at else None,
+    }
+
+
 def _ensure_conversation_membership(db: Session, conversation_id: int, user_id: int):
     return _get_conversation_membership_or_403(db, conversation_id, user_id, ERR_NOT_MEMBER_CONVERSATION)
 
@@ -360,7 +383,7 @@ def _serialize_user(user: models.User, remark: Optional[str] = None, group_name:
         "userId": user.username,
         "accountId": str(user.id),
         "name": display_name,
-        "avatar": user.avatar or '/default-avatar.png',
+        "avatar": user.avatar or '/aegis-avatar-shield.svg',
         "signature": user.bio or "",
         "email": user.email or "",
         "group": group_name or "我的好友",
@@ -427,7 +450,73 @@ def _serialize_message(
         payload["replyTo"] = _serialize_reply_reference(reply_message, current_user_id, reply_sender)
     if msg_type == "forward" and message.media_data:
         payload["forwardData"] = json.loads(message.media_data)
+    if msg_type == "game" and message.media_data:
+        payload["gameData"] = json.loads(message.media_data)
     return payload
+
+
+def _get_private_game_players(db: Session, conversation_id: int, current_user_id: int):
+    conversation = db.query(models.Conversation).filter(models.Conversation.id == conversation_id).first()
+    if not conversation or conversation.is_group:
+        raise HTTPException(status_code=400, detail="Tic-tac-toe can only be started in a private chat")
+    _ensure_conversation_membership(db, conversation_id, current_user_id)
+    members = (
+        db.query(models.ConversationMember)
+        .filter(models.ConversationMember.conversation_id == conversation_id)
+        .all()
+    )
+    if len(members) != 2:
+        raise HTTPException(status_code=400, detail="Private chat must have exactly two players")
+    peer_id = next(member.user_id for member in members if member.user_id != current_user_id)
+    return [member.user_id for member in members], peer_id
+
+
+def _serialize_tic_tac_toe_game(db: Session, game: models.TicTacToeGame, current_user_id: int | None = None):
+    user_ids = [uid for uid in [game.inviter_id, game.invitee_id, game.x_user_id, game.o_user_id, game.turn_user_id, game.winner_user_id] if uid]
+    users = db.query(models.User).filter(models.User.id.in_(set(user_ids))).all() if user_ids else []
+    user_map = {user.id: user for user in users}
+
+    def name_for(user_id):
+        user = user_map.get(user_id)
+        return (user.nickname or user.username) if user else "未知成员"
+
+    return {
+        "id": game.id,
+        "conversationId": game.conversation_id,
+        "status": game.status,
+        "board": list(game.board),
+        "inviterId": game.inviter_id,
+        "inviteeId": game.invitee_id,
+        "xUserId": game.x_user_id,
+        "oUserId": game.o_user_id,
+        "turnUserId": game.turn_user_id,
+        "winnerUserId": game.winner_user_id,
+        "inviterName": name_for(game.inviter_id),
+        "inviteeName": name_for(game.invitee_id),
+        "xName": name_for(game.x_user_id),
+        "oName": name_for(game.o_user_id),
+        "currentUserMark": "X" if current_user_id == game.x_user_id else ("O" if current_user_id == game.o_user_id else None),
+        "createdAt": game.created_at.isoformat() if game.created_at else None,
+        "updatedAt": game.updated_at.isoformat() if game.updated_at else None,
+    }
+
+
+def _notify_tic_tac_toe(db: Session, game: models.TicTacToeGame, member_ids: list[int]):
+    _dispatch_notification(
+        member_ids,
+        {
+            "type": "game_updated",
+            "conversationId": game.conversation_id,
+            "game": _serialize_tic_tac_toe_game(db, game),
+        },
+    )
+
+
+def _winning_mark(board: str):
+    for a, b, c in [(0, 1, 2), (3, 4, 5), (6, 7, 8), (0, 3, 6), (1, 4, 7), (2, 5, 8), (0, 4, 8), (2, 4, 6)]:
+        if board[a] != "." and board[a] == board[b] == board[c]:
+            return board[a]
+    return None
 
 
 def _get_reply_message_or_400(db: Session, conversation_id: int, reply_to_id: Optional[int]):
@@ -498,13 +587,13 @@ def _serialize_session(db: Session, conversation: models.Conversation, current_u
             .filter(
                 models.Message.conversation_id == conversation.id,
                 models.Message.id > (current_membership.read_index or 0),
-                models.Message.sender_id != current_user.id,
+                or_(models.Message.sender_id.is_(None), models.Message.sender_id != current_user.id),
             )
             .count()
         )
 
     title = conversation.name or "未命名会话"
-    avatar = title[:1] if title else "会"
+    avatar = '/aegis-avatar-order.svg'
     real_name = title
 
     if not conversation.is_group:
@@ -513,7 +602,7 @@ def _serialize_session(db: Session, conversation: models.Conversation, current_u
         if peer_user:
             title = peer_user.nickname or peer_user.username
             real_name = peer_user.username
-            avatar = peer_user.avatar or '/default-avatar.png'
+            avatar = peer_user.avatar or '/aegis-avatar-shield.svg'
 
     payload = {
         "id": conversation.id,
@@ -815,6 +904,76 @@ def update_session_mute(
     }
 
 
+@router.get("/notes")
+def read_user_notes(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    notes = (
+        db.query(models.UserNote)
+        .filter(models.UserNote.user_id == current_user.id)
+        .order_by(models.UserNote.updated_at.desc(), models.UserNote.id.desc())
+        .all()
+    )
+    return [_serialize_user_note(note) for note in notes]
+
+
+@router.post("/notes")
+def create_user_note(
+    payload: UserNotePayload,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    note = models.UserNote(
+        user_id=current_user.id,
+        title=payload.title.strip() or "无标题笔记",
+        content=payload.content.strip(),
+    )
+    db.add(note)
+    db.commit()
+    db.refresh(note)
+    return _serialize_user_note(note)
+
+
+@router.put("/notes/{note_id}")
+def update_user_note(
+    note_id: int,
+    payload: UserNotePayload,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    note = (
+        db.query(models.UserNote)
+        .filter(models.UserNote.id == note_id, models.UserNote.user_id == current_user.id)
+        .first()
+    )
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    note.title = payload.title.strip() or "无标题笔记"
+    note.content = payload.content.strip()
+    db.commit()
+    db.refresh(note)
+    return _serialize_user_note(note)
+
+
+@router.delete("/notes/{note_id}")
+def delete_user_note(
+    note_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    note = (
+        db.query(models.UserNote)
+        .filter(models.UserNote.id == note_id, models.UserNote.user_id == current_user.id)
+        .first()
+    )
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    db.delete(note)
+    db.commit()
+    return {"message": "Note deleted successfully"}
+
+
 @router.get("/sessions/{conversation_id}/messages")
 def read_messages(
     conversation_id: int,
@@ -1065,6 +1224,151 @@ def send_message(
         "status": "sent",
         "message": _serialize_message(new_message, current_user.id, current_user, reply_message, reply_sender),
     }
+
+
+@router.get("/games/tictactoe/active")
+def get_active_tic_tac_toe_game(
+    conversation_id: int = Query(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    _ensure_conversation_membership(db, conversation_id, current_user.id)
+    game = (
+        db.query(models.TicTacToeGame)
+        .filter(
+            models.TicTacToeGame.conversation_id == conversation_id,
+            models.TicTacToeGame.status.in_(["pending", "active"]),
+        )
+        .order_by(models.TicTacToeGame.id.desc())
+        .first()
+    )
+    return _serialize_tic_tac_toe_game(db, game, current_user.id) if game else None
+
+
+@router.post("/games/tictactoe/invite")
+def invite_tic_tac_toe_game(
+    payload: TicTacToeInvitePayload,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    member_ids, peer_id = _get_private_game_players(db, payload.conversation_id, current_user.id)
+    existing = (
+        db.query(models.TicTacToeGame)
+        .filter(
+            models.TicTacToeGame.conversation_id == payload.conversation_id,
+            models.TicTacToeGame.status.in_(["pending", "active"]),
+        )
+        .first()
+    )
+    if existing:
+        raise HTTPException(status_code=400, detail="There is already an active tic-tac-toe game")
+
+    game = models.TicTacToeGame(
+        conversation_id=payload.conversation_id,
+        inviter_id=current_user.id,
+        invitee_id=peer_id,
+        x_user_id=current_user.id,
+        o_user_id=peer_id,
+        turn_user_id=current_user.id,
+    )
+    db.add(game)
+    db.flush()
+    game_data = {"kind": "tic_tac_toe", "gameId": game.id}
+    message = models.Message(
+        conversation_id=payload.conversation_id,
+        sender_id=current_user.id,
+        message_type="game",
+        content="发起了一局井字棋",
+        media_data=json.dumps(game_data),
+    )
+    db.add(message)
+    db.commit()
+    db.refresh(game)
+    db.refresh(message)
+    _dispatch_notification(
+        member_ids,
+        {
+            "type": "conversation_updated",
+            "conversationId": payload.conversation_id,
+            "messageId": message.id,
+            "message": _serialize_message(message, current_user.id, current_user),
+        },
+    )
+    _notify_tic_tac_toe(db, game, member_ids)
+    return _serialize_tic_tac_toe_game(db, game, current_user.id)
+
+
+@router.post("/games/tictactoe/{game_id}/accept")
+def accept_tic_tac_toe_game(
+    game_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    game = db.query(models.TicTacToeGame).filter(models.TicTacToeGame.id == game_id).first()
+    if not game or game.invitee_id != current_user.id or game.status != "pending":
+        raise HTTPException(status_code=404, detail="Pending tic-tac-toe invite not found")
+    member_ids, _ = _get_private_game_players(db, game.conversation_id, current_user.id)
+    game.status = "active"
+    db.commit()
+    db.refresh(game)
+    _notify_tic_tac_toe(db, game, member_ids)
+    return _serialize_tic_tac_toe_game(db, game, current_user.id)
+
+
+@router.post("/games/tictactoe/{game_id}/move")
+def play_tic_tac_toe_move(
+    game_id: int,
+    payload: TicTacToeMovePayload,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    game = db.query(models.TicTacToeGame).filter(models.TicTacToeGame.id == game_id).first()
+    if not game or game.status != "active":
+        raise HTTPException(status_code=404, detail="Active tic-tac-toe game not found")
+    member_ids, _ = _get_private_game_players(db, game.conversation_id, current_user.id)
+    if game.turn_user_id != current_user.id:
+        raise HTTPException(status_code=400, detail="It is not your turn")
+    if payload.index < 0 or payload.index > 8 or game.board[payload.index] != ".":
+        raise HTTPException(status_code=400, detail="Invalid move")
+
+    mark = "X" if current_user.id == game.x_user_id else "O"
+    board = game.board[:payload.index] + mark + game.board[payload.index + 1:]
+    game.board = board
+    winner = _winning_mark(board)
+    if winner:
+        game.status = "x_win" if winner == "X" else "o_win"
+        game.winner_user_id = game.x_user_id if winner == "X" else game.o_user_id
+        game.turn_user_id = None
+    elif "." not in board:
+        game.status = "draw"
+        game.turn_user_id = None
+    else:
+        game.turn_user_id = game.o_user_id if mark == "X" else game.x_user_id
+    db.commit()
+    db.refresh(game)
+    _notify_tic_tac_toe(db, game, member_ids)
+    return _serialize_tic_tac_toe_game(db, game, current_user.id)
+
+
+@router.post("/games/tictactoe/{game_id}/resign")
+def resign_tic_tac_toe_game(
+    game_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    game = db.query(models.TicTacToeGame).filter(models.TicTacToeGame.id == game_id).first()
+    if not game or game.status not in ["pending", "active"]:
+        raise HTTPException(status_code=404, detail="Tic-tac-toe game not found")
+    member_ids, peer_id = _get_private_game_players(db, game.conversation_id, current_user.id)
+    if current_user.id not in [game.inviter_id, game.invitee_id]:
+        raise HTTPException(status_code=403, detail="Not a player in this game")
+    game.status = "cancelled" if game.status == "pending" else ("o_win" if current_user.id == game.x_user_id else "x_win")
+    game.winner_user_id = None if game.status == "cancelled" else peer_id
+    game.turn_user_id = None
+    db.commit()
+    db.refresh(game)
+    _notify_tic_tac_toe(db, game, member_ids)
+    return _serialize_tic_tac_toe_game(db, game, current_user.id)
 
 
 @router.post("/messages/send-forward")
@@ -1612,7 +1916,7 @@ def create_group_announcement(
 
     # 系统消息：发布群公告
     publisher_name = current_user.nickname or current_user.username
-    sys_text = f'"{publisher_name}"发布了新公告'
+    sys_text = f'"{publisher_name}"发布了新公告：{content}'
     sys_msg = models.Message(conversation_id=conversation_id, sender_id=None, message_type="system", content=sys_text)
     db.add(sys_msg)
 

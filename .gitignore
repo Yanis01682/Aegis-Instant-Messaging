@@ -15,6 +15,7 @@ dist/
 
 # local Claude files
 .claude/
+.codex-run/
 
 # coverage artifacts
 .coverage

@@ -73,10 +73,16 @@ function SidebarPanel({
   blacklist,
   // 收藏消息列表
   favoriteItems = [],
+  // 账号笔记列表
+  noteItems = [],
+  selectedNoteId,
   // 打开收藏的原消息
   onOpenFavorite,
   // 移除收藏
   onRemoveFavorite,
+  onStartNewNote,
+  onSelectNote,
+  onDeleteNote,
   // 移出黑名单回调
   onRemoveFromBlacklist,
   // 从黑名单打开聊天回调
@@ -142,13 +148,17 @@ function SidebarPanel({
   const archivedGroupSessions = filteredSessions.filter(shouldArchiveGroup)
   const normalSessions = filteredSessions.filter((session) => !shouldArchiveGroup(session))
   const sidebarSearchValue = activeTab === 'friends' ? friendSearchQuery : activeTab === 'requests' ? '' : searchQuery
-  const sidebarPlaceholder = activeTab === 'requests' ? '申请列表无需搜索' : activeTab === 'favorites' ? '搜索收藏' : '搜索'
+  const sidebarPlaceholder = activeTab === 'requests' ? '申请列表无需搜索' : activeTab === 'favorites' ? '搜索收藏' : activeTab === 'notes' ? '搜索笔记' : '搜索'
   const showHeaderAddButton = activeTab === 'chats' || activeTab === 'friends'
   const favoriteSearchText = searchQuery.trim().toLowerCase()
   const filteredFavoriteItems = favoriteItems.filter((item) => {
     if (!favoriteSearchText) return true
     return [item.sessionTitle, item.senderName, item.text, item.mediaName, item.previewText]
       .some((value) => String(value || '').toLowerCase().includes(favoriteSearchText))
+  })
+  const filteredNoteItems = noteItems.filter((item) => {
+    if (!favoriteSearchText) return true
+    return [item.title, item.content].some((value) => String(value || '').toLowerCase().includes(favoriteSearchText))
   })
 
   const handleSessionContextMenu = (e, session) => {
@@ -202,6 +212,13 @@ function SidebarPanel({
   }
 
   const formatFavoriteSavedAt = (value) => {
+    if (!value) return ''
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return ''
+    return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+  }
+
+  const formatNoteTime = (value) => {
     if (!value) return ''
     const date = new Date(value)
     if (Number.isNaN(date.getTime())) return ''
@@ -279,7 +296,7 @@ function SidebarPanel({
             className="wechat-add-btn" 
             onClick={(e) => {
               e.stopPropagation()
-              setHeaderMenu(prev => prev ? null : {x: e.clientX, y: e.clientY})
+              setHeaderMenu(prev => prev ? null : { x: 0, y: 0 })
             }}
           >
             <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
@@ -453,6 +470,47 @@ function SidebarPanel({
         </div>
       )}
 
+      {activeTab === 'notes' && (
+        <div className="notes-container">
+          <div className="notes-toolbar">
+            <div>
+              <p className="notes-title">Aegis 笔记</p>
+              <span>{noteItems.length} 条账号记录</span>
+            </div>
+            <button type="button" className="note-new-btn" onClick={onStartNewNote}>新建</button>
+          </div>
+
+          {filteredNoteItems.length > 0 ? (
+            <ul className="note-list">
+              {filteredNoteItems.map((note) => (
+                <li key={note.id} className={`note-item ${selectedNoteId === note.id ? 'active' : ''}`}>
+                  <button type="button" className="note-main" onClick={() => onSelectNote?.(note)}>
+                    <div className="note-row">
+                      <span className="note-title">{note.title || '无标题笔记'}</span>
+                      <span className="note-time">{formatNoteTime(note.updatedAt || note.createdAt)}</span>
+                    </div>
+                    <p>{note.content || '空白笔记'}</p>
+                  </button>
+                  <button
+                    type="button"
+                    className="note-delete"
+                    aria-label="删除笔记"
+                    onClick={() => onDeleteNote?.(note.id)}
+                  >
+                    ×
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="empty-favorites">
+              <p>{noteItems.length === 0 ? '暂无笔记' : '没有匹配的笔记'}</p>
+              <span>把骑士团线索、誓约草稿或行动备忘留在右侧书页</span>
+            </div>
+          )}
+        </div>
+      )}
+
       {activeTab === 'requests' && (
         <div className="friends-container">
           {groupInviteRequests.length > 0 && (
@@ -536,15 +594,23 @@ function SidebarPanel({
 
       {headerMenu && (
         <div
-          className="session-context-menu"
-          style={{ top: headerMenu.y, left: headerMenu.x }}
+          className="session-context-menu header-context-menu"
           onClick={(e) => e.stopPropagation()}
         >
+          <div className="header-context-title">Aegis Actions</div>
           <button type="button" className="session-context-item" onClick={() => handleHeaderMenuAction('new-group')}>
-            <span style={{marginRight:'8px'}}>💬</span> 发起群聊
+            <span className="context-item-mark">✦</span>
+            <span>
+              <strong>发起群聊</strong>
+              <small>召集新的同行者</small>
+            </span>
           </button>
           <button type="button" className="session-context-item" onClick={() => handleHeaderMenuAction('new-friend')}>
-            <span style={{marginRight:'8px'}}>👤</span> 添加好友
+            <span className="context-item-mark">◇</span>
+            <span>
+              <strong>添加好友</strong>
+              <small>建立新的誓约联系</small>
+            </span>
           </button>
         </div>
       )}

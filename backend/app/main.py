@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="WhatTheDogDoing API")
+app = FastAPI(title="Aegis API")
 
 # backend/app/main.py
 
@@ -39,7 +39,7 @@ app.add_middleware(
 
 @app.get("/")
 def read_root():
-    return {"Hello": "WhatTheDogDoing"}
+    return {"Hello": "Aegis"}
 
 @app.get("/health")
 def health():
@@ -219,6 +219,25 @@ def initialize_database():
                             user_id INTEGER NOT NULL,
                             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                             FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+                            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                        )
+                    """))
+                    connection.commit()
+
+            try:
+                with engine.connect() as connection:
+                    connection.execute(text("SELECT title FROM user_notes LIMIT 1"))
+            except Exception:
+                logger.info("Migrated: creating user_notes table manually")
+                with engine.connect() as connection:
+                    connection.execute(text("""
+                        CREATE TABLE user_notes (
+                            id INTEGER PRIMARY KEY AUTO_INCREMENT,
+                            user_id INTEGER NOT NULL,
+                            title VARCHAR(120) NOT NULL,
+                            content TEXT NOT NULL,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
                         )
                     """))

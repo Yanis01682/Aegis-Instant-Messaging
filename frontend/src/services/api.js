@@ -197,6 +197,83 @@ export async function updateSessionMute(conversationId, muted) {
   return res.data
 }
 
+const getLocalNoteKey = () => `aegis_notes:${localStorage.getItem('auth_token') || 'guest'}`
+
+const readLocalNotes = () => {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(getLocalNoteKey()) || '[]')
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+const writeLocalNotes = (notes) => {
+  localStorage.setItem(getLocalNoteKey(), JSON.stringify(notes))
+}
+
+export async function getNotes() {
+  try {
+    const res = await apiClient.get('/api/chat/notes')
+    return res.data
+  } catch (err) {
+    console.warn('使用本地笔记缓存', err.message)
+    return readLocalNotes()
+  }
+}
+
+export async function createNote(payload) {
+  try {
+    const res = await apiClient.post('/api/chat/notes', payload)
+    return res.data
+  } catch (err) {
+    console.warn('笔记接口不可用，已保存到本地', err.message)
+    const now = new Date().toISOString()
+    const note = {
+      id: `local-note-${Date.now()}`,
+      title: payload.title?.trim() || '无标题笔记',
+      content: payload.content?.trim() || '',
+      createdAt: now,
+      updatedAt: now,
+    }
+    writeLocalNotes([note, ...readLocalNotes()])
+    return note
+  }
+}
+
+export async function updateNote(noteId, payload) {
+  try {
+    const res = await apiClient.put(`/api/chat/notes/${noteId}`, payload)
+    return res.data
+  } catch (err) {
+    console.warn('笔记接口不可用，已更新本地缓存', err.message)
+    const now = new Date().toISOString()
+    const notes = readLocalNotes()
+    const nextNote = {
+      id: noteId,
+      title: payload.title?.trim() || '无标题笔记',
+      content: payload.content?.trim() || '',
+      createdAt: notes.find((note) => note.id === noteId)?.createdAt || now,
+      updatedAt: now,
+    }
+    writeLocalNotes(notes.some((note) => note.id === noteId)
+      ? notes.map((note) => (note.id === noteId ? nextNote : note))
+      : [nextNote, ...notes])
+    return nextNote
+  }
+}
+
+export async function deleteNote(noteId) {
+  try {
+    const res = await apiClient.delete(`/api/chat/notes/${noteId}`)
+    return res.data
+  } catch (err) {
+    console.warn('笔记接口不可用，已删除本地缓存', err.message)
+    writeLocalNotes(readLocalNotes().filter((note) => note.id !== noteId))
+    return { ok: true }
+  }
+}
+
 export async function createGroup(name, memberIds) {
   const res = await apiClient.post('/api/chat/groups', {
     name,
@@ -339,6 +416,31 @@ export async function sendVoiceMessage(conversationId, file, replyToId = null) {
   const params = { conversation_id: conversationId }
   if (replyToId) params.reply_to_id = replyToId
   const res = await apiClient.post('/api/chat/messages/send-voice', formData, { params, headers: { 'Content-Type': undefined } })
+  return res.data
+}
+
+export async function getActiveTicTacToeGame(conversationId) {
+  const res = await apiClient.get('/api/chat/games/tictactoe/active', { params: { conversation_id: conversationId } })
+  return res.data
+}
+
+export async function inviteTicTacToeGame(conversationId) {
+  const res = await apiClient.post('/api/chat/games/tictactoe/invite', { conversation_id: conversationId })
+  return res.data
+}
+
+export async function acceptTicTacToeGame(gameId) {
+  const res = await apiClient.post(`/api/chat/games/tictactoe/${gameId}/accept`)
+  return res.data
+}
+
+export async function playTicTacToeMove(gameId, index) {
+  const res = await apiClient.post(`/api/chat/games/tictactoe/${gameId}/move`, { index })
+  return res.data
+}
+
+export async function resignTicTacToeGame(gameId) {
+  const res = await apiClient.post(`/api/chat/games/tictactoe/${gameId}/resign`)
   return res.data
 }
 

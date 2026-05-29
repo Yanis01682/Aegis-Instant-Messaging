@@ -53,18 +53,30 @@ import {
   updateGroupNickname,
   updateSessionMute,
   sendForwardMessage,
+  getNotes,
+  createNote,
+  updateNote,
+  deleteNote,
+  getActiveTicTacToeGame,
+  inviteTicTacToeGame,
+  acceptTicTacToeGame,
+  playTicTacToeMove,
+  resignTicTacToeGame,
 } from './services/api'
 import AuthView from './components/stage2/AuthView'
 import LeftNav from './components/stage2/LeftNav'
 import SidebarPanel from './components/stage2/SidebarPanel'
 import ChatMainView from './components/stage2/ChatMainView'
+import NoteWorkspace from './components/stage2/NoteWorkspace'
 import Overlays from './components/stage2/Overlays'
+import TicTacToeModal from './components/stage2/TicTacToeModal'
 import { getForwardMessageLabel, normalizeForwardData } from './utils/forwardData'
+import { AEGIS_DEFAULT_GROUP_AVATAR, AEGIS_DEFAULT_USER_AVATAR, resolveAegisAvatar } from './utils/aegisAvatars'
 
 const EMPTY_SESSION = {
   id: null,
   title: '暂无会话',
-  avatar: '聊',
+  avatar: AEGIS_DEFAULT_GROUP_AVATAR,
   lastMessage: '去添加一个真实好友开始聊天吧',
   time: '',
   badge: 0,
@@ -152,12 +164,13 @@ function App() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false) // 注销账户二次确认
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false) // 退出登录二次确认
   const [pendingAnnouncements, setPendingAnnouncements] = useState([]) // 未确认的群公告
+  const [ticTacToeGame, setTicTacToeGame] = useState(null)
+  const [showTicTacToeModal, setShowTicTacToeModal] = useState(false)
   const [atMentionSessionId, setAtMentionSessionId] = useState(null) // 被 @ 的会话 ID，用于显示 [有人@我] 标记
   const [sessionFilter, setSessionFilter] = useState('all') // 会话筛选：all-全部 | personal-个人 | group-群聊
   const [searchQuery, setSearchQuery] = useState('') // 搜索关键词
   const [chatlistWidth] = useState(320) // 会话列表宽度（固定，不再支持拖拽）
-  const [composerHeight, setComposerHeight] = useState(120) // 输入框高度
-  const [isComposingResizing, setIsComposingResizing] = useState(false) // 是否正在调整输入框高度
+  const composerHeight = 136 // 输入框高度固定，避免拖拽跳动
   const [lightboxImage, setLightboxImage] = useState(null) // 图片查看灯箱：{ url, name }
   const [showEmojiPicker, setShowEmojiPicker] = useState(false) // 表情选择器显示状态
   const [showRegisterForm, setShowRegisterForm] = useState(false) // 注册表单显示状态
@@ -173,7 +186,7 @@ function App() {
   const [showForwardDialog, setShowForwardDialog] = useState(false) // 转发对话框
   const [showForwardDetail, setShowForwardDetail] = useState(false) // 转发详情弹层
   const [forwardDetailData, setForwardDetailData] = useState(null) // 转发详情数据
-  const [userAvatar, setUserAvatar] = useState('我') // 用户头像（支持图片或文字）
+  const [userAvatar, setUserAvatar] = useState(AEGIS_DEFAULT_USER_AVATAR) // 用户头像（支持图片或文字）
   const [showProfileModal, setShowProfileModal] = useState(false) // 个人信息模态框
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false) // 修改密码模态框
   const [changePasswordForm, setChangePasswordForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' }) // 修改密码表单
@@ -191,6 +204,9 @@ function App() {
   const [activeTab, setActiveTab] = useState('chats') // 当前激活的标签页：chats-会话，friends-好友
   const [blacklist, setBlacklist] = useState([]) // 黑名单列表
   const [favoriteItems, setFavoriteItems] = useState([]) // 收藏消息列表
+  const [noteItems, setNoteItems] = useState([]) // 笔记列表
+  const [editingNoteId, setEditingNoteId] = useState(null)
+  const [noteDraft, setNoteDraft] = useState({ title: '', content: '' })
   const [showAddFriendModal, setShowAddFriendModal] = useState(false) // 添加好友模态框
   const [isEditingRemark, setIsEditingRemark] = useState(false) // 是否正在编辑备注
   const [tempRemark, setTempRemark] = useState('') // 临时备注
@@ -272,14 +288,21 @@ function App() {
     }
   }
 
+  const normalizeTicTacToeGame = (game) => {
+    if (!game) return null
+    return {
+      ...game,
+      currentUserMark: currentUserId === game.xUserId ? 'X' : (currentUserId === game.oUserId ? 'O' : null),
+    }
+  }
+
   const syncProfileFromUser = async (user) => {
     if (!user) return
     setCurrentUserId(user.id ?? null)
     // (status removed)
     try {
       const profile = await getProfile()
-      const resolvedAvatar =
-        profile.avatar || '/default-avatar.png'
+      const resolvedAvatar = resolveAegisAvatar(profile.avatar)
       setProfileData({
         id: user.id ?? null,
         username: user.username || '',
@@ -299,7 +322,7 @@ function App() {
         nickname: prev.nickname || '',
         email: user.email ?? prev.email ?? '',
       }))
-      setUserAvatar('/default-avatar.png')
+      setUserAvatar(AEGIS_DEFAULT_USER_AVATAR)
     }
   }
 
@@ -339,10 +362,11 @@ function App() {
         if (friend && friend.remark) {
           nextSession = { ...session, title: friend.remark }
         }
-        // 如果会话头像是空字符串或单字符，使用默认头像
-        if (!nextSession.avatar || nextSession.avatar.length === 1) {
-          nextSession = { ...nextSession, avatar: '/default-avatar.png' }
+        if (!nextSession.avatar || nextSession.avatar.length === 1 || nextSession.avatar === '/default-avatar.png') {
+          nextSession = { ...nextSession, avatar: AEGIS_DEFAULT_USER_AVATAR }
         }
+      } else if (!nextSession.avatar || nextSession.avatar.length === 1) {
+        nextSession = { ...nextSession, avatar: AEGIS_DEFAULT_GROUP_AVATAR }
       }
       
       // 先调用 applyLocalSessionPreview
@@ -607,10 +631,19 @@ function App() {
     } else {
       setFavoriteItems([])
     }
+
+    getNotes()
+      .then((notes) => setNoteItems(Array.isArray(notes) ? notes : []))
+      .catch((err) => {
+        console.warn('加载笔记失败', err)
+        setNoteItems([])
+      })
   }, [currentUserId])
 
   useEffect(() => {
     if (!isLoggedIn || !currentChat) {
+      setTicTacToeGame(null)
+      setShowTicTacToeModal(false)
       return
     }
 
@@ -624,6 +657,20 @@ function App() {
 
     loadMessages()
   }, [currentChat, dynamicSessions, isLoggedIn]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!isLoggedIn || !currentChat || !currentUserId) return
+    const session = sessions.find((item) => item.id === currentChat)
+    if (!session || session.isGroup) {
+      setTicTacToeGame(null)
+      setShowTicTacToeModal(false)
+      return
+    }
+
+    getActiveTicTacToeGame(currentChat)
+      .then((game) => setTicTacToeGame(normalizeTicTacToeGame(game)))
+      .catch(() => setTicTacToeGame(null))
+  }, [currentChat, currentUserId, isLoggedIn, sessions]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!isLoggedIn || !currentChat) return
@@ -716,6 +763,11 @@ function App() {
           if (payload.message && payload.conversationId === currentChat) {
             const msg = payload.message
             msg.sender = msg.type === 'system' ? 'system' : (msg.senderId === currentUserId ? 'me' : 'other')
+            if (msg.type === 'system' && payload.announcement) {
+              msg.announcementId = payload.announcement.id
+              msg.announcement = payload.announcement
+              msg.text = `${payload.announcement.publisherName || msg.senderName || '群成员'}发布了群公告：${payload.announcement.content || msg.text || ''}`
+            }
             if (msg.type === 'forward') {
               msg.forwardData = normalizeForwardData(msg.forwardData)
             }
@@ -731,7 +783,7 @@ function App() {
             
             setMessages((prev) => {
               const existing = prev[currentChat] || []
-              if (existing.some(m => m.id === msg.id)) return prev
+              if (existing.some(m => m.id === msg.id || (msg.announcementId && m.announcementId === msg.announcementId))) return prev
               // 如果是自己发的，替换乐观消息
               if (msg.sender === 'me') {
                 const pendingIdx = existing.findIndex(m => String(m.id).startsWith('pending-'))
@@ -790,6 +842,14 @@ function App() {
           if (!payload.message && payload.conversationId === currentChat) {
             refreshConversationMessages(currentChat)
           }
+          return
+        }
+
+        if (payload.type === 'game_updated') {
+          if (payload.conversationId === currentChat) {
+            setTicTacToeGame(normalizeTicTacToeGame(payload.game))
+          }
+          await refreshRealtimeChatData(currentChat)
           return
         }
 
@@ -1800,11 +1860,54 @@ function App() {
   const handleSaveAnnouncement = () => {
     const currentSession = getCurrentSession()
     if (!currentSession?.isGroup) return
+    const content = tempAnnouncement.trim()
+    if (!content) {
+      alert('群公告内容不能为空')
+      return
+    }
     publishGroupAnnouncement(currentSession.id, tempAnnouncement)
       .then(async () => {
         const items = await getGroupAnnouncements(currentSession.id)
         setGroupAnnouncementHistory(items)
-        setGroupAnnouncement(items[0]?.content || '')
+        const latest = items[0]
+        setGroupAnnouncement(latest?.content || '')
+        if (latest) {
+          const localAnnouncementMessage = {
+            id: `announcement-${latest.id || Date.now()}`,
+            type: 'system',
+            sender: 'system',
+            text: `${latest.publisherName || profileData.nickname || profileData.username || '我'}发布了群公告：${content}`,
+            announcementId: latest.id,
+            announcement: latest,
+            time: formatLocalMessageTime(),
+            timestamp: latest.createdAt || new Date().toISOString(),
+          }
+          setMessages((prev) => {
+            const existing = prev[currentSession.id] || []
+            if (existing.some((message) => message.announcementId === latest.id)) return prev
+            return { ...prev, [currentSession.id]: [...existing, localAnnouncementMessage] }
+          })
+        }
+        setSessions((prev) => prev.map((session) => (
+          session.id === currentSession.id
+            ? {
+                ...session,
+                lastMessage: `[群公告] ${content}`,
+                badge: (session.badge || 0) + 1,
+                time: formatLocalMessageTime(),
+              }
+            : session
+        )))
+        setDynamicSessions((prev) => prev.map((session) => (
+          session.id === currentSession.id
+            ? {
+                ...session,
+                lastMessage: `[群公告] ${content}`,
+                badge: (session.badge || 0) + 1,
+                time: formatLocalMessageTime(),
+              }
+            : session
+        )))
         setIsEditingAnnouncement(false)
         alert('群公告已保存')
       })
@@ -1919,7 +2022,7 @@ function App() {
         const user = await getCurrentUser()
         if (user) {
           // 先重置展示态，避免上一个账号的头像短暂闪现
-          setUserAvatar('/default-avatar.png')
+          setUserAvatar(AEGIS_DEFAULT_USER_AVATAR)
           await syncProfileFromUser(user)
           setIsLoggedIn(true)
           await refreshRealtimeChatData()
@@ -2363,6 +2466,7 @@ function App() {
 
   // 打开个人信息页面
   const handleOpenProfile = () => {
+    setShowUserPanel(false)
     setShowProfileModal(true)
     setIsEditingProfile(false)
   }
@@ -2516,6 +2620,20 @@ function App() {
     }))
   }
 
+  const handleSelectPresetAvatar = async (avatarValue) => {
+    try {
+      await updateProfile({ avatar: avatarValue })
+      setUserAvatar(avatarValue)
+      setProfileData(prev => ({ ...prev, avatar: avatarValue }))
+      await refreshRealtimeChatData(currentChat)
+      if (currentChat && getCurrentSession().isGroup) {
+        await refreshGroupConversationMembers(currentChat)
+      }
+    } catch (err) {
+      alert(err.response?.data?.detail || '头像更新失败，请重试')
+    }
+  }
+
   // 更换头像
   const handleChangeAvatar = (e) => {
     const file = e.target.files[0]
@@ -2647,6 +2765,58 @@ function App() {
     setMessageInput('')
     setReplyToMessage(null)
     setEditingMessageId(null)
+  }
+
+  const handleStartTicTacToe = async () => {
+    const activeSession = getCurrentSession()
+    if (!activeSession?.id || activeSession.isGroup) return
+    try {
+      const game = await inviteTicTacToeGame(activeSession.id)
+      setTicTacToeGame(normalizeTicTacToeGame(game))
+      setShowTicTacToeModal(true)
+      await refreshRealtimeChatData(activeSession.id)
+    } catch (err) {
+      alert(err.response?.data?.detail || err.message || '发起井字棋失败')
+    }
+  }
+
+  const handleOpenTicTacToeGame = async () => {
+    if (!currentChat) return
+    try {
+      const game = ticTacToeGame || await getActiveTicTacToeGame(currentChat)
+      if (!game) {
+        alert('当前没有可返回的棋局')
+        return
+      }
+      setTicTacToeGame(normalizeTicTacToeGame(game))
+      setShowTicTacToeModal(true)
+    } catch (err) {
+      alert(err.response?.data?.detail || err.message || '打开棋局失败')
+    }
+  }
+
+  const handleAcceptTicTacToe = async (gameId) => {
+    try {
+      setTicTacToeGame(normalizeTicTacToeGame(await acceptTicTacToeGame(gameId)))
+    } catch (err) {
+      alert(err.response?.data?.detail || err.message || '接受对局失败')
+    }
+  }
+
+  const handleTicTacToeMove = async (gameId, index) => {
+    try {
+      setTicTacToeGame(normalizeTicTacToeGame(await playTicTacToeMove(gameId, index)))
+    } catch (err) {
+      alert(err.response?.data?.detail || err.message || '落子失败')
+    }
+  }
+
+  const handleResignTicTacToe = async (gameId) => {
+    try {
+      setTicTacToeGame(normalizeTicTacToeGame(await resignTicTacToeGame(gameId)))
+    } catch (err) {
+      alert(err.response?.data?.detail || err.message || '退出棋局失败')
+    }
   }
 
   // 发送图片消息（调用后端上传API）
@@ -2898,6 +3068,13 @@ function App() {
     setChangePasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' })
   }
 
+  const handleReturnToAccountCenter = () => {
+    setShowProfileModal(false)
+    setShowChangePasswordModal(false)
+    setChangePasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' })
+    setShowUserPanel(true)
+  }
+
   // 关闭修改密码弹窗
   const handleCloseChangePassword = () => {
     setShowChangePasswordModal(false)
@@ -2936,7 +3113,7 @@ function App() {
     try {
       await changePassword(oldPassword, newPassword)
       alert('密码修改成功')
-      handleCloseChangePassword()
+      handleReturnToAccountCenter()
     } catch (err) {
       const msg = err.response?.data?.detail || err.message || '密码修改失败'
       alert(msg)
@@ -2981,56 +3158,6 @@ function App() {
   // 打开图片灯箱
   const openLightbox = (url, name, type = 'image') => setLightboxImage({ url, name, type })
   const closeLightbox = () => setLightboxImage(null)
-
-  // 开始拖拽输入框高度
-  const handleComposerResizeStart = (e) => {
-    setIsComposingResizing(true)
-    e.preventDefault()
-  }
-
-  // 处理拖拽输入框高度
-  const handleComposerResizeMove = (e) => {
-    if (!isComposingResizing) return
-    
-    const container = document.querySelector('.composer')
-    if (!container) return
-    
-    const _rect = container.getBoundingClientRect()
-    const newHeight = window.innerHeight - e.clientY
-    // 限制最小和最大高度
-    if (newHeight >= 80 && newHeight <= 400) {
-      setComposerHeight(newHeight)
-    }
-  }
-
-  // 结束拖拽输入框
-  const handleComposerResizeEnd = () => {
-    setIsComposingResizing(false)
-  }
-
-  // 添加全局鼠标事件监听
-  useEffect(() => {
-    // 左侧会话列表拖拽 - 已移除
-    
-    // 输入框高度拖拽
-    if (isComposingResizing) {
-      document.addEventListener('mousemove', handleComposerResizeMove)
-      document.addEventListener('mouseup', handleComposerResizeEnd)
-      document.body.style.cursor = 'row-resize'
-      document.body.style.userSelect = 'none'
-    } else {
-      document.removeEventListener('mousemove', handleComposerResizeMove)
-      document.removeEventListener('mouseup', handleComposerResizeEnd)
-      document.body.style.cursor = ''
-    }
-    
-    // (status menu removed)
-    
-    return () => {
-      document.removeEventListener('mousemove', handleComposerResizeMove)
-      document.removeEventListener('mouseup', handleComposerResizeEnd)
-    }
-  }, [isComposingResizing]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 点击在线人数
   // eslint-disable-next-line no-unused-vars
@@ -3208,6 +3335,66 @@ function App() {
     setFavoriteItems((prev) => prev.filter((item) => item.id !== favoriteId))
   }
 
+  const handleStartNewNote = () => {
+    setActiveTab('notes')
+    setEditingNoteId('new')
+    setNoteDraft({ title: '', content: '' })
+  }
+
+  const handleSelectNote = (note) => {
+    setEditingNoteId(note.id)
+    setNoteDraft({ title: note.title || '', content: note.content || '' })
+  }
+
+  const handleCancelNote = () => {
+    setEditingNoteId(null)
+    setNoteDraft({ title: '', content: '' })
+  }
+
+  const handleCreateNote = async (note) => {
+    const created = await createNote(note)
+    setNoteItems((prev) => [created, ...prev.filter((item) => item.id !== created.id)])
+    return created
+  }
+
+  const handleUpdateNote = async (noteId, note) => {
+    const updated = await updateNote(noteId, note)
+    setNoteItems((prev) => prev.map((item) => (item.id === noteId ? updated : item)))
+    return updated
+  }
+
+  const handleDeleteNote = async (noteId) => {
+    await deleteNote(noteId)
+    setNoteItems((prev) => prev.filter((item) => item.id !== noteId))
+    if (editingNoteId === noteId) {
+      handleCancelNote()
+    }
+  }
+
+  const handleSaveNoteDraft = async () => {
+    if (!noteDraft.title.trim() && !noteDraft.content.trim()) return
+    if (editingNoteId === 'new') {
+      await handleCreateNote(noteDraft)
+      setEditingNoteId(null)
+      setNoteDraft({ title: '', content: '' })
+      return
+    }
+    await handleUpdateNote(editingNoteId, noteDraft)
+    setEditingNoteId(null)
+    setNoteDraft({ title: '', content: '' })
+  }
+
+  const selectedNote = noteItems.find((note) => note.id === editingNoteId) || null
+
+  const handleSetActiveTab = (tab) => {
+    setActiveTab(tab)
+    if (tab === 'requests' || tab === 'blacklist') {
+      setCurrentChat(null)
+      setEditingNoteId(null)
+      setNoteDraft({ title: '', content: '' })
+    }
+  }
+
   // 未登录时显示登录界面
   if (!isLoggedIn) {
     return (
@@ -3228,16 +3415,15 @@ function App() {
           userAvatar={userAvatar}
           toggleUserPanel={toggleUserPanel}
           activeTab={activeTab}
-          setActiveTab={setActiveTab}
+          setActiveTab={handleSetActiveTab}
           pendingRequestCount={friendRequestList.length + groupInviteRequests.length}
           atMentionCount={atMentionCount}
-          favoriteCount={favoriteItems.length}
         />
 
       <main className="im-layout">
         <SidebarPanel
           activeTab={activeTab}
-          setActiveTab={setActiveTab}
+          setActiveTab={handleSetActiveTab}
           blacklist={blacklist}
           showFriendSearch={showFriendSearch}
           setShowFriendSearch={setShowFriendSearch}
@@ -3265,8 +3451,13 @@ function App() {
           pinnedChatIds={pinnedChatIds}
           onTogglePinChat={handleTogglePinChat}
           favoriteItems={favoriteItems}
+          noteItems={noteItems}
+          selectedNoteId={editingNoteId}
           onOpenFavorite={handleOpenFavoriteItem}
           onRemoveFavorite={handleRemoveFavoriteItem}
+          onStartNewNote={handleStartNewNote}
+          onSelectNote={handleSelectNote}
+          onDeleteNote={handleDeleteNote}
           onRemoveFromBlacklist={handleRemoveFromBlacklist}
           onOpenBlacklistChat={handleOpenBlacklistChat}
           friendRequestList={friendRequestList}
@@ -3280,57 +3471,71 @@ function App() {
         {/* 侧边栏与聊天窗口的固定分隔线 */}
         <div className="resize-handle" />
 
-        <ChatMainView
-          getCurrentSession={getCurrentSession}
-          groupMembers={groupMembers}
-          currentChat={currentChat}
-          userAvatar={userAvatar}
-          handleOpenPeerProfile={handleOpenPeerProfile}
-          handleOpenProfile={handleOpenProfile}
-          handleOpenMemberList={handleOpenMemberList}
-          handleOpenChatDetail={handleOpenChatDetail}
-          handleOpenSearchMessage={handleOpenSearchMessage}
-          messages={messages}
-          handleMessagesClick={handleMessagesClick}
-          handleMessageContextMenu={handleMessageContextMenu}
-          jumpToMessageId={jumpToMessageId}
-          handleJumpHandled={() => setJumpToMessageId(null)}
-          handleJumpToOriginalMessage={handleJumpToOriginalMessage}
-          composerHeight={composerHeight}
-          replyToMessage={replyToMessage}
-          cancelReply={cancelReply}
-          showEmojiPicker={showEmojiPicker}
-          toggleEmojiPicker={toggleEmojiPicker}
-          messageInput={messageInput}
-          setMessageInput={handleMessageInputChange}
-          handleKeyPress={handleKeyPress}
-          handleSendMessage={handleSendMessage}
-          handleSendImage={handleSendImage}
-          handleSendVideo={handleSendVideo}
-          handleSendFile={handleSendFile}
-          handleVoiceRecord={handleVoiceRecord}
-          isRecording={isRecording}
-          isComposingResizing={isComposingResizing}
-          handleComposerResizeStart={handleComposerResizeStart}
-          onOpenLightbox={openLightbox}
-          pendingAnnouncements={pendingAnnouncements}
-          onConfirmAnnouncement={async (id) => {
-            await confirmAnnouncement(currentChat, id)
-            setPendingAnnouncements(prev => prev.filter(a => a.id !== id))
-          }}
-          showMentionPicker={showMentionPicker}
-          hideMentionPicker={hideMentionPicker}
-          handleSelectMention={handleSelectMention}
-          getFilteredMentionMembers={getFilteredMentionMembers}
-          selectedMentionIndex={selectedMentionIndex}
-          setSelectedMentionIndex={setSelectedMentionIndex}
-          isMultiSelectMode={isMultiSelectMode}
-          selectedMessages={selectedMessages}
-          toggleMessageSelection={toggleMessageSelection}
-          exitMultiSelectMode={exitMultiSelectMode}
-          startForward={startForward}
-          handleOpenForwardDetail={handleOpenForwardDetail}
-        />
+        {activeTab === 'notes' ? (
+          <NoteWorkspace
+            editingNoteId={editingNoteId}
+            noteDraft={noteDraft}
+            setNoteDraft={setNoteDraft}
+            selectedNote={selectedNote}
+            noteCount={noteItems.length}
+            onStartNewNote={handleStartNewNote}
+            onSaveNote={handleSaveNoteDraft}
+            onCancelNote={handleCancelNote}
+          />
+        ) : (
+          <ChatMainView
+            getCurrentSession={getCurrentSession}
+            groupMembers={groupMembers}
+            currentChat={currentChat}
+            userAvatar={userAvatar}
+            handleOpenPeerProfile={handleOpenPeerProfile}
+            handleOpenProfile={handleOpenProfile}
+            handleOpenMemberList={handleOpenMemberList}
+            handleOpenChatDetail={handleOpenChatDetail}
+            handleOpenSearchMessage={handleOpenSearchMessage}
+            messages={messages}
+            handleMessagesClick={handleMessagesClick}
+            handleMessageContextMenu={handleMessageContextMenu}
+            jumpToMessageId={jumpToMessageId}
+            handleJumpHandled={() => setJumpToMessageId(null)}
+            handleJumpToOriginalMessage={handleJumpToOriginalMessage}
+            composerHeight={composerHeight}
+            replyToMessage={replyToMessage}
+            cancelReply={cancelReply}
+            showEmojiPicker={showEmojiPicker}
+            toggleEmojiPicker={toggleEmojiPicker}
+            messageInput={messageInput}
+            setMessageInput={handleMessageInputChange}
+            handleKeyPress={handleKeyPress}
+            handleSendMessage={handleSendMessage}
+            handleSendImage={handleSendImage}
+            handleSendVideo={handleSendVideo}
+            handleSendFile={handleSendFile}
+            handleVoiceRecord={handleVoiceRecord}
+            handleStartTicTacToe={handleStartTicTacToe}
+            handleOpenTicTacToeGame={handleOpenTicTacToeGame}
+            hasActiveTicTacToeGame={Boolean(ticTacToeGame && ['pending', 'active'].includes(ticTacToeGame.status))}
+            isRecording={isRecording}
+            onOpenLightbox={openLightbox}
+            pendingAnnouncements={pendingAnnouncements}
+            onConfirmAnnouncement={async (id) => {
+              await confirmAnnouncement(currentChat, id)
+              setPendingAnnouncements(prev => prev.filter(a => a.id !== id))
+            }}
+            showMentionPicker={showMentionPicker}
+            hideMentionPicker={hideMentionPicker}
+            handleSelectMention={handleSelectMention}
+            getFilteredMentionMembers={getFilteredMentionMembers}
+            selectedMentionIndex={selectedMentionIndex}
+            setSelectedMentionIndex={setSelectedMentionIndex}
+            isMultiSelectMode={isMultiSelectMode}
+            selectedMessages={selectedMessages}
+            toggleMessageSelection={toggleMessageSelection}
+            exitMultiSelectMode={exitMultiSelectMode}
+            startForward={startForward}
+            handleOpenForwardDetail={handleOpenForwardDetail}
+          />
+        )}
       </main>
 
       <Overlays
@@ -3379,6 +3584,7 @@ function App() {
         showProfileModal={showProfileModal}
         setShowProfileModal={setShowProfileModal}
         handleOpenChangePassword={handleOpenChangePassword}
+        handleReturnToAccountCenter={handleReturnToAccountCenter}
         showChangePasswordModal={showChangePasswordModal}
         handleCloseChangePassword={handleCloseChangePassword}
         changePasswordForm={changePasswordForm}
@@ -3392,6 +3598,7 @@ function App() {
         isEditingProfile={isEditingProfile}
         handleEditProfile={handleEditProfile}
         handleProfileChange={handleProfileChange}
+        handleSelectPresetAvatar={handleSelectPresetAvatar}
         handleCancelProfile={handleCancelProfile}
         handleSaveProfile={handleSaveProfile}
         handleChangeAvatar={handleChangeAvatar}
@@ -3542,6 +3749,16 @@ function App() {
           )}
         </div>
       )}
+
+      <TicTacToeModal
+        game={ticTacToeGame}
+        currentUserId={currentUserId}
+        visible={showTicTacToeModal}
+        onClose={() => setShowTicTacToeModal(false)}
+        onAccept={handleAcceptTicTacToe}
+        onMove={handleTicTacToeMove}
+        onResign={handleResignTicTacToe}
+      />
     </div>
   )
 }

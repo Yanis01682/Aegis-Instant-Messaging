@@ -203,6 +203,62 @@ def test_send_and_read_messages():
     assert alice_sessions.json()[0]["lastMessage"] == "hello frank"
 
 
+def test_tic_tac_toe_invite_accept_move_and_resign():
+    headers_alice, _ = register_and_login("ttt_alice", "ttt_alice@example.com")
+    headers_bob, bob_user = register_and_login("ttt_bob", "ttt_bob@example.com")
+    add_friend_res = client.post(
+        "/api/chat/friends/add",
+        json={"friend_id": bob_user["id"]},
+        headers=headers_alice,
+    )
+    conversation_id = add_friend_res.json()["conversation_id"]
+
+    invite_res = client.post(
+        "/api/chat/games/tictactoe/invite",
+        json={"conversation_id": conversation_id},
+        headers=headers_alice,
+    )
+    assert invite_res.status_code == 200
+    game = invite_res.json()
+    assert game["status"] == "pending"
+    assert game["currentUserMark"] == "X"
+
+    bob_active = client.get(
+        f"/api/chat/games/tictactoe/active?conversation_id={conversation_id}",
+        headers=headers_bob,
+    )
+    assert bob_active.status_code == 200
+    assert bob_active.json()["currentUserMark"] == "O"
+
+    messages_res = client.get(f"/api/chat/sessions/{conversation_id}/messages", headers=headers_bob)
+    assert messages_res.status_code == 200
+    assert messages_res.json()[-1]["type"] == "game"
+    assert messages_res.json()[-1]["gameData"]["gameId"] == game["id"]
+
+    accept_res = client.post(f"/api/chat/games/tictactoe/{game['id']}/accept", headers=headers_bob)
+    assert accept_res.status_code == 200
+    assert accept_res.json()["status"] == "active"
+
+    out_of_turn = client.post(
+        f"/api/chat/games/tictactoe/{game['id']}/move",
+        json={"index": 0},
+        headers=headers_bob,
+    )
+    assert out_of_turn.status_code == 400
+
+    first_move = client.post(
+        f"/api/chat/games/tictactoe/{game['id']}/move",
+        json={"index": 0},
+        headers=headers_alice,
+    )
+    assert first_move.status_code == 200
+    assert first_move.json()["board"][0] == "X"
+
+    resign_res = client.post(f"/api/chat/games/tictactoe/{game['id']}/resign", headers=headers_bob)
+    assert resign_res.status_code == 200
+    assert resign_res.json()["status"] == "x_win"
+
+
 def test_send_message_response_time_matches_messages_list():
     headers_alice, _ = register_and_login("time_alice", "time_alice@example.com")
     headers_bob, bob_user = register_and_login("time_bob", "time_bob@example.com")
