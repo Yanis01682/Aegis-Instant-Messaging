@@ -29,9 +29,7 @@
 .im-shell > .im-layout {
   border-radius: 0 32px 32px 0;
   overflow: hidden;
-  background:
-    linear-gradient(180deg, rgba(255, 252, 247, 0.68), rgba(242, 236, 226, 0.72)),
-    url('/aegis-bg-v2.png') center / cover no-repeat;
+  background: rgba(255, 252, 247, 0.4);
   box-shadow:
     0 28px 84px rgba(72, 56, 26, 0.18),
     0 0 0 1px rgba(255, 253, 248, 0.48),
@@ -40,7 +38,6 @@
 
 .left-nav,
 .chatlist-panel,
-.chat-panel,
 .composer,
 .user-panel,
 .chat-detail-panel,
@@ -56,7 +53,6 @@
 }
 
 .chatlist-panel,
-.chat-panel,
 .composer,
 .user-panel,
 .chat-detail-panel,
@@ -93,9 +89,14 @@
 }
 
 .chat-messages {
+  background: transparent !important;
+}
+
+.chat-panel,
+.empty-wechat-panel {
   background:
-    linear-gradient(180deg, rgba(255, 252, 247, 0.72), rgba(241, 236, 226, 0.76)),
-    url('/aegis-bg-v2.png') center / cover no-repeat;
+    linear-gradient(180deg, rgba(255, 252, 247, 0.54), rgba(241, 236, 226, 0.58)),
+    url('/aegis-bg-v2.png') center / cover no-repeat !important;
 }
 
 .message.incoming .bubble,
@@ -346,7 +347,6 @@
 
 .chat-panel::before,
 .user-panel::before,
-.chat-detail-panel::before,
 .login-container::before {
   content: '';
   position: absolute;
@@ -354,6 +354,30 @@
   border: 1px solid rgba(176, 145, 90, 0.18);
   border-radius: 24px;
   pointer-events: none;
+}
+
+.chat-panel::before {
+  content: none !important;
+  display: none !important;
+}
+
+.chat-detail-panel::before {
+  display: none !important;
+}
+
+.chat-detail-panel::after,
+.chat-detail-header::before,
+.chat-detail-header::after,
+.chat-detail-content::before,
+.chat-detail-content::after,
+.group-info-section::before,
+.group-info-section::after,
+.personal-info-section::before,
+.personal-info-section::after,
+.detail-section::before,
+.detail-section::after {
+  content: none !important;
+  display: none !important;
 }
 
 .login-container {
@@ -367,14 +391,147 @@
 }
 
 .profile-modal {
-  position: fixed;
-  top: 28px;
-  right: 28px;
-  bottom: 28px;
+  position: relative;
+  top: auto;
+  right: auto;
+  bottom: auto;
   width: min(440px, calc(100vw - 56px));
-  max-height: none;
+  max-height: min(760px, calc(100vh - 56px));
   border-radius: 28px;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
+}
+
+.profile-modal-body {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.user-panel-overlay {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 28px;
+  background: rgba(34, 30, 24, 0.46) !important;
+}
+
+.user-panel {
+  position: relative !important;
+  top: auto !important;
+  right: auto !important;
+  width: min(430px, calc(100vw - 56px)) !important;
+  height: min(720px, calc(100vh - 56px)) !important;
+  border: 1px solid rgba(145, 118, 72, 0.2) !important;
+  border-radius: 28px !important;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.94), rgba(239, 232, 218, 0.92)) !important;
+  box-shadow: 0 28px 76px rgba(46, 35, 18, 0.28) !important;
+  animation: slideUp 0.24s ease !important;
+}
+
+.user-panel::before {
+  content: none !important;
+  display: none !important;
+}
+
+.user-panel-header {
+  min-height: 140px;
+  padding: 24px 28px !important;
+  background: rgba(255, 253, 248, 0.62) !important;
+}
+
+.user-panel-menu {
+  padding: 18px 0 !important;
+}
+
+.user-panel-footer {
+  background: rgba(255, 253, 248, 0.72) !important;
+}
+
+.note-workspace:not(:has(.note-workspace-editor)) .note-workspace-body {
+  padding: 0 !important;
+}
+
+.member-list-overlay {
+  background: rgba(34, 30, 24, 0.46) !important;
+}
+
+.member-list-modal {
+  width: min(760px, calc(100vw - 56px)) !important;
+  max-height: min(760px, calc(100vh - 56px)) !important;
+  border: 1px solid rgba(145, 118, 72, 0.2) !important;
+  border-radius: 28px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.96), rgba(239, 232, 218, 0.94)) !important;
+  box-shadow: 0 28px 76px rgba(46, 35, 18, 0.28) !important;
+}
+
+.member-list-header {
+  background: rgba(255, 253, 248, 0.72) !important;
+  border-bottom: 0 !important;
+}
+
+.member-list-body {
+  background: transparent !important;
+}
+
+.member-list-section,
+.member-list-modal .member-item {
+  border: 0 !important;
+  background: rgba(255, 255, 255, 0.54) !important;
+  border-radius: 16px !important;
+}
+
+.composer {
+  min-height: 136px !important;
+  padding: 14px 22px 18px !important;
+  gap: 10px !important;
+  border-top: 0 !important;
+  background:
+    linear-gradient(180deg, rgba(247, 242, 232, 0.78), rgba(235, 228, 216, 0.88)) !important;
+}
+
+.composer-toolbar {
+  gap: 18px !important;
+}
+
+.toolbar-btn {
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 10px !important;
+  font-size: 1.06rem !important;
+}
+
+.composer-input {
+  min-height: 76px !important;
+  border: 1px solid rgba(145, 118, 72, 0.14) !important;
+  border-radius: 14px !important;
+  background: rgba(255, 255, 255, 0.68) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.composer-actions {
+  position: absolute;
+  right: 22px;
+  bottom: 18px;
+}
+
+.send-btn {
+  min-width: 104px !important;
+  min-height: 44px !important;
+  border-radius: 12px !important;
+}
+
+.composer-resize-handle {
+  display: none !important;
+}
+
+.announcement-meta {
+  margin: 6px 0 0;
+  color: var(--aegis-muted);
+  font-size: 0.78rem;
 }
 
 .peer-profile-modal {
@@ -390,12 +547,21 @@
 
 .night-mode .im-shell {
   background:
-    linear-gradient(180deg, rgba(18, 18, 20, 0.78), rgba(10, 10, 12, 0.88)),
-    url('/aegis-bg-v2.png') center / cover no-repeat fixed !important;
+    linear-gradient(135deg, #27231d 0%, #191813 58%, #10110e 100%) !important;
+}
+
+.night-mode .chat-panel,
+.night-mode .empty-wechat-panel {
+  background:
+    linear-gradient(180deg, rgba(24, 22, 18, 0.7), rgba(18, 17, 15, 0.78)),
+    url('/aegis-bg-v2.png') center / cover no-repeat !important;
+}
+
+.night-mode .chat-messages {
+  background: transparent !important;
 }
 
 .night-mode .chatlist-panel,
-.night-mode .chat-panel,
 .night-mode .composer,
 .night-mode .user-panel,
 .night-mode .chat-detail-panel,
@@ -444,6 +610,88 @@
 .night-mode .favorite-item {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(211, 183, 125, 0.1);
+}
+
+.chat-detail-panel {
+  position: relative !important;
+  inset: auto !important;
+  width: min(640px, calc(100vw - 40px)) !important;
+  max-width: none !important;
+  height: min(820px, calc(100vh - 40px)) !important;
+  max-height: calc(100vh - 40px) !important;
+  border-radius: 28px !important;
+  border-left: 0 !important;
+  overflow: hidden !important;
+  background:
+    linear-gradient(180deg, rgba(255, 252, 247, 0.74), rgba(239, 231, 215, 0.78)),
+    url('/aegis-bg-v2.png') center / cover no-repeat !important;
+  box-shadow: 0 28px 76px rgba(46, 35, 18, 0.28) !important;
+  animation: slideUp 0.24s ease !important;
+}
+
+.chat-detail-overlay {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 20px !important;
+  background: rgba(34, 30, 24, 0.46) !important;
+}
+
+.chat-detail-header,
+.group-info-section,
+.personal-info-section,
+.detail-section,
+.detail-section:not(:last-child),
+.announcement-display,
+.remark-edit-form,
+.announcement-edit-form {
+  border: 0 !important;
+}
+
+.chat-detail-header {
+  min-height: 64px;
+  padding: 18px 24px !important;
+  box-shadow: none !important;
+  background: rgba(255, 253, 248, 0.76) !important;
+}
+
+.chat-detail-content {
+  height: calc(100% - 65px);
+  overflow-y: auto;
+  background: transparent !important;
+}
+
+.group-info-section,
+.personal-info-section {
+  background: rgba(255, 253, 248, 0.38) !important;
+}
+
+.group-name,
+.personal-name,
+.owner-name,
+.my-nickname,
+.remark-input,
+.group-detail-text {
+  color: var(--aegis-text) !important;
+}
+
+.group-member-count,
+.owner-role,
+.section-title,
+.arrow-icon {
+  color: var(--aegis-muted) !important;
+}
+
+.detail-section {
+  margin: 14px 20px;
+  border-radius: 16px;
+  box-shadow: none !important;
+}
+
+.chat-detail-panel *,
+.chat-detail-panel *::before,
+.chat-detail-panel *::after {
+  text-decoration: none;
 }
 
 .note-workspace::before {
