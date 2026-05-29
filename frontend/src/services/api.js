@@ -197,24 +197,81 @@ export async function updateSessionMute(conversationId, muted) {
   return res.data
 }
 
+const getLocalNoteKey = () => `aegis_notes:${localStorage.getItem('auth_token') || 'guest'}`
+
+const readLocalNotes = () => {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(getLocalNoteKey()) || '[]')
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+const writeLocalNotes = (notes) => {
+  localStorage.setItem(getLocalNoteKey(), JSON.stringify(notes))
+}
+
 export async function getNotes() {
-  const res = await apiClient.get('/api/chat/notes')
-  return res.data
+  try {
+    const res = await apiClient.get('/api/chat/notes')
+    return res.data
+  } catch (err) {
+    console.warn('使用本地笔记缓存', err.message)
+    return readLocalNotes()
+  }
 }
 
 export async function createNote(payload) {
-  const res = await apiClient.post('/api/chat/notes', payload)
-  return res.data
+  try {
+    const res = await apiClient.post('/api/chat/notes', payload)
+    return res.data
+  } catch (err) {
+    console.warn('笔记接口不可用，已保存到本地', err.message)
+    const now = new Date().toISOString()
+    const note = {
+      id: `local-note-${Date.now()}`,
+      title: payload.title?.trim() || '无标题笔记',
+      content: payload.content?.trim() || '',
+      createdAt: now,
+      updatedAt: now,
+    }
+    writeLocalNotes([note, ...readLocalNotes()])
+    return note
+  }
 }
 
 export async function updateNote(noteId, payload) {
-  const res = await apiClient.put(`/api/chat/notes/${noteId}`, payload)
-  return res.data
+  try {
+    const res = await apiClient.put(`/api/chat/notes/${noteId}`, payload)
+    return res.data
+  } catch (err) {
+    console.warn('笔记接口不可用，已更新本地缓存', err.message)
+    const now = new Date().toISOString()
+    const notes = readLocalNotes()
+    const nextNote = {
+      id: noteId,
+      title: payload.title?.trim() || '无标题笔记',
+      content: payload.content?.trim() || '',
+      createdAt: notes.find((note) => note.id === noteId)?.createdAt || now,
+      updatedAt: now,
+    }
+    writeLocalNotes(notes.some((note) => note.id === noteId)
+      ? notes.map((note) => (note.id === noteId ? nextNote : note))
+      : [nextNote, ...notes])
+    return nextNote
+  }
 }
 
 export async function deleteNote(noteId) {
-  const res = await apiClient.delete(`/api/chat/notes/${noteId}`)
-  return res.data
+  try {
+    const res = await apiClient.delete(`/api/chat/notes/${noteId}`)
+    return res.data
+  } catch (err) {
+    console.warn('笔记接口不可用，已删除本地缓存', err.message)
+    writeLocalNotes(readLocalNotes().filter((note) => note.id !== noteId))
+    return { ok: true }
+  }
 }
 
 export async function createGroup(name, memberIds) {

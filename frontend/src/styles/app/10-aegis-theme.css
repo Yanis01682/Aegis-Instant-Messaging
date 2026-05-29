@@ -12,7 +12,7 @@
 }
 
 .im-shell {
-  padding: 28px;
+  padding: 38px;
   box-sizing: border-box;
   background:
     radial-gradient(circle at 8% 12%, rgba(213, 186, 134, 0.22), transparent 28%),
@@ -20,19 +20,22 @@
 }
 
 .im-shell > .left-nav {
-  border-radius: 24px 0 0 24px;
+  border-radius: 32px 0 0 32px;
   overflow: hidden;
   background: rgba(255, 252, 247, 0.62);
   border-right: 1px solid rgba(145, 118, 72, 0.18);
 }
 
 .im-shell > .im-layout {
-  border-radius: 0 24px 24px 0;
+  border-radius: 0 32px 32px 0;
   overflow: hidden;
   background:
     linear-gradient(180deg, rgba(255, 252, 247, 0.68), rgba(242, 236, 226, 0.72)),
     url('/aegis-bg-v2.png') center / cover no-repeat;
-  box-shadow: 0 20px 64px rgba(72, 56, 26, 0.14);
+  box-shadow:
+    0 28px 84px rgba(72, 56, 26, 0.18),
+    0 0 0 1px rgba(255, 253, 248, 0.48),
+    inset 0 0 0 1px rgba(145, 118, 72, 0.12);
 }
 
 .left-nav,
@@ -46,6 +49,7 @@
 .legal-modal,
 .auth-card,
 .login-box,
+.register-box,
 .panel-header,
 .wechat-panel-header {
   backdrop-filter: blur(18px);
@@ -356,7 +360,8 @@
   backdrop-filter: blur(18px);
 }
 
-.login-box {
+.login-box,
+.register-box {
   background: rgba(255, 253, 248, 0.86);
   border: 1px solid rgba(145, 118, 72, 0.22);
 }
@@ -439,4 +444,136 @@
 .night-mode .favorite-item {
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(211, 183, 125, 0.1);
+}
+
+.note-workspace::before {
+  display: none;
+}
+
+.note-workspace-body {
+  padding: 30px !important;
+}
+
+.note-workspace-editor {
+  min-height: calc(100% - 2px);
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.96), rgba(249, 244, 235, 0.94)) !important;
+}
+
+.note-workspace-editor textarea {
+  min-height: 360px;
+  resize: none;
+}
+
+.note-workspace-editor .note-editor-actions {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(145, 118, 72, 0.14);
+}
+
+.login-container {
+  border-radius: 34px;
+}
+
+.login-container::before {
+  inset: 24px;
+  border-radius: 28px;
+}
+
+.login-box,
+.register-box {
+  position: relative;
+  max-width: 460px;
+  padding: 42px;
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.94), rgba(243, 235, 219, 0.9)) !important;
+  box-shadow:
+    0 28px 70px rgba(56, 42, 22, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82) !important;
+}
+
+.login-box::before,
+.register-box::before {
+  content: '';
+  display: block;
+  width: 74px;
+  height: 74px;
+  margin: 0 auto 14px;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(0, 0, 0, 0.18)),
+    url('/aegis-avatar-group.png') center / cover no-repeat;
+  box-shadow: 0 12px 28px rgba(72, 56, 26, 0.2);
+}
+
+.brand-logo .brand-dot {
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 4px;
+  background: linear-gradient(135deg, var(--aegis-brass-soft), var(--aegis-brass)) !important;
+}
+
+.form-group input,
+.profile-edit-form input,
+.profile-edit-form select,
+.profile-edit-form textarea {
+  border-color: rgba(145, 118, 72, 0.2) !important;
+  background: rgba(255, 253, 248, 0.82) !important;
+}
+
+.form-group input:focus,
+.profile-edit-form input:focus,
+.profile-edit-form select:focus,
+.profile-edit-form textarea:focus {
+  border-color: rgba(143, 106, 53, 0.62) !important;
+  box-shadow: 0 0 0 3px rgba(143, 106, 53, 0.13) !important;
+}
+
+.forgot-link,
+.login-footer a,
+.password-toggle-btn,
+.profile-modal-close,
+.peer-profile-close {
+  color: var(--aegis-brass) !important;
+}
+
+.login-btn,
+.register-btn,
+.edit-profile-btn,
+.profile-form-buttons .save-btn,
+.peer-profile-send-btn,
+.peer-profile-add-btn {
+  background: linear-gradient(135deg, var(--aegis-brass), var(--aegis-brass-soft)) !important;
+  color: #fffaf0 !important;
+  box-shadow: 0 12px 26px rgba(143, 106, 53, 0.22) !important;
+}
+
+.back-to-login-btn,
+.profile-form-buttons .cancel-btn {
+  border-color: rgba(145, 118, 72, 0.28) !important;
+  color: var(--aegis-brass) !important;
+  background: rgba(255, 253, 248, 0.74) !important;
+}
+
+.profile-avatar,
+.user-panel-avatar,
+.peer-profile-avatar,
+.avatar-preview,
+.avatar-preset {
+  border-color: rgba(145, 118, 72, 0.26) !important;
+  box-shadow: 0 12px 30px rgba(72, 56, 26, 0.16);
+}
+
+.avatar-preset.active {
+  border-color: rgba(143, 106, 53, 0.74) !important;
+  box-shadow:
+    0 0 0 3px rgba(143, 106, 53, 0.16),
+    0 12px 30px rgba(72, 56, 26, 0.18) !important;
+}
+
+.user-status-dot.status-online,
+.member-status,
+.online-dot {
+  background: #a67c3c !important;
 }

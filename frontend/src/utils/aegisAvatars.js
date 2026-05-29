@@ -1,10 +1,10 @@
-export const AEGIS_DEFAULT_USER_AVATAR = '/aegis-avatar-shield.svg'
-export const AEGIS_DEFAULT_GROUP_AVATAR = '/aegis-avatar-order.svg'
+export const AEGIS_DEFAULT_USER_AVATAR = '/aegis-avatar-user.png'
+export const AEGIS_DEFAULT_GROUP_AVATAR = '/aegis-avatar-group.png'
 
 export const AEGIS_AVATAR_PRESETS = [
   { id: 'shield', label: '守誓盾徽', value: AEGIS_DEFAULT_USER_AVATAR },
-  { id: 'sword', label: '银刃骑士', value: '/aegis-avatar-sword.svg' },
-  { id: 'templar', label: '圣殿誓约', value: '/aegis-avatar-templar.svg' },
+  { id: 'sword', label: '银刃骑士', value: '/aegis-avatar-sword.png' },
+  { id: 'templar', label: '圣殿誓约', value: '/aegis-avatar-templar.png' },
   { id: 'order', label: '翡翠教团', value: AEGIS_DEFAULT_GROUP_AVATAR },
 ]
 
