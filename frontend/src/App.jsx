@@ -40,6 +40,7 @@ import {
   sendVideoMessage,
   sendFileMessage,
   sendVoiceMessage,
+  translateMessage,
   unpinChatSession,
   revokeMessage,
   getProfile,
@@ -92,6 +93,14 @@ const EMPTY_SESSION = {
 }
 
 const DEFAULT_FRIEND_GROUP = '我的好友'
+const AEGIS_BOT = {
+  id: '__aegis_lune__',
+  name: '露恩',
+  displayName: '露恩',
+  groupNickname: '群聊助手',
+  avatar: '/aegis-avatar-order.svg',
+  isBot: true,
+}
 
 const createHistoryFilters = () => ({
   sender: 'all',
@@ -181,6 +190,8 @@ function App() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false) // 表情选择器显示状态
   const [showRegisterForm, setShowRegisterForm] = useState(false) // 注册表单显示状态
   const [contextMenu, setContextMenu] = useState(null) // 右键菜单：{ messageId, x, y, type }
+  const [messageTranslations, setMessageTranslations] = useState({})
+  const [translatingMessageId, setTranslatingMessageId] = useState(null)
   const [replyToMessage, setReplyToMessage] = useState(null) // 回复的消息：{ id, text, sender }
   const [editingMessageId, setEditingMessageId] = useState(null) // 正在编辑的消息 ID
   const [showMentionPicker, setShowMentionPicker] = useState(false) // @ 成员选择器显示状态
@@ -485,7 +496,7 @@ function App() {
       [conversationId]: owner?.name ?? '',
     }))
 
-    const mine = fetchedMembers.find((member) => member.id === currentUserId)
+      const mine = fetchedMembers.find((member) => member.id === currentUserId)
     if (mine) {
       setUserRole(mine.role)
     }
@@ -680,7 +691,13 @@ function App() {
     }
 
     getActiveTicTacToeGame(currentChat)
-      .then((game) => setTicTacToeGame(normalizeTicTacToeGame(game)))
+      .then((game) => {
+        setTicTacToeGame((prev) => {
+          if (game) return normalizeTicTacToeGame(game)
+          if (prev?.conversationId === currentChat && isTerminalTicTacToeGame(prev)) return prev
+          return null
+        })
+      })
       .catch(() => {
         setTicTacToeGame((prev) => (
           prev?.conversationId === currentChat && isTerminalTicTacToeGame(prev) ? prev : null
@@ -1132,6 +1149,17 @@ function App() {
   // 根据被点击的消息，解析对方资料（群聊/私聊）
   const resolvePeerProfileFromMessage = (msg) => {
     if (!msg || msg.sender === 'me' || msg.sender === 'system') return null
+    if (msg.type === 'bot' || msg.senderName === AEGIS_BOT.name) {
+      return {
+        name: AEGIS_BOT.displayName,
+        userId: AEGIS_BOT.id,
+        avatar: AEGIS_BOT.avatar,
+        status: 'online',
+        email: '',
+        wechatId: AEGIS_BOT.id,
+        source: 'bot'
+      }
+    }
 
     const currentSession = getCurrentSession()
 
@@ -2144,6 +2172,10 @@ function App() {
     // 只有自己发送的消息才能撤回，其他人的消息可以回复
     const canRevoke = msg.sender === 'me'
     const canReply = msg.sender !== 'system'
+    const canTranslate =
+      typeof msg.id === 'number' &&
+      !['system', 'image', 'video', 'file', 'voice', 'forward', 'game'].includes(msg.type || 'text') &&
+      Boolean(msg.text)
     
     const canDelete = msg.sender !== 'system'
     
@@ -2158,6 +2190,7 @@ function App() {
       y: e.clientY,
       canRevoke,
       canReply,
+      canTranslate,
       canDelete,
       message: msg, // 保存完整消息对象用于转发
     })
@@ -2241,6 +2274,24 @@ function App() {
 
     setFavoriteItems((prev) => [favoriteItem, ...prev.filter((item) => item.id !== favoriteItem.id)].slice(0, 500))
     closeContextMenu()
+  }
+
+  const handleTranslateMessage = async () => {
+    if (!contextMenu?.messageId || !contextMenu?.canTranslate) return
+    const messageId = contextMenu.messageId
+    closeContextMenu()
+    setTranslatingMessageId(messageId)
+    try {
+      const result = await translateMessage(messageId, '简体中文')
+      setMessageTranslations((prev) => ({
+        ...prev,
+        [messageId]: result.translation,
+      }))
+    } catch (err) {
+      alert(err.response?.data?.detail || err.message || '转译暂时失败')
+    } finally {
+      setTranslatingMessageId(null)
+    }
   }
 
   // 回复消息
@@ -2469,7 +2520,7 @@ function App() {
     const members = groupMembers[currentChat] || []
     
     // 过滤掉当前用户（不能@自己）
-    const filteredMembers = members.filter(member => member.id !== currentUserId)
+    const filteredMembers = [AEGIS_BOT, ...members.filter(member => member.id !== currentUserId)]
     
     if (!mentionSearchQuery) return filteredMembers
     
@@ -3581,6 +3632,8 @@ function App() {
             handleOpenChatDetail={handleOpenChatDetail}
             handleOpenSearchMessage={handleOpenSearchMessage}
             messages={messages}
+            messageTranslations={messageTranslations}
+            translatingMessageId={translatingMessageId}
             handleMessagesClick={handleMessagesClick}
             handleMessageContextMenu={handleMessageContextMenu}
             jumpToMessageId={jumpToMessageId}
@@ -3636,6 +3689,7 @@ function App() {
         handleRevokeMessage={handleRevokeMessage}
         handleDeleteMessage={handleDeleteMessage}
         handleFavoriteMessage={handleFavoriteMessage}
+        handleTranslateMessage={handleTranslateMessage}
         startMultiSelectFromMenu={startMultiSelectFromMenu}
         showForwardDialog={showForwardDialog}
         cancelForward={cancelForward}

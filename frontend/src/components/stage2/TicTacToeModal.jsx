@@ -13,6 +13,16 @@ function getGameTitle(game, currentUserId) {
   return game.winnerUserId === currentUserId ? '你赢了' : '对方获胜'
 }
 
+function getResultText(game, currentUserId) {
+  if (!game) return ''
+  if (game.status === 'draw') return '双方平局，棋盘已封存。'
+  if (game.status === 'cancelled') return '这局对弈已取消。'
+  const winnerName = game.winnerUserId === game.xUserId ? game.xName : game.oName
+  const loserName = game.winnerUserId === game.xUserId ? game.oName : game.xName
+  if (game.winnerUserId === currentUserId) return `结算：你击败了 ${loserName || '对方'}。`
+  return `结算：${winnerName || '对方'} 获胜，${loserName || '你'} 落败。`
+}
+
 function TicTacToeModal({
   game,
   currentUserId,
@@ -32,8 +42,12 @@ function TicTacToeModal({
   const isTerminal = terminalStatuses.has(game.status)
   const board = game.board || Array(9).fill('.')
 
+  const handleBackdropClick = () => {
+    if (!isTerminal) onClose()
+  }
+
   return (
-    <div className="ttt-overlay" onClick={onClose}>
+    <div className="ttt-overlay" onClick={handleBackdropClick}>
       <div className="ttt-modal" onClick={(event) => event.stopPropagation()}>
         <div className="ttt-header">
           <div>
@@ -68,10 +82,17 @@ function TicTacToeModal({
           ))}
         </div>
 
+        {isTerminal && (
+          <div className="ttt-result">
+            <strong>{getGameTitle(game, currentUserId)}</strong>
+            <span>{getResultText(game, currentUserId)}</span>
+          </div>
+        )}
+
         <div className="ttt-footer">
           {game.status === 'pending' && !canAccept && <span>邀请已发出，对方同意后开局。</span>}
           {game.status === 'active' && <span>你执 {currentMark}，{canMove ? '选择一格落子。' : '请等对方行动。'}</span>}
-          {isTerminal && <span>这局已经结束，可以退出，也可以再邀请对方一局。</span>}
+          {isTerminal && <span>结算已生成，确认后可退出棋局。</span>}
           <div className="ttt-actions">
             {canAccept && <button type="button" className="ttt-primary" onClick={() => onAccept(game.id)}>接受对局</button>}
             {isTerminal && <button type="button" className="ttt-primary" onClick={onInviteAgain}>再邀请</button>}

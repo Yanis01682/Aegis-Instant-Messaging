@@ -25,6 +25,8 @@ function ChatMainView({
   handleOpenSearchMessage,
   // 全量消息映射（按会话 id）。
   messages,
+  messageTranslations = {},
+  translatingMessageId = null,
   // 点击消息列表时执行的处理函数（用于关闭右键菜单）。
   handleMessagesClick,
   // 消息右键菜单触发函数。
@@ -218,11 +220,16 @@ function ChatMainView({
     if (!textarea) return {}
     
     const rect = textarea.getBoundingClientRect()
+    const panel = textarea.closest('.chat-panel')
+    const panelRect = panel?.getBoundingClientRect()
+    const left = panelRect ? Math.max(16, rect.left - panelRect.left) : 20
+    const width = Math.min(360, Math.max(260, rect.width - 40))
     return {
-      position: 'fixed',
-      bottom: window.innerHeight - rect.top + 8,
-      left: rect.left,
-      width: Math.min(300, rect.width), // 最大宽度 300px
+      position: 'absolute',
+      bottom: `${composerHeight + 8}px`,
+      left,
+      width,
+      maxWidth: 'calc(100% - 40px)',
     }
   }
 
@@ -330,8 +337,12 @@ function ChatMainView({
             const member = members.find((m) => m.id === msg.senderId) || members.find((m) => m.name === msg.senderName)
             if (member) {
               peerAvatar = member.avatar || currentSession.avatar
+            } else if (msg.type === 'bot' || msg.senderName === '露恩') {
+              peerAvatar = '/aegis-avatar-order.svg'
             }
           }
+          const translationText = messageTranslations[msg.id]
+          const isTranslating = translatingMessageId === msg.id
 
           return (
           <div
@@ -416,6 +427,12 @@ function ChatMainView({
                 )}
                 <span className="message-time">{msg.time}</span>
               </div>
+              {(translationText || isTranslating) && (
+                <div className="message-translation">
+                  <span className="translation-label">转译</span>
+                  <span className="translation-text">{isTranslating ? '转译中...' : translationText}</span>
+                </div>
+              )}
             </div>
           </div>
           )
