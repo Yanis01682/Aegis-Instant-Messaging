@@ -8,35 +8,27 @@ The project implements a full-stack chat application with account management, fr
 
 Frontend: [frontend-dyno-whatthedogdoing.app.spring26b.secoder.net](https://frontend-dyno-whatthedogdoing.app.spring26b.secoder.net/)
 
-## Screenshots
-
-### Chat Overview
-
-![Aegis chat overview](docs/screenshots/overview.png)
-
-### Group Detail and Member Management
-
-![Aegis group detail](docs/screenshots/group-detail.png)
-
-### Tic-Tac-Toe in Chat
-
-![Aegis tic-tac-toe game](docs/screenshots/tic-tac-toe-game.png)
-
-### Echo Yard
-
-![Aegis echo yard](docs/screenshots/echo-yard.png)
-
-### Personal Notes
-
-![Aegis personal notes](docs/screenshots/notes.png)
-
-### Profile Settings
-
-![Aegis profile settings](docs/screenshots/profile-settings.png)
-
 ## Course Result
 
 This project won **First Prize in the Excellent Course Project Evaluation**.
+
+<p align="center">
+  <img src="docs/screenshots/award-first-prize.jpg" alt="First Prize certificate" width="520">
+</p>
+
+## Screenshots
+
+| Chat Overview | Group Detail |
+| --- | --- |
+| <img src="docs/screenshots/overview.png" alt="Aegis chat overview" width="420"> | <img src="docs/screenshots/group-detail.png" alt="Aegis group detail and member management" width="300"> |
+
+| Tic-Tac-Toe in Chat | Echo Yard |
+| --- | --- |
+| <img src="docs/screenshots/tic-tac-toe-game.png" alt="Aegis tic-tac-toe game" width="260"> | <img src="docs/screenshots/echo-yard.png" alt="Aegis echo yard" width="420"> |
+
+| Personal Notes | Profile Settings |
+| --- | --- |
+| <img src="docs/screenshots/notes.png" alt="Aegis personal notes" width="420"> | <img src="docs/screenshots/profile-settings.png" alt="Aegis profile settings" width="260"> |
 
 ## Features
 
