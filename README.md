@@ -2,11 +2,37 @@
 
 Aegis is a PC web instant messaging system built as the final project for **Software Engineering**, Tsinghua University, Spring 2026.
 
-The project implements a full-stack chat application with account management, friend relationships, private chats, group chats, real-time notifications, group administration, moments, personal notes, message translation, a group bot, and tic-tac-toe invitations.
+The project implements a full-stack chat application with account management, friend relationships, private chats, group chats, real-time notifications, group administration, an echo-yard feed, personal notes, message translation, a group bot, and tic-tac-toe invitations.
 
-## Screenshot
+## Demo
 
-![Aegis login screen](docs/screenshots/login.png)
+Frontend: [frontend-dyno-whatthedogdoing.app.spring26b.secoder.net](https://frontend-dyno-whatthedogdoing.app.spring26b.secoder.net/)
+
+## Screenshots
+
+### Chat Overview
+
+![Aegis chat overview](docs/screenshots/overview.png)
+
+### Group Detail and Member Management
+
+![Aegis group detail](docs/screenshots/group-detail.png)
+
+### Tic-Tac-Toe in Chat
+
+![Aegis tic-tac-toe game](docs/screenshots/tic-tac-toe-game.png)
+
+### Echo Yard
+
+![Aegis echo yard](docs/screenshots/echo-yard.png)
+
+### Personal Notes
+
+![Aegis personal notes](docs/screenshots/notes.png)
+
+### Profile Settings
+
+![Aegis profile settings](docs/screenshots/profile-settings.png)
 
 ## Course Result
 
@@ -19,7 +45,7 @@ This project won **First Prize in the Excellent Course Project Evaluation**.
 - Messaging: private chats, group chats, text and media messages, replies, recalls, unread counts, pinned chats, and mute settings.
 - Group management: group creation, member invitations, join approvals, announcements, nicknames, administrators, ownership transfer, member removal, exit, and dissolution.
 - Real-time delivery: WebSocket notifications with HTTP long-polling as a fallback.
-- Extended experiences: moments, personal notes, message translation, a group bot, and tic-tac-toe invitations.
+- Extended experiences: echo-yard posts, personal notes, message translation, a group bot, and tic-tac-toe invitations.
 
 ## Tech Stack
 
